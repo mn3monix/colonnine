@@ -508,7 +508,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='2.0';
+const APP_VERSION='2.0.1';
 const APP_DATE='30.08.2026';
 
 
@@ -517,8 +517,7 @@ const APP_DATE='30.08.2026';
    ============================================================ */
 const LANGS={it:'Italiano',en:'English',pl:'Polski'};
 const TXT={
-it:{
- destPh:"Destinazione — es. Bydgoszcz", trace:"Traccia",
+it:{ trace:"Traccia",
  pfFast:"Veloce", pfFastS:"il più rapido", pfSce:"Panoramico", pfSceS:"cosa vedere",
  pfChe:"Economico", pfCheS:"evita pedaggi", socLab:"Carica ora",
  mapOff:"Mappa non attiva", mapOffTx:"Inserisci la chiave Google Maps nelle impostazioni per vedere mappa e traffico. L'elenco qui sotto funziona comunque.",
@@ -549,7 +548,7 @@ it:{
  outOf:"km fuori dal percorso",
  setT:"Impostazioni", setSub:"Restano su questo dispositivo.", version:"Versione", ofDate:"del",
  hLang:"Lingua", hRoute:"Percorso", hChar:"Colonnine", hSee:"Cose da vedere", hKeys:"Chiavi",
- hCar:"Auto", hFound:"Trovati sul percorso", hOps:"I tuoi operatori",
+ hCar:"Auto", hOps:"I tuoi operatori",
  swHwy:"Evita le autostrade", swHwyS:"Strade normali, tempi molto più lunghi",
  swFer:"Evita i traghetti", swFerS:"Utile verso la Scandinavia o le isole",
  swToll:"Evita i pedaggi", swTollS:"Sempre attivo nel profilo Economico",
@@ -560,47 +559,36 @@ it:{
  seeTx:"Cosa cercare lungo il percorso panoramico. Ogni categoria in più è una ricerca in più, quindi tienine attive quattro o cinque.",
  lExcl:"Escludi se il nome contiene (separati da virgola)", lRate:"Voto minimo delle recensioni",
  lRev:"Numero minimo di recensioni",
- lGkey:"Google Maps API key", lOckey:"Open Charge Map API key", ockeyPh:"necessaria per le colonnine reali",
- lModel:"Modello", lKwh:"Capacità utile della batteria (kWh)", lWh:"Consumo reale (Wh/km)",
- lRes:"Riserva minima all'arrivo (%)", lAvg:"Potenza media di ricarica (kW)", lEff:"Rendimento di ricarica (0–1)",
+ lGkey:"Google Maps API key",
+ lModel:"Modello", lKwh:"Capacità utile della batteria (kWh)", lWh:"Consumo reale (Wh/km)", lAvg:"Potenza media di ricarica (kW)", lEff:"Rendimento di ricarica (0–1)",
  hintAvg:"La potenza media è quella reale su tutta la sosta, non il picco: una Model Y su un Supercharger da 250 kW fa in media 100–130 kW da 10 a 80%.",
  hintCar:"I valori del modello sono medie indicative su percorso misto. Dopo un viaggio vero, correggi il consumo con quello letto a bordo: è il parametro che cambia di più fra inverno ed estate, e in autostrada sale del 20–30%.",
- foundTx:"Operatori incontrati lungo la strada che non hai ancora configurato.",
- foundNone:"Nessuno per ora. Traccia un percorso e torna qui.",
  cUse:"Usa", cOp:"Operatore", newOpPh:"Aggiungi a mano — es. Atlante", add:"Aggiungi",
  saveClose:"Salva e chiudi", keysTx:"Serve la sola chiave Google: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Impostazioni salvate", tRecalc:"Premi Traccia per ricalcolare il percorso",
  tNoDest:"Scrivi una destinazione", tNoKey:"Serve la chiave Google per calcolare il percorso",
  tCalc:"Calcolo i percorsi…", tNotFound:"Percorso non trovato:", tCompare:"Confronto le alternative…",
- tSeek:"Cerco le colonnine su questa rotta…", tCats:"Cerco le categorie scelte…",
- tRoutes:"percorsi", tNewOps:"operatori nuovi in ⚙",
- tDemoKey:"Serve la chiave Open Charge Map — set dimostrativo", tDemoNo:"Open Charge Map non risponde — set dimostrativo",
+ tSeek:"Cerco le colonnine su questa rotta…",
+ tRoutes:"percorsi",
  tOpAdded:"aggiunto — imposta il prezzo in ⚙", tOpDup:"Operatore già presente",
  tStopsSet:"Soste impostate — premi Naviga con le soste", tMaxStops:"Massimo 9 soste in un URL di Google Maps",
  tKeyBad:"Chiave Google rifiutata", tKeyAsk:"Apri ⚙ e inserisci la chiave Google Maps",
  tProfile:"Premi Traccia per ricalcolare con questo profilo",
  viaPh:"Aggiungi tappa intermedia", viaNote:"Con le tappe Google non offre percorsi alternativi.",
  thisCh:"Questa ricarica", fullCh:"Ricarica tipica", runTot:"Speso fino a qui", tripTot:"Totale del viaggio",
- swTraf:"Mostra il traffico", swTrafS:"Le strade verdi possono coprire i pallini delle colonnine",
- lArr:"Carica desiderata all&#39;arrivo alla colonnina (%)", lRefv:"Velocità a cui vale quel consumo (km/h)", keep:"tieni max", freeSp:"andatura libera", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione",
- testKey:"Prova la chiave", testing:"Provo…", testNo:"Nessuna chiave inserita", testOkA:"Funziona:", testOkB:"colonnine trovate vicino a te", testFail:"Non funziona:",
- lVplan:"Velocità che intendi tenere (km/h)", hintVplan:"È il limite che rispetti in autostrada: 130 in Italia e Austria, 140 in Polonia, libera in molti tratti tedeschi. Tutti i calcoli — autonomia, carica all&#39;arrivo, costi — partono dal consumo a questa velocità.", spOk:"ok a", spSlow:"rallenta a",
- vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.",
- lSource:"Da dove prendere le colonnine", srcAuto:"Automatico — prima Open Charge Map, poi OpenStreetMap", srcOcm:"Solo Open Charge Map (serve la chiave)", srcOsm:"Solo OpenStreetMap (nessuna chiave)", hintSrc:"OpenStreetMap non richiede chiavi e risponde sempre, ma non conosce lo stato di funzionamento né i prezzi dichiarati. Open Charge Map è più ricco quando è raggiungibile.", osmCredit:"Dati colonnine © contributori OpenStreetMap", tOsm:"Dati da OpenStreetMap", tOsmFail:"supercharge.info non risponde",
- lTmin:"Carica minima quando ti fermi (%)", lTmax:"Carica massima (%)", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
+ swTraf:"Mostra il traffico", swTrafS:"Le strade verdi possono coprire i pallini delle colonnine", lRefv:"Velocità a cui vale quel consumo (km/h)", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione", spOk:"ok a", spSlow:"rallenta a",
+ vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.", tOsmFail:"supercharge.info non risponde", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
  arrLab:"Arrivo",
  stopLab:"Sosta",
  retry:"Riprova",
- onlyOcm:"Hai scelto “Solo Open Charge Map”: passa ad Automatico nelle impostazioni per usare anche OpenStreetMap.",
- searching:"ricerca in corso…",
- srcTesla:"Solo Supercharger Tesla (nessuna chiave)", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
+ searching:"ricerca in corso…", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
+ destPh:"Destinazione — es. Bydgoszcz",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
  cat_musei:"Musei e arte", cat_terme:"Terme", cat_cantine:"Cantine e vino"
 },
-en:{
- destPh:"Destination — e.g. Bydgoszcz", trace:"Route",
+en:{ trace:"Route",
  pfFast:"Fast", pfFastS:"quickest", pfSce:"Scenic", pfSceS:"what to see",
  pfChe:"Cheap", pfCheS:"avoids tolls", socLab:"Charge now",
  mapOff:"Map not active", mapOffTx:"Add your Google Maps key in settings to see the map and traffic. The list below works anyway.",
@@ -631,7 +619,7 @@ en:{
  outOf:"km off the route",
  setT:"Settings", setSub:"Kept on this device.", version:"Version", ofDate:"of",
  hLang:"Language", hRoute:"Route", hChar:"Chargers", hSee:"Worth seeing", hKeys:"Keys",
- hCar:"Car", hFound:"Found along the route", hOps:"Your operators",
+ hCar:"Car", hOps:"Your operators",
  swHwy:"Avoid motorways", swHwyS:"Ordinary roads, much longer times",
  swFer:"Avoid ferries", swFerS:"Useful towards Scandinavia or the islands",
  swToll:"Avoid tolls", swTollS:"Always on in the Cheap profile",
@@ -642,47 +630,36 @@ en:{
  seeTx:"What to look for along the scenic route. Every extra category is an extra search, so keep four or five active.",
  lExcl:"Exclude if the name contains (comma separated)", lRate:"Minimum review score",
  lRev:"Minimum number of reviews",
- lGkey:"Google Maps API key", lOckey:"Open Charge Map API key", ockeyPh:"needed for real chargers",
- lModel:"Model", lKwh:"Usable battery capacity (kWh)", lWh:"Real consumption (Wh/km)",
- lRes:"Minimum reserve on arrival (%)", lAvg:"Average charging power (kW)", lEff:"Charging efficiency (0–1)",
+ lGkey:"Google Maps API key",
+ lModel:"Model", lKwh:"Usable battery capacity (kWh)", lWh:"Real consumption (Wh/km)", lAvg:"Average charging power (kW)", lEff:"Charging efficiency (0–1)",
  hintAvg:"Average power means the real average over the whole stop, not the peak: a Model Y on a 250 kW Supercharger averages 100–130 kW from 10 to 80%.",
  hintCar:"Model figures are indicative averages on mixed roads. After a real trip, correct the consumption with the value from the car: it is the figure that swings most between winter and summer, and it rises 20–30% on the motorway.",
- foundTx:"Operators met along the road that you have not configured yet.",
- foundNone:"None yet. Set a route and come back here.",
  cUse:"Use", cOp:"Operator", newOpPh:"Add by hand — e.g. Atlante", add:"Add",
  saveClose:"Save and close", keysTx:"Only the Google key is needed: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Settings saved", tRecalc:"Press Route to recalculate",
  tNoDest:"Type a destination", tNoKey:"A Google key is needed to compute the route",
  tCalc:"Computing routes…", tNotFound:"Route not found:", tCompare:"Comparing the alternatives…",
- tSeek:"Looking for chargers on this route…", tCats:"Searching the chosen categories…",
- tRoutes:"routes", tNewOps:"new operators in ⚙",
- tDemoKey:"Open Charge Map key needed — demo set", tDemoNo:"Open Charge Map not responding — demo set",
+ tSeek:"Looking for chargers on this route…",
+ tRoutes:"routes",
  tOpAdded:"added — set the price in ⚙", tOpDup:"Operator already there",
  tStopsSet:"Stops set — press Navigate with stops", tMaxStops:"Nine stops maximum in a Google Maps URL",
  tKeyBad:"Google key rejected", tKeyAsk:"Open ⚙ and add your Google Maps key",
  tProfile:"Press Route to recalculate with this profile",
  viaPh:"Add a waypoint", viaNote:"With waypoints Google offers no alternative routes.",
  thisCh:"This charge", fullCh:"Typical charge", runTot:"Spent so far", tripTot:"Trip total",
- swTraf:"Show traffic", swTrafS:"Green roads can hide the charger dots",
- lArr:"Wanted charge on arrival at the charger (%)", lRefv:"Speed that consumption refers to (km/h)", keep:"keep max", freeSp:"no speed limit needed", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination",
- testKey:"Test the key", testing:"Testing…", testNo:"No key entered", testOkA:"Works:", testOkB:"chargers found near you", testFail:"Not working:",
- lVplan:"Speed you intend to hold (km/h)", hintVplan:"The limit you actually respect on the motorway: 130 in Italy and Austria, 140 in Poland, unrestricted on many German stretches. Every figure — range, arrival charge, cost — starts from consumption at this speed.", spOk:"fine at", spSlow:"slow to",
- vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.",
- lSource:"Where to get chargers from", srcAuto:"Automatic — Open Charge Map first, then OpenStreetMap", srcOcm:"Open Charge Map only (key required)", srcOsm:"OpenStreetMap only (no key)", hintSrc:"OpenStreetMap needs no key and always answers, but knows nothing about working status or stated prices. Open Charge Map is richer when reachable.", osmCredit:"Charger data © OpenStreetMap contributors", tOsm:"Data from OpenStreetMap", tOsmFail:"supercharge.info is not answering",
- lTmin:"Minimum charge when you stop (%)", lTmax:"Maximum charge (%)", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
+ swTraf:"Show traffic", swTrafS:"Green roads can hide the charger dots", lRefv:"Speed that consumption refers to (km/h)", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination", spOk:"fine at", spSlow:"slow to",
+ vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.", tOsmFail:"supercharge.info is not answering", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
  arrLab:"On arrival",
  stopLab:"Charge to",
  retry:"Retry",
- onlyOcm:"You chose “Open Charge Map only”: switch to Automatic in settings to also use OpenStreetMap.",
- searching:"searching…",
- srcTesla:"Tesla Superchargers only (no key)", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
+ searching:"searching…", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
+ destPh:"Destination — e.g. Bydgoszcz",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
  cat_musei:"Museums and art", cat_terme:"Thermal baths", cat_cantine:"Wineries"
 },
-pl:{
- destPh:"Cel — np. Bydgoszcz", trace:"Wyznacz",
+pl:{ trace:"Wyznacz",
  pfFast:"Szybko", pfFastS:"najszybciej", pfSce:"Widokowo", pfSceS:"co zobaczyć",
  pfChe:"Tanio", pfCheS:"omija opłaty", socLab:"Ładunek teraz",
  mapOff:"Mapa nieaktywna", mapOffTx:"Wpisz klucz Google Maps w ustawieniach, aby zobaczyć mapę i ruch. Lista poniżej działa mimo to.",
@@ -713,7 +690,7 @@ pl:{
  outOf:"km od trasy",
  setT:"Ustawienia", setSub:"Zostają na tym urządzeniu.", version:"Wersja", ofDate:"z",
  hLang:"Język", hRoute:"Trasa", hChar:"Ładowarki", hSee:"Co zobaczyć", hKeys:"Klucze",
- hCar:"Samochód", hFound:"Znalezione na trasie", hOps:"Twoi operatorzy",
+ hCar:"Samochód", hOps:"Twoi operatorzy",
  swHwy:"Omijaj autostrady", swHwyS:"Zwykłe drogi, dużo dłuższy czas",
  swFer:"Omijaj promy", swFerS:"Przydatne w stronę Skandynawii lub wysp",
  swToll:"Omijaj opłaty", swTollS:"Zawsze włączone w profilu Tanio",
@@ -724,40 +701,30 @@ pl:{
  seeTx:"Czego szukać na trasie widokowej. Każda dodatkowa kategoria to dodatkowe zapytanie, więc trzymaj cztery lub pięć.",
  lExcl:"Pomiń, jeśli nazwa zawiera (po przecinku)", lRate:"Minimalna ocena",
  lRev:"Minimalna liczba opinii",
- lGkey:"Klucz Google Maps API", lOckey:"Klucz Open Charge Map API", ockeyPh:"potrzebny do prawdziwych ładowarek",
- lModel:"Model", lKwh:"Użyteczna pojemność baterii (kWh)", lWh:"Realne zużycie (Wh/km)",
- lRes:"Minimalna rezerwa na miejscu (%)", lAvg:"Średnia moc ładowania (kW)", lEff:"Sprawność ładowania (0–1)",
+ lGkey:"Klucz Google Maps API",
+ lModel:"Model", lKwh:"Użyteczna pojemność baterii (kWh)", lWh:"Realne zużycie (Wh/km)", lAvg:"Średnia moc ładowania (kW)", lEff:"Sprawność ładowania (0–1)",
  hintAvg:"Średnia moc to realna średnia z całego postoju, nie szczyt: Model Y na Superchargerze 250 kW osiąga średnio 100–130 kW od 10 do 80%.",
  hintCar:"Wartości modelu to orientacyjne średnie na trasie mieszanej. Po prawdziwej podróży popraw zużycie tym z komputera auta: to parametr, który najbardziej zmienia się zimą i latem, a na autostradzie rośnie o 20–30%.",
- foundTx:"Operatorzy napotkani na trasie, których jeszcze nie skonfigurowałeś.",
- foundNone:"Na razie nikt. Wyznacz trasę i wróć tutaj.",
  cUse:"Użyj", cOp:"Operator", newOpPh:"Dodaj ręcznie — np. Atlante", add:"Dodaj",
  saveClose:"Zapisz i zamknij", keysTx:"Potrzebny jest tylko klucz Google: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Ustawienia zapisane", tRecalc:"Naciśnij Wyznacz, aby przeliczyć trasę",
  tNoDest:"Wpisz cel podróży", tNoKey:"Do wyznaczenia trasy potrzebny jest klucz Google",
  tCalc:"Liczę trasy…", tNotFound:"Nie znaleziono trasy:", tCompare:"Porównuję warianty…",
- tSeek:"Szukam ładowarek na tej trasie…", tCats:"Szukam wybranych kategorii…",
- tRoutes:"trasy", tNewOps:"nowych operatorów w ⚙",
- tDemoKey:"Potrzebny klucz Open Charge Map — zestaw demo", tDemoNo:"Open Charge Map nie odpowiada — zestaw demo",
+ tSeek:"Szukam ładowarek na tej trasie…",
+ tRoutes:"trasy",
  tOpAdded:"dodany — ustaw cenę w ⚙", tOpDup:"Operator już jest",
  tStopsSet:"Postoje ustawione — naciśnij Nawiguj z postojami", tMaxStops:"Maksymalnie dziewięć postojów w adresie Google Maps",
  tKeyBad:"Klucz Google odrzucony", tKeyAsk:"Otwórz ⚙ i wpisz klucz Google Maps",
  tProfile:"Naciśnij Wyznacz, aby przeliczyć z tym profilem",
  viaPh:"Dodaj punkt pośredni", viaNote:"Z punktami pośrednimi Google nie proponuje wariantów trasy.",
  thisCh:"To ładowanie", fullCh:"Typowe ładowanie", runTot:"Wydane do tej pory", tripTot:"Razem za podróż",
- swTraf:"Pokaż ruch", swTrafS:"Zielone drogi mogą zasłaniać kropki ładowarek",
- lArr:"Żądany ładunek po dojeździe do ładowarki (%)", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", keep:"trzymaj maks.", freeSp:"bez ograniczenia", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu",
- testKey:"Sprawdź klucz", testing:"Sprawdzam…", testNo:"Nie wpisano klucza", testOkA:"Działa:", testOkB:"ładowarek w pobliżu", testFail:"Nie działa:",
- lVplan:"Prędkość, którą zamierzasz trzymać (km/h)", hintVplan:"Limit, którego naprawdę przestrzegasz na autostradzie: 130 we Włoszech i Austrii, 140 w Polsce, bez ograniczeń na wielu odcinkach w Niemczech. Wszystkie wyliczenia — zasięg, ładunek po dojeździe, koszty — wychodzą od zużycia przy tej prędkości.", spOk:"ok przy", spSlow:"zwolnij do",
- vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.",
- lSource:"Skąd brać ładowarki", srcAuto:"Automatycznie — najpierw Open Charge Map, potem OpenStreetMap", srcOcm:"Tylko Open Charge Map (wymaga klucza)", srcOsm:"Tylko OpenStreetMap (bez klucza)", hintSrc:"OpenStreetMap nie wymaga klucza i zawsze odpowiada, ale nie zna stanu działania ani podanych cen. Open Charge Map jest bogatszy, gdy działa.", osmCredit:"Dane ładowarek © współtwórcy OpenStreetMap", tOsmFail:"supercharge.info nie odpowiada", tOsm:"Dane z OpenStreetMap",
- lTmin:"Minimalny ładunek przy postoju (%)", lTmax:"Maksymalny ładunek (%)", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
+ swTraf:"Pokaż ruch", swTrafS:"Zielone drogi mogą zasłaniać kropki ładowarek", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu", spOk:"ok przy", spSlow:"zwolnij do",
+ vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.", tOsmFail:"supercharge.info nie odpowiada", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
  arrLab:"Po dojeździe",
  stopLab:"Ładuj do",
  retry:"Ponów",
- onlyOcm:"Wybrałeś „Tylko Open Charge Map”: przełącz na Automatycznie w ustawieniach, aby użyć też OpenStreetMap.",
- searching:"szukam…",
- srcTesla:"Tylko Supercharger Tesla (bez klucza)", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
+ searching:"szukam…", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
+ destPh:"Cel — np. Bydgoszcz",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1114,7 +1081,6 @@ function descriviErrore(e){
   return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
 }
 
-// ---------- OpenStreetMap via Overpass: nessuna chiave, una sola richiesta ----------
 let scCache=null;                       // il registro mondiale si scarica una volta sola
 async function fetchTesla(){
   if(!scCache){
@@ -1444,7 +1410,10 @@ function render(){
         <span class="right">
           <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
           ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
-          ${st?`<span class="charge">→ ${Math.round(st.target)}% · ${Math.round(st.min)} min</span>`:''}
+          ${st?`<span class="charge">→ ${Math.round(st.target)}% · ${Math.round(st.min)} ${t('min')}</span>`:''}
+          ${st?`<span class="spd ${st.vmax?'slow':''}">${st.vmax
+              ? `${t('spSlow')} ${Math.round(st.vmax)} km/h`
+              : `${t('spOk')} ${S.vplan} km/h`}</span>`:''}
           <span class="eur ${c.eur==null?'none':''}">${st&&st.eur!=null?'€ '+st.eur.toFixed(2):(c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?t('tariffQ'):'—'))}</span>
           ${st&&st.cum!=null&&PLAN.plan.length>1?`<span class="cum">Σ € ${st.cum.toFixed(2)}</span>`:''}
         </span>`;
@@ -1466,10 +1435,10 @@ function render(){
     await save(); renderStops(); render();
     toast(t('tStopsSet'));
   };
-  if(fonte==='osm'||fonte==='tesla'){
+  if(fonte==='tesla'){
     const c=document.createElement('p'); c.className='hint';
     c.style.cssText='padding:4px 4px 10px;margin:0';
-    c.textContent=fonte==='osm'?t('osmCredit'):t('scCredit'); list.appendChild(c);
+    c.textContent=t('scCredit'); list.appendChild(c);
   }
   drawMarkers(rows,views);
   const ng=document.getElementById('navGo'); if(ng) ng.href=navUrl();
