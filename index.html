@@ -138,6 +138,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
 .stn .eur.none{color:var(--ice-dim)}
 .stn .cum{font-size:11.5px;color:var(--ice-dim);display:block;margin-top:1px}
+.stn .spd{font-size:12px;color:var(--live);display:block;margin-top:1px}
 .stn.far{opacity:.42}
 .stn .arr{color:var(--live)}
 .stn .arr.low{color:var(--alert)}
@@ -390,8 +391,12 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <input id="wh" type="number" step="5" value="185">
   </div>
   <div class="field">
-    <label for="reserve" data-t="lRes"></label>
+    <label for="reserve" data-t="lArr"></label>
     <input id="reserve" type="number" step="1" min="0" max="40" value="10">
+  </div>
+  <div class="field">
+    <label for="refv" data-t="lRefv"></label>
+    <input id="refv" type="number" step="5" min="60" max="150" value="110">
   </div>
   <div class="field">
     <label for="avgkw" data-t="lAvg"></label>
@@ -402,6 +407,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <input id="eff" type="number" step="0.01" value="0.92">
   </div>
   <p class="hint" data-t="hintAvg"></p>
+  <p class="hint" data-t="hintSp"></p>
   <p class="hint" data-t="hintCar"></p>
 
   <h4 data-t="hFound">Trovati sul percorso</h4>
@@ -490,7 +496,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.9.4';
+const APP_VERSION='1.10.1';
 const APP_DATE='30.08.2026';
 
 
@@ -512,8 +518,8 @@ it:{
  lowA:"Con il", lowB:"di carica e la riserva al", lowC:"fai", lowD:"ma la prima colonnina è a",
  lowE:"Alza il cursore della carica se sei più carico di così", lowF:"oppure abbassa la riserva",
  lowG:"e non trovo colonnine davanti a te.",
- planCut:"Piano interrotto dopo", planCut2:"da lì non trovo colonnine raggiungibili.", planCut3:"Le prime",
- planCut4:"soste", hold:"reggono.",
+ planCut:"Piano interrotto dopo", planCut2:"da lì non trovo colonnine raggiungibili.", planCut3:"La prima", planCut3b:"Le prime",
+ planCut4:"sosta", planCut4b:"soste", hold:"regge.", holdP:"reggono.",
  demoNote:"<b>Stai usando il set dimostrativo di 11 colonnine</b>: inserisci la chiave Open Charge Map e ritraccia.",
  elseNote:"In alternativa allarga la deviazione massima o abbassa la potenza minima.",
  empty:"Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.",
@@ -564,6 +570,7 @@ it:{
  viaPh:"Aggiungi tappa intermedia", viaNote:"Con le tappe Google non offre percorsi alternativi.",
  thisCh:"Questa ricarica", fullCh:"Ricarica 10→80%", runTot:"Speso fino a qui", tripTot:"Totale del viaggio",
  swTraf:"Mostra il traffico", swTrafS:"Le strade verdi possono coprire i pallini delle colonnine",
+ lArr:"Carica desiderata all&#39;arrivo alla colonnina (%)", lRefv:"Velocità a cui vale quel consumo (km/h)", keep:"tieni max", freeSp:"andatura libera", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -582,8 +589,8 @@ en:{
  lowA:"At", lowB:"charge with a", lowC:"reserve you can do", lowD:"but the first charger is",
  lowE:"Raise the charge slider if you are fuller than that", lowF:"or lower the reserve",
  lowG:"and I find no chargers ahead of you.",
- planCut:"Plan stops after", planCut2:"beyond that I find no reachable chargers.", planCut3:"The first",
- planCut4:"stops", hold:"hold up.",
+ planCut:"Plan stops after", planCut2:"beyond that I find no reachable chargers.", planCut3:"The first", planCut3b:"The first",
+ planCut4:"stop", planCut4b:"stops", hold:"holds up.", holdP:"hold up.",
  demoNote:"<b>You are on the demo set of 11 chargers</b>: add your Open Charge Map key and route again.",
  elseNote:"Otherwise widen the maximum detour or lower the minimum power.",
  empty:"No chargers on the road ahead. Set a route, or widen the maximum detour in settings.",
@@ -634,6 +641,7 @@ en:{
  viaPh:"Add a waypoint", viaNote:"With waypoints Google offers no alternative routes.",
  thisCh:"This charge", fullCh:"Full 10→80% charge", runTot:"Spent so far", tripTot:"Trip total",
  swTraf:"Show traffic", swTrafS:"Green roads can hide the charger dots",
+ lArr:"Wanted charge on arrival at the charger (%)", lRefv:"Speed that consumption refers to (km/h)", keep:"keep max", freeSp:"no speed limit needed", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -652,8 +660,8 @@ pl:{
  lowA:"Przy", lowB:"ładunku i rezerwie", lowC:"przejedziesz", lowD:"ale pierwsza ładowarka jest za",
  lowE:"Podnieś suwak ładunku, jeśli masz więcej", lowF:"albo zmniejsz rezerwę",
  lowG:"i nie widzę ładowarek przed tobą.",
- planCut:"Plan urywa się po", planCut2:"dalej nie znajduję osiągalnych ładowarek.", planCut3:"Pierwsze",
- planCut4:"postoje", hold:"się trzymają.",
+ planCut:"Plan urywa się po", planCut2:"dalej nie znajduję osiągalnych ładowarek.", planCut3:"Pierwszy", planCut3b:"Pierwsze",
+ planCut4:"postój", planCut4b:"postoje", hold:"się trzyma.", holdP:"się trzymają.",
  demoNote:"<b>Używasz zestawu demonstracyjnego 11 ładowarek</b>: wpisz klucz Open Charge Map i wyznacz trasę ponownie.",
  elseNote:"Możesz też zwiększyć maksymalne zboczenie albo obniżyć minimalną moc.",
  empty:"Brak ładowarek na trasie przed tobą. Wyznacz trasę albo zwiększ maksymalne zboczenie w ustawieniach.",
@@ -704,6 +712,7 @@ pl:{
  viaPh:"Dodaj punkt pośredni", viaNote:"Z punktami pośrednimi Google nie proponuje wariantów trasy.",
  thisCh:"To ładowanie", fullCh:"Pełne ładowanie 10→80%", runTot:"Wydane do tej pory", tripTot:"Razem za podróż",
  swTraf:"Pokaż ruch", swTrafS:"Zielone drogi mogą zasłaniać kropki ładowarek",
+ lArr:"Żądany ładunek po dojeździe do ładowarki (%)", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", keep:"trzymaj maks.", freeSp:"bez ograniczenia", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -734,7 +743,7 @@ const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
 let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:10, avgkw:110, car:'Tesla Model Y AWD (2025+)',
-        eff:0.92, corridor:6, minkw:50,
+        refv:110, eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
         lang:'it', traffic:true, cats:['panorami','natura','passi','borghi'],
@@ -870,6 +879,25 @@ function rangeNow(){
 /* ============================================================
    Piano delle soste — catena greedy "la più lontana raggiungibile"
    ============================================================ */
+// Wh/km alla velocità v, da aerodinamica e rotolamento, calibrato sul consumo dichiarato
+function whAt(v){
+  const CdA=0.62, massa=2100, Crr=0.010, aux=450, eta=0.88, rho=1.225;
+  const f=vk=>{ const ms=vk/3.6;
+    const F=0.5*rho*CdA*ms*ms + Crr*massa*9.81;
+    return (F/3.6)/eta + aux/vk; };
+  const rif=S.refv||110;
+  return f(v)*(S.wh/f(rif));
+}
+// velocità massima per coprire km arrivando con socEnd partendo da socStart
+function speedFor(km,socStart,socEnd){
+  if(!(km>1)) return null;
+  const disponibili=Math.max(0,(socStart-socEnd)/100*S.kwh*1000)/km;   // Wh/km
+  if(disponibili<=0) return 0;
+  if(whAt(135)<=disponibili) return null;        // nessun vincolo: vai come vuoi
+  let lo=45,hi=135;
+  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(whAt(mid)<=disponibili) lo=mid; else hi=mid; }
+  return lo;
+}
 function kmFromSoc(pct){ return Math.max(0,pct/100*S.kwh*1000/S.wh); }
 function socForKm(km){ return km*S.wh/1000/S.kwh*100; }
 
@@ -905,14 +933,19 @@ function buildPlan(rows){
     for(let i=0;i<plan.length;i++){
       plan[i].arr=soc-socForKm(plan[i].s.km-pos);
       const nextKm=(i+1<plan.length)?plan[i+1].s.km:dest;
-      const need=S.reserve+socForKm(nextKm-plan[i].s.km)+5;   // 5 punti di margine
+      const need=S.reserve+socForKm(nextKm-plan[i].s.km);     // carica desiderata all'arrivo
       plan[i].target=Math.max(plan[i].arr, Math.min(100, need));
       plan[i].kwh=Math.max(0,(plan[i].target-plan[i].arr)/100*S.kwh)/S.eff;
       const o=opFor(plan[i].s.operator);
       plan[i].eur=o?plan[i].kwh*o.price+(o.fee||0):null;
       plan[i].min=plan[i].kwh/Math.min(S.avgkw,plan[i].s.kw||S.avgkw)*60;
       plan[i].cum=(i>0?(plan[i-1].cum||0):0)+(plan[i].eur||0);
+      plan[i].vmax=speedFor(plan[i].s.km-pos, soc, S.reserve);
       pos=plan[i].s.km; soc=plan[i].target;
+    }
+    if(plan.length){
+      const u=plan[plan.length-1];
+      plan.vFinal=speedFor(dest-u.s.km, u.target, S.reserve);
     }
     return plan;
   }
@@ -1244,7 +1277,9 @@ function render(){
             ` ${t('lowE')}`+(S.reserve>5?`, ${t('lowF')}`:'')+`.`;
       } else {
         msg=`${t('planCut')} <b>${Math.round(P[P.length-1].s.km)} km</b>: ${t('planCut2')} `+
-            `${t('planCut3')} ${P.length} ${t('planCut4')} (${fmtDur(tot*60)}) ${t('hold')}`;
+            (P.length>1
+              ? `${t('planCut3b')} ${P.length} ${t('planCut4b')} (${fmtDur(tot*60)}) ${t('holdP')}`
+              : `${t('planCut3')} ${t('planCut4')} (${fmtDur(tot*60)}) ${t('hold')}`);
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
@@ -1257,7 +1292,8 @@ function render(){
       const eur=P.every(p=>p.eur!=null)?P.reduce((a,p)=>a+p.eur,0):null;
       box.innerHTML=`<span class="txt"><b>${P.length}</b> ${P.length>1?t('stopsN'):t('stopN')} · `+
         `<b>${fmtDur(tot*60)}</b> ${t('charging')}${eur!=null?` · ${t('tripTot')} <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
-        `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}</span>`+
+        `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}`+
+        (P.vFinal?`<br>${t('toDest')}: ${t('keep')} <b>${Math.round(P.vFinal)} km/h</b>`:'')+`</span>`+
         `<button id="usePlan">${t('use')}</button>`;
     }
     list.appendChild(box);
@@ -1371,6 +1407,7 @@ function openDetail(s){
         <div class="spec"><div class="k">${t('dSt')}</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?t('dOn'):t('dOff')}</div></div>
         <div class="spec"><div class="k">${t('dArr')}</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':t('dry')}</div></div>
         <div class="spec"><div class="k">${t('dEn')}</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
+        ${st&&st.vmax!==undefined?`<div class="spec"><div class="k">${t('dSpeed')}</div><div class="v" style="color:var(--live)">${st.vmax?Math.round(st.vmax)+' km/h':t('freeSp')}</div></div>`:''}
         ${st?`<div class="spec"><div class="k">${t('thisCh')}</div><div class="v" style="color:var(--signal)">${st.eur!=null?'€ '+st.eur.toFixed(2):'—'}</div></div>
         <div class="spec"><div class="k">${t('runTot')}</div><div class="v">${st.cum!=null?'€ '+st.cum.toFixed(2):'—'}</div></div>`:''}
         ${(()=>{const f=costFull(s); return f?`<div class="spec"><div class="k">${t('fullCh')}</div><div class="v">€ ${f.eur.toFixed(2)}</div></div>
@@ -1662,7 +1699,7 @@ function paintSettings(){
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('avgkw',S.avgkw);
+  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('refv',S.refv); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
@@ -1739,7 +1776,7 @@ document.getElementById('saveSet').onclick=async()=>{
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
   S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
-  S.avgkw=+g('avgkw').value||110;
+  S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
   S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
