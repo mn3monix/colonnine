@@ -77,6 +77,19 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
   color:var(--ice-dim);text-align:right;line-height:1.35}
 .sheet-head .sum b{color:var(--ice);font-weight:500}
+/* selettore delle rotte alternative */
+#routes{display:none;padding:9px 12px 2px;flex:none}
+#routes.on{display:block}
+.routes-row{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:7px}
+.rt{flex:none;min-width:132px;background:var(--deep);border:1px solid var(--deep-3);
+  border-radius:11px;padding:8px 11px;text-align:left;line-height:1.3}
+.rt.on{border-color:var(--signal);background:rgba(242,169,59,.1)}
+.rt .lb{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ice-dim);display:block}
+.rt.on .lb{color:var(--signal)}
+.rt .big{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;display:block;margin-top:1px}
+.rt .sm{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ice-dim);display:block}
+
 /* barra delle soste */
 #stops{display:none;padding:9px 12px 10px;border-bottom:1px solid var(--deep-3);flex:none}
 #stops.on{display:block}
@@ -262,6 +275,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
       <h2>Sul tratto residuo<span class="ver" id="ver"></span></h2>
       <span class="sum" id="count">—</span>
     </div>
+    <div id="routes"><div class="routes-row" id="routesRow"></div></div>
     <div id="stops">
       <div class="stops-row" id="stopsRow"></div>
       <div class="stops-act">
@@ -452,7 +466,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.7';
+const APP_VERSION='1.8';
 const APP_DATE='30.08.2026';
 
 const CATS=[
@@ -526,6 +540,7 @@ function fmtClock(d){ return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute
 let map=null,traffic=null,dirRenderer=null,meMarker=null,placesSvc=null;
 let route=[],cum=[],cumT=[],hwy=[];
 let markers=[],stations=[],pois=[],selected=null,summary=null;
+let altRes=null,altProfs=[],altIdx=0,altCache={};
 let me={lat:43.912,lng:10.223};
 
 function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
@@ -1164,53 +1179,84 @@ async function trace(){
   const dest=document.getElementById('dest').value.trim();
   if(!dest) return toast('Scrivi una destinazione');
   if(!map) return toast('Serve la chiave Google per calcolare il percorso');
+  S.lastDest=dest; save();
   const req={ origin:me,destination:dest,travelMode:'DRIVING',
     avoidHighways:!!S.noHwy, avoidFerries:!!S.noFerry,
     avoidTolls: S.profile==='cheap' ? true : !!S.noToll,
-    provideRouteAlternatives: S.profile==='scenic',
+    provideRouteAlternatives:true,
     drivingOptions:{departureTime:new Date(),trafficModel:'bestguess'} };
 
-  S.lastDest=dest; save();
-  toast('Calcolo il percorso…');
+  toast('Calcolo i percorsi…');
   new google.maps.DirectionsService().route(req,async (res,st)=>{
     if(st!=='OK') return toast('Percorso non trovato: '+st);
 
-    let chosen=0, chosenPois=[];
-    const profs=res.routes.map(profileOf);
-
-    if(S.profile==='scenic' && placesSvc){
-      toast('Cerco cosa vedere lungo le alternative…');
-      const fastest=Math.min(...profs.map(p=>p.sec[p.sec.length-1]));
-      let bestScore=-1;
-      for(let i=0;i<profs.length;i++){
-        const p=profs[i];
-        if(p.sec[p.sec.length-1]>fastest*1.3) continue;   // non oltre +30% di tempo
-        const found=await fetchPOIs(p.pts,p.km,true);
-        const score=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
-        if(score>bestScore){ bestScore=score; chosen=i; chosenPois=found; }
-      }
-      if(!placesSvc) toast('Places non disponibile con questa chiave');
-    }
-
-    if(S.profile==='scenic'&&placesSvc){
-      toast('Cerco le categorie scelte…');
-      chosenPois=await fetchPOIs(profs[chosen].pts,profs[chosen].km,false);
-    }
+    altRes=res; altProfs=res.routes.map(profileOf); altCache={}; altIdx=0;
     dirRenderer.setDirections(res);
-    dirRenderer.setRouteIndex(chosen);
-    const p=profs[chosen];
-    route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
-    summary={km:cum[cum.length-1],sec:cumT[cumT.length-1]};
-    pois=chosenPois;
 
-    toast('Cerco le colonnine…');
-    await fetchOCM(); render();
+    // nel profilo panoramico scelgo io la rotta con più cose da vedere
+    if(S.profile==='scenic'&&placesSvc){
+      toast('Confronto le alternative…');
+      const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
+      let top=-1;
+      for(let i=0;i<altProfs.length;i++){
+        const p=altProfs[i];
+        if(p.sec[p.sec.length-1]>best*1.3) continue;
+        const found=await fetchPOIs(p.pts,p.km,true);
+        const sc=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
+        if(sc>top){ top=sc; altIdx=i; }
+      }
+    }
+
+    renderRoutes();
+    await selectRoute(altIdx);
     const nuovi=unconfigured().length;
-    toast(`${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
-          (pois.length?` · ${poisAhead().length} da vedere`:'')+
+    toast(`${altProfs.length>1?altProfs.length+' percorsi · ':''}`+
+          `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
           (nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
   });
 }
+
+async function selectRoute(i){
+  if(!altRes||!altProfs[i]) return;
+  altIdx=i;
+  dirRenderer.setRouteIndex(i);
+  const p=altProfs[i];
+  route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
+  summary={km:cum[cum.length-1],sec:cumT[cumT.length-1]};
+
+  if(altCache[i]){ stations=altCache[i].st; pois=altCache[i].po; }
+  else{
+    toast('Cerco le colonnine su questa rotta…');
+    await fetchOCM();
+    pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : [];
+    altCache[i]={st:stations,po:pois};
+  }
+  renderRoutes(); render();
+}
+
+function renderRoutes(){
+  const box=document.getElementById('routes'), row=document.getElementById('routesRow');
+  const n=altProfs.length;
+  box.classList.toggle('on',n>1);
+  if(n<2) return;
+  const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
+  row.innerHTML='';
+  altProfs.forEach((p,i)=>{
+    const sec=p.sec[p.sec.length-1], km=p.km[p.km.length-1];
+    const diff=Math.round((sec-best)/60);
+    const via=(altRes.routes[i].summary||'').slice(0,22)||String.fromCharCode(65+i);
+    const b=document.createElement('button');
+    b.className='rt'+(i===altIdx?' on':''); b.dataset.rt=i;
+    b.innerHTML=`<span class="lb">via ${via}</span>`+
+      `<span class="big">${fmtDur(sec)}</span>`+
+      `<span class="sm">${Math.round(km)} km${diff>0?` · +${diff} min`:' · il più rapido'}</span>`;
+    row.appendChild(b);
+  });
+}
+document.getElementById('routesRow').addEventListener('click',e=>{
+  const b=e.target.closest('[data-rt]'); if(!b) return;
+  selectRoute(+b.dataset.rt);
+});
 
 function unconfigured(){
   const m=new Map();
@@ -1360,7 +1406,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
   document.getElementById('verSet').textContent=`Versione ${APP_VERSION} del ${APP_DATE}.`;
   await load(); paintSoc();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
-  stations=DEMO.slice(); bootMap(); renderStops(); applyWake(); render();
+  stations=DEMO.slice(); bootMap(); renderStops(); renderRoutes(); applyWake(); render();
   if(!S.gkey) toast('Apri ⚙ e inserisci la chiave Google Maps');
 })();
 </script>
