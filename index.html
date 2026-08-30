@@ -79,6 +79,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
   border-radius:50%;background:var(--ice);margin-top:-10px;border:3px solid var(--deep)}
 .soc .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;
   min-width:56px;text-align:right;flex:none}
+.soc.duo input[type=number]{flex:1;min-width:0;background:var(--deep-2);
+  border:1px solid var(--deep-3);border-radius:9px;padding:7px 10px;outline:none;
+  font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;text-align:center}
+.soc.duo input[type=number]:focus{border-color:var(--signal)}
+.soc.duo .sep{flex:none;color:var(--ice-dim);font-family:'IBM Plex Mono',monospace}
 
 #sheet{flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
   max-height:44vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
@@ -295,6 +300,13 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
       <input id="arr" type="range" min="5" max="40" step="1" value="15">
       <span class="val" id="arrVal">15%</span>
     </div>
+    <div class="soc duo">
+      <label for="tminH" data-t="stopLab">Sosta</label>
+      <input id="tminH" type="number" min="20" max="95" step="5" value="60">
+      <span class="sep">→</span>
+      <input id="tmaxH" type="number" min="30" max="100" step="5" value="80">
+      <span class="val">%</span>
+    </div>
   </header>
 
   <div id="map"></div>
@@ -412,16 +424,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <label for="wh" data-t="lWh"></label>
     <input id="wh" type="number" step="5" value="185">
   </div>
-  <div class="field">
-    <label for="tmin" data-t="lTmin"></label>
-    <input id="tmin" type="number" step="5" min="20" max="95" value="60">
-  </div>
-  <div class="field">
-    <label for="tmax" data-t="lTmax"></label>
-    <input id="tmax" type="number" step="5" min="30" max="100" value="80">
-  </div>
   <p class="hint" data-t="hintT"></p>
-  <p class="hint" data-t="hintVplan"></p>
   <div class="field" style="margin-top:9px">
     <label for="refv" data-t="lRefv"></label>
     <input id="refv" type="number" step="5" min="60" max="150" value="110">
@@ -524,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.14.1';
+const APP_VERSION='1.15.1';
 const APP_DATE='30.08.2026';
 
 
@@ -605,6 +608,7 @@ it:{
  lSource:"Da dove prendere le colonnine", srcAuto:"Automatico — prima Open Charge Map, poi OpenStreetMap", srcOcm:"Solo Open Charge Map (serve la chiave)", srcOsm:"Solo OpenStreetMap (nessuna chiave)", hintSrc:"OpenStreetMap non richiede chiavi e risponde sempre, ma non conosce lo stato di funzionamento né i prezzi dichiarati. Open Charge Map è più ricco quando è raggiungibile.", osmCredit:"Dati colonnine © contributori OpenStreetMap", tOsm:"Dati da OpenStreetMap", tOsmFail:"Anche OpenStreetMap non risponde",
  lTmin:"Carica minima quando ti fermi (%)", lTmax:"Carica massima (%)", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
  arrLab:"Arrivo",
+ stopLab:"Sosta",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -682,6 +686,7 @@ en:{
  lSource:"Where to get chargers from", srcAuto:"Automatic — Open Charge Map first, then OpenStreetMap", srcOcm:"Open Charge Map only (key required)", srcOsm:"OpenStreetMap only (no key)", hintSrc:"OpenStreetMap needs no key and always answers, but knows nothing about working status or stated prices. Open Charge Map is richer when reachable.", osmCredit:"Charger data © OpenStreetMap contributors", tOsm:"Data from OpenStreetMap", tOsmFail:"OpenStreetMap is not answering either",
  lTmin:"Minimum charge when you stop (%)", lTmax:"Maximum charge (%)", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
  arrLab:"On arrival",
+ stopLab:"Charge to",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -759,6 +764,7 @@ pl:{
  lSource:"Skąd brać ładowarki", srcAuto:"Automatycznie — najpierw Open Charge Map, potem OpenStreetMap", srcOcm:"Tylko Open Charge Map (wymaga klucza)", srcOsm:"Tylko OpenStreetMap (bez klucza)", hintSrc:"OpenStreetMap nie wymaga klucza i zawsze odpowiada, ale nie zna stanu działania ani podanych cen. Open Charge Map jest bogatszy, gdy działa.", osmCredit:"Dane ładowarek © współtwórcy OpenStreetMap", tOsmFail:"OpenStreetMap też nie odpowiada", tOsm:"Dane z OpenStreetMap",
  lTmin:"Minimalny ładunek przy postoju (%)", lTmax:"Maksymalny ładunek (%)", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
  arrLab:"Po dojeździe",
+ stopLab:"Ładuj do",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1189,24 +1195,42 @@ function potenzaDaTag(tag){
   }
   return max;
 }
+const OVERPASS=[
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
 async function fetchOSM(){
+  // punti radi: la ricerca "around" su una linea lunga è costosa per il server
   const pts=[]; let last=-999;
-  for(let i=0;i<route.length;i++) if(cum[i]-last>25){ pts.push(route[i]); last=cum[i]; }
+  for(let i=0;i<route.length;i++) if(cum[i]-last>40){ pts.push(route[i]); last=cum[i]; }
   if(!pts.length) return [];
-  const raggio=Math.round(Math.max(1,S.corridor)*1000);
-  const linea=pts.slice(0,90).map(p=>`${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(',');
-  const q=`[out:json][timeout:90];node(around:${raggio},${linea})["amenity"="charging_station"];out body 3000;`;
-  const r=await fetchTimeout('https://overpass-api.de/api/interpreter',
+  const raggio=Math.round(Math.min(10,Math.max(1,S.corridor))*1000);
+  const linea=pts.slice(0,60).map(p=>`${p.lat.toFixed(3)},${p.lng.toFixed(3)}`).join(',');
+  const q=`[out:json][timeout:60];node(around:${raggio},${linea})["amenity"="charging_station"];out body 2000;`;
+
+  let ultimo=null;
+  for(let k=0;k<OVERPASS.length;k++){
+    try{
+      const r=await fetchTimeout(OVERPASS[k],
         {method:'POST',body:'data='+encodeURIComponent(q),
-         headers:{'Content-Type':'application/x-www-form-urlencoded'}}, 90000);
-  if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
-  const d=await r.json();
+         headers:{'Content-Type':'application/x-www-form-urlencoded'}}, 60000);
+      if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
+      return leggiOSM(await r.json());
+    }catch(e){
+      ultimo=e;
+      if(k<OVERPASS.length-1) await new Promise(r=>setTimeout(r,1500));   // respiro fra i server
+    }
+  }
+  throw ultimo||new Error('nessun server disponibile');
+}
+function leggiOSM(d){
   const out=[];
   for(const n of (d.elements||[])){
     const tg=n.tags||{};
     const kw=potenzaDaTag(tg);
     if(kw && kw < (S.minkw||50)) continue;
-    if(!kw && (S.minkw||50)>22) continue;         // senza potenza dichiarata, escludo se filtro alto
+    if(!kw && (S.minkw||50)>22) continue;
     out.push({
       name: tg.name || tg.operator || 'Colonnina',
       town: tg['addr:city'] || '',
@@ -1214,8 +1238,8 @@ async function fetchOSM(){
       lat: n.lat, lng: n.lon,
       kw: kw || 0,
       pts: parseInt(tg.capacity)||0,
-      live: true,                                  // OSM non registra lo stato
-      declared: (tg.charge||tg.fee==='no'?'gratuita':'')||''
+      live: true,
+      declared: (tg.fee==='no'?'gratuita':'')
     });
   }
   return out;
@@ -1466,7 +1490,8 @@ function render(){
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? ' '+t('demoNote')+(ocmErr?` <b>(${ocmErr})</b>`:'') : ' '+t('elseNote'))+
+          ? (S.source==='osm' ? ' '+t('tOsmFail') : ' '+t('demoNote'))+(ocmErr?` <b>(${ocmErr})</b>`:'')
+          : ' '+t('elseNote'))+
         `</span>`+(P.length?`<button id="usePlan">${t('use')}</button>`:'');
     } else if(!P.length){
       box.innerHTML=`<span class="txt">${t('noStop')} <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
@@ -1896,7 +1921,7 @@ function paintSettings(){
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('wh',S.wh); v('tmin',S.tmin); v('tmax',S.tmax); v('refv',S.refv); v('avgkw',S.avgkw);
+  v('kwh',S.kwh); v('wh',S.wh);  v('refv',S.refv); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode); v('source',S.source);
@@ -1998,8 +2023,6 @@ document.getElementById('saveSet').onclick=async()=>{
   const prevLang=S.lang; S.lang=g('lang').value;
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
-  S.tmax=Math.min(100,Math.max(30,+g('tmax').value||80));
-  S.tmin=Math.min(S.tmax-5,Math.max(20,+g('tmin').value||60));
   S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
   S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
@@ -2031,6 +2054,17 @@ function paintSoc(){
   socEl.style.setProperty('--pct',((socEl.value-1)/78*100)+'%');
 }
 socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
+
+const tminEl=document.getElementById('tminH'), tmaxEl=document.getElementById('tmaxH');
+let duoTimer=null;
+function applicaDuo(){
+  S.tmax=Math.min(100,Math.max(30,+tmaxEl.value||80));
+  S.tmin=Math.min(S.tmax-5,Math.max(20,+tminEl.value||60));
+  tminEl.value=S.tmin; tmaxEl.value=S.tmax;
+  render(); if(selected&&!selected.poi) openDetail(selected);
+  clearTimeout(duoTimer); duoTimer=setTimeout(save,400);
+}
+tminEl.onchange=applicaDuo; tmaxEl.onchange=applicaDuo;
 
 const arrEl=document.getElementById('arr');
 let arrTimer=null;
@@ -2064,6 +2098,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
   await load(); applyI18n(); paintSoc();
   document.getElementById('vpl').value=S.vplan||130; paintVpl();
   document.getElementById('arr').value=S.reserve; paintArr();
+  tminEl.value=S.tmin; tmaxEl.value=S.tmax;
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
   stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
   if(!S.gkey) toast(t('tKeyAsk'));
