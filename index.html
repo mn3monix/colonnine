@@ -512,7 +512,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='2.1.1';
+const APP_VERSION='2.1.2';
 const APP_DATE='30.08.2026';
 
 
@@ -1070,7 +1070,7 @@ async function fetchStations(){
 
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  diario=`${fmtClock(t0)} · ${got.length} Supercharger sul percorso`+
+  diario=`${fmtClock(t0)} · ${got.length} Supercharger sul percorso · suggerimenti ${acModo}`+
          (scCache?` (registro: ${scCache.length})`:'')+(ocmErr?` · ${ocmErr}`:'');
   console.log('[colonnine]',diario);
   if(usingDemo) toast(ocmErr||t('tOsmFail'));
@@ -1639,20 +1639,23 @@ window.initMap=async function(){
           fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
   watchMe(); render();
 };
-// Google ha due generazioni di completamento: provo la nuova, poi la vecchia
-let acNuovo=null;      // null = non ancora saputo, true/false = esito
+// Google ha due generazioni di completamento: provo la nuova, poi la vecchia.
+// Se qualcosa va storto il campo di testo normale resta sempre utilizzabile.
+let acModo='—';
 async function attaccaSuggerimenti(inp,quandoScelto){
   if(!inp||!window.google||!google.maps) return;
+
   // 1) nuova: elemento web PlaceAutocompleteElement
+  let el=null;
   try{
     const lib=await google.maps.importLibrary('places');
-    const El=lib.PlaceAutocompleteElement||google.maps.places.PlaceAutocompleteElement;
+    const El=lib&&(lib.PlaceAutocompleteElement||google.maps.places.PlaceAutocompleteElement);
     if(El){
-      const el=new El({});
+      el=new El({});
       el.className='ac-new';
       el.setAttribute('placeholder',inp.placeholder||'');
-      inp.style.display='none';
       inp.parentElement.insertBefore(el,inp);
+      if(!el.isConnected) throw new Error('elemento non inserito');
       el.addEventListener('gmp-select',async ev=>{
         try{
           const p=ev.placePrediction.toPlace();
@@ -1662,9 +1665,20 @@ async function attaccaSuggerimenti(inp,quandoScelto){
           if(quandoScelto) quandoScelto(nome,p.location.lat(),p.location.lng());
         }catch(e){ console.warn('[colonnine] scelta luogo',e); }
       });
-      acNuovo=true; return;
+      // ciò che digiti finisce anche nel campo nascosto, così Traccia funziona
+      el.addEventListener('input',ev=>{
+        const v=ev.target&&ev.target.value;
+        if(typeof v==='string') inp.value=v;
+      });
+      inp.style.display='none';          // nascondo solo ora che tutto è a posto
+      acModo='nuova'; return;
     }
-  }catch(e){ console.warn('[colonnine] Places nuova non disponibile',e); }
+  }catch(e){
+    console.warn('[colonnine] Places nuova non disponibile',e);
+    if(el&&el.parentElement) el.parentElement.removeChild(el);
+    inp.style.display='';                // il campo normale torna sempre visibile
+  }
+
   // 2) vecchia
   try{
     const ac=new google.maps.places.Autocomplete(inp);
@@ -1673,9 +1687,11 @@ async function attaccaSuggerimenti(inp,quandoScelto){
       if(p&&p.geometry&&quandoScelto)
         quandoScelto(p.name||p.formatted_address,p.geometry.location.lat(),p.geometry.location.lng());
     });
-    acNuovo=false; return;
+    acModo='vecchia'; return;
   }catch(e){ console.warn('[colonnine] Places vecchia non disponibile',e); }
-  if(acNuovo===null){ acNuovo=false; toast(t('acOld')); }
+
+  acModo='assenti';
+  toast(t('acOld'));
 }
 
 function watchMe(){
