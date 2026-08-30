@@ -75,6 +75,16 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
   color:var(--ice-dim);text-align:right;line-height:1.35}
 .sheet-head .sum b{color:var(--ice);font-weight:500}
+/* barra delle soste */
+#stops{display:none;padding:9px 12px 10px;border-bottom:1px solid var(--deep-3);flex:none}
+#stops.on{display:block}
+.stops-row{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.sc{flex:none;background:var(--deep);border:1px solid var(--deep-3);border-radius:20px;
+  padding:6px 8px 6px 11px;font-size:12.5px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.sc .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ice-dim)}
+.sc .x{color:var(--ice-dim);font-size:15px;line-height:1}
+.stops-act{display:flex;gap:7px;margin-top:9px}
+.stops-act .btn{flex:1;text-align:center;text-decoration:none;padding:10px 8px;font-size:14px}
 #list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 12px}
 
 .stn{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;
@@ -223,6 +233,13 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
       <h2>Sul tratto residuo</h2>
       <span class="sum" id="count">—</span>
     </div>
+    <div id="stops">
+      <div class="stops-row" id="stopsRow"></div>
+      <div class="stops-act">
+        <a class="btn primary" id="navGo" href="#">Naviga con le soste</a>
+        <button class="btn ghost" id="stopsClear">Svuota</button>
+      </div>
+    </div>
     <div id="list"></div>
   </div>
 </div>
@@ -259,6 +276,9 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   </div>
   <div class="sw"><span class="t">Solo i miei operatori<small>Nasconde tutte le altre colonnine invece di mostrarle in grigio</small></span>
     <input type="checkbox" id="onlyMine"></div>
+
+  <div class="sw"><span class="t">Tieni lo schermo acceso<small>Mentre guardi l'elenco in viaggio</small></span>
+    <input type="checkbox" id="awake"></div>
 
   <h4>Cose da vedere</h4>
   <div class="field">
@@ -356,6 +376,7 @@ const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay
 let S={ gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
+        stops:[], lastDest:'', awake:false,
         ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
 
 const mem={};
@@ -556,6 +577,63 @@ async function fetchPOIs(pathArr,cumArr){
 }
 
 /* ============================================================
+   Soste e passaggio alla navigazione
+   ============================================================ */
+const MAX_STOPS=9;   // limite degli URL di Google Maps
+function isStop(s){ return S.stops.some(x=>Math.abs(x.lat-s.lat)<1e-6&&Math.abs(x.lng-s.lng)<1e-6); }
+async function toggleStop(s){
+  const i=S.stops.findIndex(x=>Math.abs(x.lat-s.lat)<1e-6&&Math.abs(x.lng-s.lng)<1e-6);
+  if(i>=0) S.stops.splice(i,1);
+  else{
+    if(S.stops.length>=MAX_STOPS) return toast('Massimo '+MAX_STOPS+' soste in un URL di Google Maps');
+    S.stops.push({name:s.name,lat:s.lat,lng:s.lng,
+                  operator:s.poi?'★ '+s.rating.toFixed(1):(s.operator||''),km:s.km});
+  }
+  S.stops.sort((a,b)=>(a.km??0)-(b.km??0));
+  await save(); renderStops(); render();
+}
+function navUrl(){
+  if(!S.stops.length) return '#';
+  const dest=S.lastDest ? encodeURIComponent(S.lastDest)
+                        : `${S.stops[S.stops.length-1].lat},${S.stops[S.stops.length-1].lng}`;
+  const way=(S.lastDest?S.stops:S.stops.slice(0,-1))
+              .map(s=>`${s.lat.toFixed(6)},${s.lng.toFixed(6)}`).join('|');
+  return 'https://www.google.com/maps/dir/?api=1'+
+         `&origin=${me.lat.toFixed(6)},${me.lng.toFixed(6)}`+
+         `&destination=${dest}`+(way?`&waypoints=${encodeURIComponent(way)}`:'')+
+         '&travelmode=driving';
+}
+function renderStops(){
+  const box=document.getElementById('stops'), row=document.getElementById('stopsRow');
+  box.classList.toggle('on',S.stops.length>0);
+  row.innerHTML='';
+  S.stops.forEach((s,i)=>{
+    const b=document.createElement('span'); b.className='sc';
+    b.innerHTML=`<span class="n">${i+1}</span>${s.name.slice(0,22)}<button class="x" data-rm="${i}" aria-label="Togli">×</button>`;
+    row.appendChild(b);
+  });
+  document.getElementById('navGo').href=navUrl();
+}
+document.getElementById('stopsRow').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-rm]'); if(!b) return;
+  S.stops.splice(+b.dataset.rm,1); await save(); renderStops(); render();
+});
+document.getElementById('stopsClear').onclick=async()=>{
+  S.stops=[]; await save(); renderStops(); render();
+};
+
+/* schermo acceso */
+let wakeLock=null;
+async function applyWake(){
+  try{
+    if(S.awake && 'wakeLock' in navigator){
+      if(!wakeLock) wakeLock=await navigator.wakeLock.request('screen');
+    } else if(wakeLock){ await wakeLock.release(); wakeLock=null; }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ wakeLock=null; applyWake(); } });
+
+/* ============================================================
    Interfaccia
    ============================================================ */
 function toast(m){
@@ -586,7 +664,7 @@ function render(){
       el.innerHTML=`
         <span class="bar" style="background:var(--view)"></span>
         <span class="mid">
-          <span class="op">◆ ${s.name.slice(0,30)}</span>
+          <span class="op">${isStop(s)?'✦':'◆'} ${s.name.slice(0,30)}</span>
           <span class="name">${s.off.toFixed(0)} km fuori percorso · ${s.rev.toLocaleString('it-IT')} recensioni</span>
         </span>
         <span class="right">
@@ -601,7 +679,7 @@ function render(){
         <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
         <span class="mid">
           <span class="op" style="color:${o?o.color:'var(--ice-dim)'}">
-            <span class="dot ${s.live?'':'off'}"></span>${(s.operator||'—').slice(0,24)}
+            <span class="dot ${s.live?'':'off'}"></span>${isStop(s)?'✦ ':''}${(s.operator||'—').slice(0,24)}
             ${s.onHwy?'<span class="hwy">A</span>':''}
           </span>
           <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW</span>
@@ -616,6 +694,7 @@ function render(){
     list.appendChild(el);
   });
   drawMarkers(rows,views);
+  const ng=document.getElementById('navGo'); if(ng) ng.href=navUrl();
 }
 
 function openDetail(s){
@@ -639,8 +718,8 @@ function openDetail(s){
         <div class="spec"><div class="k">Deviazione</div><div class="v">${s.off.toFixed(1)} km</div></div>
       </div>
       <div class="actions">
+        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?'Sosta ✓':'Sosta +'}</button>
         <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}&query_place_id=${s.place_id}">Dettagli</a>
-        <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
         <button class="btn" id="closeD">Chiudi</button>
       </div>`;
   } else {
@@ -667,13 +746,16 @@ function openDetail(s){
         <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
       </div>
       <div class="actions">
-        ${!o?`<button class="btn" id="quickAdd">Aggiungi operatore</button>`:''}
-        <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
+        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?'Sosta ✓':'Sosta +'}</button>
+        ${!o?`<button class="btn" id="quickAdd">Operatore +</button>`:
+             `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>`}
         <button class="btn" id="closeD">Chiudi</button>
       </div>`;
   }
   document.getElementById('detail').classList.add('show');
   document.getElementById('closeD').onclick=()=>document.getElementById('detail').classList.remove('show');
+  const sb=document.getElementById('stopBtn');
+  if(sb) sb.onclick=async()=>{ await toggleStop(s); openDetail(s); };
   const qa=document.getElementById('quickAdd');
   if(qa) qa.onclick=async()=>{
     addOperator(s.operator); await save();
@@ -803,6 +885,7 @@ async function trace(){
     provideRouteAlternatives: S.profile==='scenic',
     drivingOptions:{departureTime:new Date(),trafficModel:'bestguess'} };
 
+  S.lastDest=dest; save();
   toast('Calcolo il percorso…');
   new google.maps.DirectionsService().route(req,async (res,st)=>{
     if(st!=='OK') return toast('Percorso non trovato: '+st);
@@ -873,7 +956,7 @@ function paintSettings(){
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
   v('kwh',S.kwh); v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
-  c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine);
+  c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine); c('awake',S.awake);
 
   const ops=document.getElementById('ops'); ops.innerHTML='';
   S.ops.forEach((o,i)=>{
@@ -931,6 +1014,7 @@ document.getElementById('saveSet').onclick=async()=>{
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
   S.cmode=g('cmode').value; S.onlyMine=g('onlyMine').checked;
+  S.awake=g('awake').checked; applyWake();
   S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
   await save();
   document.getElementById('settings').classList.remove('show');
@@ -951,7 +1035,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
 (async()=>{
   await load(); paintSoc();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
-  stations=DEMO.slice(); bootMap(); render();
+  stations=DEMO.slice(); bootMap(); renderStops(); applyWake(); render();
   if(!S.gkey) toast('Apri ⚙ e inserisci la chiave Google Maps');
 })();
 </script>
