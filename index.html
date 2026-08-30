@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.5';
+const APP_VERSION='1.15.7';
 const APP_DATE='30.08.2026';
 
 
@@ -610,6 +610,7 @@ it:{
  arrLab:"Arrivo",
  stopLab:"Sosta",
  retry:"Riprova",
+ onlyOcm:"Hai scelto “Solo Open Charge Map”: passa ad Automatico nelle impostazioni per usare anche OpenStreetMap.",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -689,6 +690,7 @@ en:{
  arrLab:"On arrival",
  stopLab:"Charge to",
  retry:"Retry",
+ onlyOcm:"You chose “Open Charge Map only”: switch to Automatic in settings to also use OpenStreetMap.",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -768,6 +770,7 @@ pl:{
  arrLab:"Po dojeździe",
  stopLab:"Ładuj do",
  retry:"Ponów",
+ onlyOcm:"Wybrałeś „Tylko Open Charge Map”: przełącz na Automatycznie w ustawieniach, aby użyć też OpenStreetMap.",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1171,6 +1174,7 @@ async function fetchStations(){
 
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
+  if(usingDemo && S.source==='ocm') ocmErr=(ocmErr?ocmErr+' · ':'')+t('onlyOcm');
   diario=`${fmtClock(t0)} · ${S.source} · ${got.length} colonnine`+
          (ocmErr?` · ${ocmErr}`:'')+(osmNota?` · ${osmNota}`:'');
   console.log('[colonnine]',diario);
@@ -1293,7 +1297,7 @@ async function fetchPOIs(pathArr,cumArr,light){
   const jobs=[];
   for(const p of probes.slice(0,cap))
     for(const c of used) jobs.push(nearbyPromise(new google.maps.LatLng(p.lat,p.lng),c));
-  const res=await Promise.all(jobs);
+  const res=await Promise.all(jobs.map(p=>p.catch(()=>[])));
   const seen=new Set(),out=[];
   for(const list of res) for(const {x:p,cat} of list){
     if(!p.place_id||seen.has(p.place_id)) continue;
@@ -1827,20 +1831,27 @@ async function trace(){
 
     // nel profilo panoramico scelgo io la rotta con più cose da vedere
     if(S.profile==='scenic'&&placesSvc){
-      toast(t('tCompare'));
-      const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
-      let top=-1;
-      for(let i=0;i<altProfs.length;i++){
-        const p=altProfs[i];
-        if(p.sec[p.sec.length-1]>best*1.3) continue;
-        const found=await fetchPOIs(p.pts,p.km,true);
-        const sc=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
-        if(sc>top){ top=sc; altIdx=i; }
-      }
+      try{
+        toast(t('tCompare'));
+        const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
+        let top=-1;
+        for(let i=0;i<altProfs.length;i++){
+          const p=altProfs[i];
+          if(p.sec[p.sec.length-1]>best*1.3) continue;
+          const found=await fetchPOIs(p.pts,p.km,true);
+          const sc=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
+          if(sc>top){ top=sc; altIdx=i; }
+        }
+      }catch(e){ console.warn('[colonnine] attrazioni non disponibili',e); altIdx=0; }
     }
 
     renderRoutes();
-    await selectRoute(altIdx);
+    try{ await selectRoute(altIdx); }
+    catch(e){
+      console.error('[colonnine] errore nella selezione rotta',e);
+      diario='errore: '+(e&&e.message?e.message:e);
+      render(); toast('Errore: '+(e&&e.message?e.message:e));
+    }
     const nuovi=unconfigured().length;
     toast(`${altProfs.length>1?altProfs.length+' '+t('tRoutes')+' · ':''}`+
           `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
@@ -1863,7 +1874,8 @@ async function selectRoute(i){
     render();                       // mostro subito la nuova rotta con i dati vecchi
     toast(t('tSeek'));
     await fetchStations();
-    pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : [];
+    try{ pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : []; }
+    catch(e){ pois=[]; console.warn('[colonnine] attrazioni non disponibili',e); }
     altCache[i]={st:stations,po:pois,demo:usingDemo,err:ocmErr};
     render();
     toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
