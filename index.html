@@ -142,6 +142,13 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .spec .k{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ice-dim)}
 .spec .v{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-top:1px}
+.shot{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:var(--radius);
+  margin-bottom:14px;background:var(--deep-3);display:block}
+.shot.hide{display:none}
+.desc{margin-top:12px;padding:13px 15px;border:1px solid var(--deep-3);border-radius:var(--radius);
+  background:var(--deep);font-size:14px;line-height:1.55}
+.desc.load{color:var(--ice-dim);font-style:italic}
+.desc .src{display:block;margin-top:7px;font-size:11.5px;color:var(--ice-dim);font-style:normal}
 .card .actions{display:flex;gap:8px;margin-top:14px}
 .card .actions .btn{flex:1;text-align:center;text-decoration:none}
 
@@ -668,9 +675,12 @@ async function fetchPOIs(pathArr,cumArr,light){
     if(rating<S.minrate||rev<S.minrev) continue;
     if(excluded(p.name)) continue;
     seen.add(p.place_id);
+    let photo='';
+    try{ photo=p.photos&&p.photos[0]?p.photos[0].getUrl({maxWidth:900,maxHeight:560}):''; }catch(e){}
     out.push({ poi:true, name:p.name, place_id:p.place_id,
                lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
-               rating, rev, cat:cat.nm, catId:cat.id });
+               rating, rev, cat:cat.nm, catId:cat.id, photo,
+               vicinity:p.vicinity||'' });
   }
   return out;
 }
@@ -731,6 +741,42 @@ async function applyWake(){
   }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ wakeLock=null; applyWake(); } });
+
+/* ============================================================
+   Descrizione del luogo — chiesta solo quando apri la scheda
+   ============================================================ */
+const detCache=new Map();
+function placeDetails(id){
+  if(detCache.has(id)) return Promise.resolve(detCache.get(id));
+  return new Promise(res=>{
+    if(!placesSvc||!id){ res(null); return; }
+    placesSvc.getDetails(
+      {placeId:id,fields:['editorial_summary','website','formatted_address','opening_hours','photos']},
+      (d,st)=>{
+        const ok=st===google.maps.places.PlacesServiceStatus.OK?d:null;
+        detCache.set(id,ok); res(ok);
+      });
+  });
+}
+async function fillDescription(s){
+  const box=document.getElementById('poiDesc');
+  const img=document.getElementById('poiShot');
+  if(!box) return;
+  const d=await placeDetails(s.place_id);
+  if(!document.getElementById('poiDesc')) return;      // scheda già chiusa
+  const txt=d&&d.editorial_summary&&d.editorial_summary.overview;
+  box.classList.remove('load');
+  if(txt){
+    box.innerHTML=`${txt}<span class="src">Descrizione di Google${d.formatted_address?' · '+d.formatted_address:''}</span>`;
+  } else {
+    box.innerHTML=`Google non ha una descrizione per questo luogo.`+
+      `<span class="src">${s.cat}${d&&d.formatted_address?' · '+d.formatted_address:(s.vicinity?' · '+s.vicinity:'')}</span>`;
+  }
+  // se la ricerca non aveva foto, provo con quelle del dettaglio
+  if(img&&!s.photo&&d&&d.photos&&d.photos[0]){
+    try{ img.src=d.photos[0].getUrl({maxWidth:900,maxHeight:560}); img.classList.remove('hide'); }catch(e){}
+  }
+}
 
 /* ============================================================
    Interfaccia
@@ -812,6 +858,7 @@ function openDetail(s){
 
   if(s.poi){
     card.innerHTML=`
+      <img id="poiShot" class="shot ${s.photo?'':'hide'}" ${s.photo?`src="${s.photo}"`:''} alt="" loading="lazy">
       <h3 style="color:var(--view)">${s.name}</h3>
       <p class="sub">${s.cat||'Da vedere'} · ${s.off.toFixed(1)} km fuori dal percorso</p>
       <div class="readout">
@@ -819,6 +866,7 @@ function openDetail(s){
         <div class="big view">★ ${s.rating.toFixed(1)}</div>
         <div class="calc">${s.rev.toLocaleString('it-IT')} recensioni su Google</div>
       </div>
+      <div class="desc load" id="poiDesc">Carico la descrizione…</div>
       <div class="specs">
         <div class="spec"><div class="k">Distanza</div><div class="v">${s.km.toFixed(0)} km</div></div>
         <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
@@ -862,6 +910,7 @@ function openDetail(s){
       </div>`;
   }
   document.getElementById('detail').classList.add('show');
+  if(s.poi) fillDescription(s);
   document.getElementById('closeD').onclick=()=>document.getElementById('detail').classList.remove('show');
   const sb=document.getElementById('stopBtn');
   if(sb) sb.onclick=async()=>{ await toggleStop(s); openDetail(s); };
