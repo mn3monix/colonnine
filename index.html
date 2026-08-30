@@ -466,7 +466,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.8.1';
+const APP_VERSION='1.8.2';
 const APP_DATE='30.08.2026';
 
 const CATS=[
@@ -918,13 +918,23 @@ function render(){
     const P=PLAN.plan;
     const box=document.createElement('div'); box.className='plan';
     if(PLAN.fail){
-      const dove=P.length?Math.round(P[P.length-1].s.km):0;
+      const soc=+document.getElementById('soc').value;
       const tot=P.reduce((a,p)=>a+p.min,0);
-      box.innerHTML=`<span class="txt bad">Piano incompleto: dopo ${dove} km non trovo colonnine raggiungibili.`+
-        (P.length?` Le prime ${P.length} soste (${fmtDur(tot*60)}) reggono.`:'')+
+      const prossima=rows.find(x=>x.km>1);
+      let msg;
+      if(!P.length){
+        msg=`Con il ${soc}% di carica e la riserva al ${S.reserve}% fai <b>${Math.round(r)} km</b>, `+
+            (prossima?`ma la prima colonnina è a <b>${Math.round(prossima.km)} km</b>.`:'e non trovo colonnine davanti a te.')+
+            ` Alza il cursore della carica se sei più carico di così`+
+            (S.reserve>5?`, oppure abbassa la riserva`:'')+`.`;
+      } else {
+        msg=`Piano interrotto dopo <b>${Math.round(P[P.length-1].s.km)} km</b>: da lì non trovo colonnine raggiungibili. `+
+            `Le prime ${P.length} soste (${fmtDur(tot*60)}) reggono.`;
+      }
+      box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? ` <b>Stai usando il set dimostrativo di 11 colonnine</b>, che lascia buchi enormi: inserisci la chiave Open Charge Map nelle impostazioni e ritraccia.`
-          : ` Allarga la deviazione, abbassa la potenza minima o togli il filtro sugli operatori.`)+
+          ? ` <b>Stai usando il set dimostrativo di 11 colonnine</b>: inserisci la chiave Open Charge Map e ritraccia.`
+          : ` In alternativa allarga la deviazione massima o abbassa la potenza minima.`)+
         `</span>`+(P.length?`<button id="usePlan">Usa</button>`:'');
     } else if(!P.length){
       box.innerHTML=`<span class="txt">Arrivi a destinazione senza ricaricare, con circa <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
