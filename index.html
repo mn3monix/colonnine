@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.1';
+const APP_VERSION='1.15.2';
 const APP_DATE='30.08.2026';
 
 
@@ -1160,6 +1160,7 @@ async function fetchStations(){
       toast(t('tOsm')+'…');
       got=await fetchOSM();
       if(got.length) fonte='osm';
+      else ocmErr=ocmErr||('OSM: nessuna colonnina utile — '+(osmNota||'nessun nodo restituito'));
     }catch(e){ ocmErr=ocmErr||('OSM: '+descriviErrore(e)); }
   }
 
@@ -1195,6 +1196,7 @@ function potenzaDaTag(tag){
   }
   return max;
 }
+let osmNota='';
 const OVERPASS=[
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass-api.de/api/interpreter',
@@ -1225,12 +1227,20 @@ async function fetchOSM(){
   throw ultimo||new Error('nessun server disponibile');
 }
 function leggiOSM(d){
-  const out=[];
+  const out=[]; let grezzi=0, senzaPotenza=0;
+  const minkw=S.minkw||50;
   for(const n of (d.elements||[])){
+    grezzi++;
     const tg=n.tags||{};
     const kw=potenzaDaTag(tg);
-    if(kw && kw < (S.minkw||50)) continue;
-    if(!kw && (S.minkw||50)>22) continue;
+    if(kw && kw < minkw) continue;
+    if(!kw){
+      // in OSM la potenza spesso manca: tengo comunque le prese da ricarica rapida
+      const rapida=Object.keys(tg).some(k=>/type2_combo|ccs|chademo|tesla_supercharger/i.test(k))
+                   || /ionity|tesla|supercharger|fastned|electra/i.test(tg.operator||tg.brand||'');
+      if(!rapida && minkw>22) continue;
+      senzaPotenza++;
+    }
     out.push({
       name: tg.name || tg.operator || 'Colonnina',
       town: tg['addr:city'] || '',
@@ -1242,6 +1252,7 @@ function leggiOSM(d){
       declared: (tg.fee==='no'?'gratuita':'')
     });
   }
+  osmNota=`${grezzi} nodi, ${out.length} tenuti${senzaPotenza?', '+senzaPotenza+' senza potenza dichiarata':''}`;
   return out;
 }
 
