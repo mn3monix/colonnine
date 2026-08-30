@@ -359,6 +359,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
       <option value="auto" data-t="srcAuto"></option>
       <option value="ocm" data-t="srcOcm"></option>
       <option value="osm" data-t="srcOsm"></option>
+      <option value="tesla" data-t="srcTesla"></option>
     </select>
   </div>
   <p class="hint" data-t="hintSrc"></p>
@@ -527,7 +528,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.9';
+const APP_VERSION='1.16';
 const APP_DATE='30.08.2026';
 
 
@@ -612,6 +613,7 @@ it:{
  retry:"Riprova",
  onlyOcm:"Hai scelto “Solo Open Charge Map”: passa ad Automatico nelle impostazioni per usare anche OpenStreetMap.",
  searching:"ricerca in corso…",
+ srcTesla:"Solo Supercharger Tesla (nessuna chiave)", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -693,6 +695,7 @@ en:{
  retry:"Retry",
  onlyOcm:"You chose “Open Charge Map only”: switch to Automatic in settings to also use OpenStreetMap.",
  searching:"searching…",
+ srcTesla:"Tesla Superchargers only (no key)", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -774,6 +777,7 @@ pl:{
  retry:"Ponów",
  onlyOcm:"Wybrałeś „Tylko Open Charge Map”: przełącz na Automatycznie w ustawieniach, aby użyć też OpenStreetMap.",
  searching:"szukam…",
+ srcTesla:"Tylko Supercharger Tesla (bez klucza)", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1168,7 +1172,7 @@ async function fetchStations(){
     try{ got=await fetchOCM(); }catch(e){ ocmErr=ocmErr||descriviErrore(e); }
     if(got.length) fonte='ocm';
   }
-  if(!got.length && S.source!=='ocm'){
+  if(!got.length && S.source!=='ocm' && S.source!=='tesla'){
     try{
       passo('OpenStreetMap · '+t('searching'));
       toast(t('tOsm')+'…');
@@ -1176,6 +1180,13 @@ async function fetchStations(){
       if(got.length) fonte='osm';
       else ocmErr=ocmErr||('OSM: nessuna colonnina utile — '+(osmNota||'nessun nodo restituito'));
     }catch(e){ ocmErr=ocmErr||('OSM: '+descriviErrore(e)); }
+  }
+  if(!got.length && S.source!=='ocm' && S.source!=='osm'){
+    try{
+      passo(t('tTesla')+' · '+t('searching'));
+      got=await fetchTesla();
+      if(got.length) fonte='tesla';
+    }catch(e){ ocmErr=ocmErr||('supercharge.info: '+descriviErrore(e)); }
   }
 
   usingDemo=!got.length;
@@ -1186,6 +1197,7 @@ async function fetchStations(){
   console.log('[colonnine]',diario);
   if(usingDemo) toast(S.source==='osm'?t('tOsmFail'):(S.ockey?('Open Charge Map: '+(ocmErr||'nessun dato')):t('tDemoKey')));
   else if(fonte==='osm') toast(`${got.length} · ${t('osmCredit')}`);
+  else if(fonte==='tesla') toast(`${got.length} · ${t('scCredit')}`);
 }
 // fetch che si arrende dopo n secondi invece di restare appesa
 async function fetchTimeout(url,opt,ms){
@@ -1256,6 +1268,28 @@ async function fetchOSM(){
     }
   }
   throw ultimo||new Error('nessun server disponibile');
+}
+let scCache=null;                       // il registro mondiale si scarica una volta sola
+async function fetchTesla(){
+  if(!scCache){
+    const r=await fetchTimeout('https://supercharge.info/service/supercharge/allSites',{},25000);
+    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
+    scCache=await r.json();
+  }
+  const out=[];
+  for(const s of scCache){
+    if(!s.gps || s.status!=='OPEN') continue;
+    out.push({
+      name: s.name || 'Supercharger',
+      town: (s.address&&s.address.city)||'',
+      operator: 'Tesla Supercharger',
+      lat: s.gps.latitude, lng: s.gps.longitude,
+      kw: s.powerKilowatt || 250,
+      pts: s.stallCount || 0,
+      live: true, declared: ''
+    });
+  }
+  return out;
 }
 function leggiOSM(d){
   const out=[]; let grezzi=0, senzaPotenza=0;
@@ -1495,7 +1529,7 @@ function render(){
   if(summary){
     const eta=new Date(Date.now()+summary.sec*1000);
     const g=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
-    head.innerHTML=`<b>${rows.length}</b> ${t('chargers')}${usingDemo?' (demo)':(fonte==='osm'?' (OSM)':'')}${views.length?` · <b>${views.length}</b> ${t('toSee')}`:''} · ${Math.round(summary.km)} km<br>`+
+    head.innerHTML=`<b>${rows.length}</b> ${t('chargers')}${usingDemo?' (demo)':(fonte==='osm'?' (OSM)':(fonte==='tesla'?' (Tesla)':''))}${views.length?` · <b>${views.length}</b> ${t('toSee')}`:''} · ${Math.round(summary.km)} km<br>`+
       `${fmtDur(summary.sec)} · ${t('arrival')} <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
   } else head.innerHTML=rows.length?`<b>${rows.length}</b> ${t('chargers')}`:'—';
 
@@ -1616,10 +1650,10 @@ function render(){
     await save(); renderStops(); render();
     toast(t('tStopsSet'));
   };
-  if(fonte==='osm'){
+  if(fonte==='osm'||fonte==='tesla'){
     const c=document.createElement('p'); c.className='hint';
     c.style.cssText='padding:4px 4px 10px;margin:0';
-    c.textContent=t('osmCredit'); list.appendChild(c);
+    c.textContent=fonte==='osm'?t('osmCredit'):t('scCredit'); list.appendChild(c);
   }
   drawMarkers(rows,views);
   const ng=document.getElementById('navGo'); if(ng) ng.href=navUrl();
