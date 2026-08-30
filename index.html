@@ -285,6 +285,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
       <input id="soc" type="range" min="1" max="79" value="42">
       <span class="val" id="socVal">42%</span>
     </div>
+    <div class="soc">
+      <label for="vpl" data-t="vLab">Velocità</label>
+      <input id="vpl" type="range" min="80" max="160" step="5" value="130">
+      <span class="val" id="vplVal">130</span>
+    </div>
   </header>
 
   <div id="map"></div>
@@ -397,10 +402,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <label for="reserve" data-t="lArr"></label>
     <input id="reserve" type="number" step="1" min="0" max="40" value="10">
   </div>
-  <div class="field">
-    <label for="vplan" data-t="lVplan"></label>
-    <input id="vplan" type="number" step="5" min="60" max="200" value="130">
-  </div>
   <p class="hint" data-t="hintVplan"></p>
   <div class="field" style="margin-top:9px">
     <label for="refv" data-t="lRefv"></label>
@@ -504,7 +505,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.11';
+const APP_VERSION='1.12';
 const APP_DATE='30.08.2026';
 
 
@@ -581,6 +582,7 @@ it:{
  lArr:"Carica desiderata all&#39;arrivo alla colonnina (%)", lRefv:"Velocità a cui vale quel consumo (km/h)", keep:"tieni max", freeSp:"andatura libera", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione",
  testKey:"Prova la chiave", testing:"Provo…", testNo:"Nessuna chiave inserita", testOkA:"Funziona:", testOkB:"colonnine trovate vicino a te", testFail:"Non funziona:",
  lVplan:"Velocità che intendi tenere (km/h)", hintVplan:"È il limite che rispetti in autostrada: 130 in Italia e Austria, 140 in Polonia, libera in molti tratti tedeschi. Tutti i calcoli — autonomia, carica all&#39;arrivo, costi — partono dal consumo a questa velocità.", spOk:"ok a", spSlow:"rallenta a",
+ vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -654,6 +656,7 @@ en:{
  lArr:"Wanted charge on arrival at the charger (%)", lRefv:"Speed that consumption refers to (km/h)", keep:"keep max", freeSp:"no speed limit needed", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination",
  testKey:"Test the key", testing:"Testing…", testNo:"No key entered", testOkA:"Works:", testOkB:"chargers found near you", testFail:"Not working:",
  lVplan:"Speed you intend to hold (km/h)", hintVplan:"The limit you actually respect on the motorway: 130 in Italy and Austria, 140 in Poland, unrestricted on many German stretches. Every figure — range, arrival charge, cost — starts from consumption at this speed.", spOk:"fine at", spSlow:"slow to",
+ vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -727,6 +730,7 @@ pl:{
  lArr:"Żądany ładunek po dojeździe do ładowarki (%)", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", keep:"trzymaj maks.", freeSp:"bez ograniczenia", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu",
  testKey:"Sprawdź klucz", testing:"Sprawdzam…", testNo:"Nie wpisano klucza", testOkA:"Działa:", testOkB:"ładowarek w pobliżu", testFail:"Nie działa:",
  lVplan:"Prędkość, którą zamierzasz trzymać (km/h)", hintVplan:"Limit, którego naprawdę przestrzegasz na autostradzie: 130 we Włoszech i Austrii, 140 w Polsce, bez ograniczeń na wielu odcinkach w Niemczech. Wszystkie wyliczenia — zasięg, ładunek po dojeździe, koszty — wychodzą od zużycia przy tej prędkości.", spOk:"ok przy", spSlow:"zwolnij do",
+ vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1341,10 +1345,18 @@ function render(){
     } else {
       const tot=P.reduce((a,p)=>a+p.min,0);
       const eur=P.every(p=>p.eur!=null)?P.reduce((a,p)=>a+p.eur,0):null;
+      // il tratto più esigente: quello che impone la velocità più bassa
+      let peggio=null;
+      P.forEach((p,i)=>{ if(p.vmax&&(!peggio||p.vmax<peggio.p.vmax)) peggio={p,i}; });
+      if(!peggio&&P.vFinal) peggio={p:{vmax:P.vFinal,s:{name:t('toDest')}},i:-1};
       box.innerHTML=`<span class="txt"><b>${P.length}</b> ${P.length>1?t('stopsN'):t('stopN')} · `+
         `<b>${fmtDur(tot*60)}</b> ${t('charging')}${eur!=null?` · ${t('tripTot')} <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
         `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}`+
-        (P.vFinal?`<br>${t('toDest')}: ${t('spSlow')} <b>${Math.round(P.vFinal)} km/h</b>`:'')+`</span>`+
+        (peggio
+          ? `<br><span style="color:var(--signal)">${t('needSlowA')} ${S.reserve}% `+
+            `${peggio.i>=0?`${t('needSlowB')} ${peggio.i+1} (${peggio.p.s.name.slice(0,22)})`:peggio.p.s.name} `+
+            `${t('needSlowC')} <b>${Math.round(peggio.p.vmax)} km/h</b></span>`
+          : `<br><span style="color:var(--live)">${t('allOk')}</span>`)+`</span>`+
         `<button id="usePlan">${t('use')}</button>`;
     }
     list.appendChild(box);
@@ -1751,7 +1763,7 @@ function paintSettings(){
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('refv',S.refv); v('vplan',S.vplan); v('avgkw',S.avgkw);
+  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('refv',S.refv); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
@@ -1849,13 +1861,12 @@ document.getElementById('testKey').onclick=async()=>{
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
-  const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
+  const prev=S.gkey, prevOc=S.ockey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
   const prevLang=S.lang; S.lang=g('lang').value;
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
   S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
   S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
-  S.vplan=Math.max(60,Math.min(200,+g('vplan').value||130));
   S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
@@ -1867,7 +1878,15 @@ document.getElementById('saveSet').onclick=async()=>{
   await save();
   if(S.lang!==prevLang){ location.reload(); return; }   // la mappa va ricaricata nella nuova lingua
   document.getElementById('settings').classList.remove('show');
-  if(S.gkey&&S.gkey!==prev&&!map) bootMap(); else render();
+  if(S.gkey&&S.gkey!==prev&&!map){ bootMap(); return; }
+  // chiave OCM cambiata: rifaccio subito la ricerca, senza aspettare un nuovo Traccia
+  if(S.ockey!==prevOc && route.length){
+    altCache={}; toast(t('tSeek'));
+    await fetchOCM(); render();
+    toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
+    return;
+  }
+  render();
   const cambiato=JSON.stringify([S.noHwy,S.noFerry,S.noToll])!==prevRoute;
   toast(cambiato&&route.length?t('tRecalc'):t('tSaved'));
 };
@@ -1878,6 +1897,18 @@ function paintSoc(){
   socEl.style.setProperty('--pct',((socEl.value-1)/78*100)+'%');
 }
 socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
+
+const vplEl=document.getElementById('vpl');
+let vplTimer=null;
+function paintVpl(){
+  document.getElementById('vplVal').textContent=vplEl.value;
+  vplEl.style.setProperty('--pct',((vplEl.value-80)/80*100)+'%');
+}
+vplEl.oninput=()=>{
+  S.vplan=+vplEl.value; paintVpl(); render();
+  if(selected&&!selected.poi) openDetail(selected);
+  clearTimeout(vplTimer); vplTimer=setTimeout(save,400);
+};
 document.getElementById('go').onclick=trace;
 document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Enter') trace(); });
 
@@ -1885,6 +1916,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
   document.getElementById('ver').textContent='v'+APP_VERSION;
   document.getElementById('verSet').textContent=`${t('version')} ${APP_VERSION} ${t('ofDate')} ${APP_DATE}.`;
   await load(); applyI18n(); paintSoc();
+  document.getElementById('vpl').value=S.vplan||130; paintVpl();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
   stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
   if(!S.gkey) toast(t('tKeyAsk'));
