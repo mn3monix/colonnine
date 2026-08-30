@@ -505,7 +505,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.12.1';
+const APP_VERSION='1.12.2';
 const APP_DATE='30.08.2026';
 
 
@@ -1046,13 +1046,14 @@ async function fetchOCM(){
       if(viaHeader) opt.headers={'X-API-Key':S.ockey};
       else u.searchParams.set('key',S.ockey);
     }
-    const r=await fetchTimeout(u,opt,12000);
+    const r=await fetchTimeout(u,opt,20000);
     if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
     return r.json();
   }
 
-  let usaHeader=false;
+  let usaHeader=false, diFila=0;
   for(const p of probes.slice(0,26)){
+    if(diFila>=3) break;          // il servizio non risponde: inutile insistere
     tentate++;
     let dati=null;
     try{ dati=await chiedi(p,usaHeader); }
@@ -1063,8 +1064,8 @@ async function fetchOCM(){
         catch(e2){ ocmErr=ocmErr||descriviErrore(e2); }
       } else ocmErr=ocmErr||descriviErrore(err);
     }
-    if(!dati) continue;
-    riuscite++;
+    if(!dati){ diFila++; continue; }
+    diFila=0; riuscite++;
     for(const poi of dati){
       if(seen.has(poi.ID)) continue; seen.add(poi.ID);
       const c=poi.Connections||[];
@@ -1088,7 +1089,7 @@ async function fetchOCM(){
 // fetch che si arrende dopo n secondi invece di restare appesa
 async function fetchTimeout(url,opt,ms){
   const c=new AbortController();
-  const tid=setTimeout(()=>c.abort(),ms||12000);
+  const tid=setTimeout(()=>c.abort(),ms||20000);
   try{ return await fetch(url,Object.assign({},opt,{signal:c.signal})); }
   finally{ clearTimeout(tid); }
 }
@@ -1097,7 +1098,7 @@ function descriviErrore(e){
   if(e&&e.status===403) return 'HTTP 403 — chiave non valida o non abilitata';
   if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra qualche minuto';
   if(e&&e.status) return 'HTTP '+e.status;
-  if(e&&e.name==='AbortError') return 'nessuna risposta entro 12 secondi';
+  if(e&&e.name==='AbortError') return 'nessuna risposta entro 20 secondi';
   if(e&&e.name==='TypeError') return 'richiesta bloccata dal browser (CORS, blocco pubblicità o rete)';
   return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
 }
@@ -1854,7 +1855,7 @@ document.getElementById('testKey').onclick=async()=>{
     u.searchParams.set('maxresults',20); u.searchParams.set('compact','true');
     const opt={};
     if(viaHeader) opt.headers={'X-API-Key':chiave}; else u.searchParams.set('key',chiave);
-    const r=await fetchTimeout(u,opt,12000);
+    const r=await fetchTimeout(u,opt,20000);
     if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
     return r.json();
   };
