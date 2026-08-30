@@ -290,6 +290,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
       <input id="vpl" type="range" min="80" max="160" step="5" value="130">
       <span class="val" id="vplVal">130</span>
     </div>
+    <div class="soc">
+      <label for="arr" data-t="arrLab">Arrivo</label>
+      <input id="arr" type="range" min="5" max="40" step="1" value="15">
+      <span class="val" id="arrVal">15%</span>
+    </div>
   </header>
 
   <div id="map"></div>
@@ -416,10 +421,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <input id="tmax" type="number" step="5" min="30" max="100" value="80">
   </div>
   <p class="hint" data-t="hintT"></p>
-  <div class="field" style="margin-top:9px">
-    <label for="reserve" data-t="lArr"></label>
-    <input id="reserve" type="number" step="1" min="0" max="40" value="10">
-  </div>
   <p class="hint" data-t="hintVplan"></p>
   <div class="field" style="margin-top:9px">
     <label for="refv" data-t="lRefv"></label>
@@ -523,7 +524,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.14';
+const APP_VERSION='1.14.1';
 const APP_DATE='30.08.2026';
 
 
@@ -603,6 +604,7 @@ it:{
  vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.",
  lSource:"Da dove prendere le colonnine", srcAuto:"Automatico — prima Open Charge Map, poi OpenStreetMap", srcOcm:"Solo Open Charge Map (serve la chiave)", srcOsm:"Solo OpenStreetMap (nessuna chiave)", hintSrc:"OpenStreetMap non richiede chiavi e risponde sempre, ma non conosce lo stato di funzionamento né i prezzi dichiarati. Open Charge Map è più ricco quando è raggiungibile.", osmCredit:"Dati colonnine © contributori OpenStreetMap", tOsm:"Dati da OpenStreetMap", tOsmFail:"Anche OpenStreetMap non risponde",
  lTmin:"Carica minima quando ti fermi (%)", lTmax:"Carica massima (%)", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
+ arrLab:"Arrivo",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -679,6 +681,7 @@ en:{
  vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.",
  lSource:"Where to get chargers from", srcAuto:"Automatic — Open Charge Map first, then OpenStreetMap", srcOcm:"Open Charge Map only (key required)", srcOsm:"OpenStreetMap only (no key)", hintSrc:"OpenStreetMap needs no key and always answers, but knows nothing about working status or stated prices. Open Charge Map is richer when reachable.", osmCredit:"Charger data © OpenStreetMap contributors", tOsm:"Data from OpenStreetMap", tOsmFail:"OpenStreetMap is not answering either",
  lTmin:"Minimum charge when you stop (%)", lTmax:"Maximum charge (%)", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
+ arrLab:"On arrival",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -755,6 +758,7 @@ pl:{
  vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.",
  lSource:"Skąd brać ładowarki", srcAuto:"Automatycznie — najpierw Open Charge Map, potem OpenStreetMap", srcOcm:"Tylko Open Charge Map (wymaga klucza)", srcOsm:"Tylko OpenStreetMap (bez klucza)", hintSrc:"OpenStreetMap nie wymaga klucza i zawsze odpowiada, ale nie zna stanu działania ani podanych cen. Open Charge Map jest bogatszy, gdy działa.", osmCredit:"Dane ładowarek © współtwórcy OpenStreetMap", tOsmFail:"OpenStreetMap też nie odpowiada", tOsm:"Dane z OpenStreetMap",
  lTmin:"Minimalny ładunek przy postoju (%)", lTmax:"Maksymalny ładunek (%)", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
+ arrLab:"Po dojeździe",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1892,7 +1896,7 @@ function paintSettings(){
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('tmin',S.tmin); v('tmax',S.tmax); v('refv',S.refv); v('avgkw',S.avgkw);
+  v('kwh',S.kwh); v('wh',S.wh); v('tmin',S.tmin); v('tmax',S.tmax); v('refv',S.refv); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode); v('source',S.source);
@@ -1994,7 +1998,6 @@ document.getElementById('saveSet').onclick=async()=>{
   const prevLang=S.lang; S.lang=g('lang').value;
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
-  S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
   S.tmax=Math.min(100,Math.max(30,+g('tmax').value||80));
   S.tmin=Math.min(S.tmax-5,Math.max(20,+g('tmin').value||60));
   S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
@@ -2029,6 +2032,18 @@ function paintSoc(){
 }
 socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
 
+const arrEl=document.getElementById('arr');
+let arrTimer=null;
+function paintArr(){
+  document.getElementById('arrVal').textContent=arrEl.value+'%';
+  arrEl.style.setProperty('--pct',((arrEl.value-5)/35*100)+'%');
+}
+arrEl.oninput=()=>{
+  S.reserve=+arrEl.value; paintArr(); render();
+  if(selected&&!selected.poi) openDetail(selected);
+  clearTimeout(arrTimer); arrTimer=setTimeout(save,400);
+};
+
 const vplEl=document.getElementById('vpl');
 let vplTimer=null;
 function paintVpl(){
@@ -2048,6 +2063,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
   document.getElementById('verSet').textContent=`${t('version')} ${APP_VERSION} ${t('ofDate')} ${APP_DATE}.`;
   await load(); applyI18n(); paintSoc();
   document.getElementById('vpl').value=S.vplan||130; paintVpl();
+  document.getElementById('arr').value=S.reserve; paintArr();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
   stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
   if(!S.gkey) toast(t('tKeyAsk'));
