@@ -139,6 +139,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
 .stn .eur.none{color:var(--ice-dim)}
 .stn .cum{font-size:11.5px;color:var(--ice-dim);display:block;margin-top:1px}
 .stn .spd{font-size:12px;color:var(--live);display:block;margin-top:1px}
+.stn .spd.slow{color:var(--signal)}
 .stn.far{opacity:.42}
 .stn .arr{color:var(--live)}
 .stn .arr.low{color:var(--alert)}
@@ -376,6 +377,8 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <label for="ockey" data-t="lOckey"></label>
     <input id="ockey" type="text" data-tp="ockeyPh" autocomplete="off" spellcheck="false">
   </div>
+  <button class="btn ghost" id="testKey" style="width:100%" data-t="testKey"></button>
+  <div id="testOut" class="hint" style="margin-top:8px"></div>
 
   <h4 data-t="hCar">Auto</h4>
   <div class="field">
@@ -395,6 +398,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <input id="reserve" type="number" step="1" min="0" max="40" value="10">
   </div>
   <div class="field">
+    <label for="vplan" data-t="lVplan"></label>
+    <input id="vplan" type="number" step="5" min="60" max="200" value="130">
+  </div>
+  <p class="hint" data-t="hintVplan"></p>
+  <div class="field" style="margin-top:9px">
     <label for="refv" data-t="lRefv"></label>
     <input id="refv" type="number" step="5" min="60" max="150" value="110">
   </div>
@@ -496,7 +504,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.10.2';
+const APP_VERSION='1.11';
 const APP_DATE='30.08.2026';
 
 
@@ -571,6 +579,8 @@ it:{
  thisCh:"Questa ricarica", fullCh:"Ricarica 10→80%", runTot:"Speso fino a qui", tripTot:"Totale del viaggio",
  swTraf:"Mostra il traffico", swTrafS:"Le strade verdi possono coprire i pallini delle colonnine",
  lArr:"Carica desiderata all&#39;arrivo alla colonnina (%)", lRefv:"Velocità a cui vale quel consumo (km/h)", keep:"tieni max", freeSp:"andatura libera", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione",
+ testKey:"Prova la chiave", testing:"Provo…", testNo:"Nessuna chiave inserita", testOkA:"Funziona:", testOkB:"colonnine trovate vicino a te", testFail:"Non funziona:",
+ lVplan:"Velocità che intendi tenere (km/h)", hintVplan:"È il limite che rispetti in autostrada: 130 in Italia e Austria, 140 in Polonia, libera in molti tratti tedeschi. Tutti i calcoli — autonomia, carica all&#39;arrivo, costi — partono dal consumo a questa velocità.", spOk:"ok a", spSlow:"rallenta a",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -642,6 +652,8 @@ en:{
  thisCh:"This charge", fullCh:"Full 10→80% charge", runTot:"Spent so far", tripTot:"Trip total",
  swTraf:"Show traffic", swTrafS:"Green roads can hide the charger dots",
  lArr:"Wanted charge on arrival at the charger (%)", lRefv:"Speed that consumption refers to (km/h)", keep:"keep max", freeSp:"no speed limit needed", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination",
+ testKey:"Test the key", testing:"Testing…", testNo:"No key entered", testOkA:"Works:", testOkB:"chargers found near you", testFail:"Not working:",
+ lVplan:"Speed you intend to hold (km/h)", hintVplan:"The limit you actually respect on the motorway: 130 in Italy and Austria, 140 in Poland, unrestricted on many German stretches. Every figure — range, arrival charge, cost — starts from consumption at this speed.", spOk:"fine at", spSlow:"slow to",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -713,6 +725,8 @@ pl:{
  thisCh:"To ładowanie", fullCh:"Pełne ładowanie 10→80%", runTot:"Wydane do tej pory", tripTot:"Razem za podróż",
  swTraf:"Pokaż ruch", swTrafS:"Zielone drogi mogą zasłaniać kropki ładowarek",
  lArr:"Żądany ładunek po dojeździe do ładowarki (%)", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", keep:"trzymaj maks.", freeSp:"bez ograniczenia", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu",
+ testKey:"Sprawdź klucz", testing:"Sprawdzam…", testNo:"Nie wpisano klucza", testOkA:"Działa:", testOkB:"ładowarek w pobliżu", testFail:"Nie działa:",
+ lVplan:"Prędkość, którą zamierzasz trzymać (km/h)", hintVplan:"Limit, którego naprawdę przestrzegasz na autostradzie: 130 we Włoszech i Austrii, 140 w Polsce, bez ograniczeń na wielu odcinkach w Niemczech. Wszystkie wyliczenia — zasięg, ładunek po dojeździe, koszty — wychodzą od zużycia przy tej prędkości.", spOk:"ok przy", spSlow:"zwolnij do",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -743,7 +757,7 @@ const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
 let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:15, avgkw:110, car:'Tesla Model Y AWD (2025+)',
-        refv:110, eff:0.92, corridor:6, minkw:50,
+        refv:110, vplan:130, eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
         lang:'it', traffic:true, cats:['panorami','natura','passi','borghi'],
@@ -869,12 +883,12 @@ const poisAhead =()=>aheadOf(pois,{poi:true,radius:15});
 function socAt(km){
   const soc=+document.getElementById('soc').value;
   if(!isFinite(km)) return soc;
-  return soc - (km*S.wh/1000)/S.kwh*100;
+  return soc - socForKm(km);
 }
 // autonomia residua fino alla riserva
 function rangeNow(){
   const soc=+document.getElementById('soc').value;
-  return Math.max(0,(soc-S.reserve)/100*S.kwh*1000/S.wh);
+  return kmFromSoc(soc-S.reserve);
 }
 /* ============================================================
    Piano delle soste — catena greedy "la più lontana raggiungibile"
@@ -888,18 +902,23 @@ function whAt(v){
   const rif=S.refv||110;
   return f(v)*(S.wh/f(rif));
 }
-// velocità massima per coprire km arrivando con socEnd partendo da socStart
+// consumo con cui si fanno tutti i conti: quello alla velocità che intendi tenere
+function whEff(){ return whAt(S.vplan||130); }
+// velocità da tenere per coprire km arrivando con socEnd; null se basta la tua andatura
 function speedFor(km,socStart,socEnd){
   if(!(km>1)) return null;
-  const disponibili=Math.max(0,(socStart-socEnd)/100*S.kwh*1000)/km;   // Wh/km
+  const disponibili=Math.max(0,(socStart-socEnd)/100*S.kwh*1000)/km;   // Wh/km spendibili
   if(disponibili<=0) return 0;
-  if(whAt(135)<=disponibili) return null;        // nessun vincolo: vai come vuoi
-  let lo=45,hi=135;
+  const v0=S.vplan||130;
+  if(whAt(v0)<=disponibili) return null;         // alla tua andatura ci arrivi già
+  let lo=40,hi=v0;
   for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(whAt(mid)<=disponibili) lo=mid; else hi=mid; }
   return lo;
 }
-function kmFromSoc(pct){ return Math.max(0,pct/100*S.kwh*1000/S.wh); }
-function socForKm(km){ return km*S.wh/1000/S.kwh*100; }
+// carica all'arrivo se percorri km alla velocità v partendo da socStart
+function socAtSpeed(km,socStart,v){ return socStart - whAt(v)*km/1000/S.kwh*100; }
+function kmFromSoc(pct){ return Math.max(0,pct/100*S.kwh*1000/whEff()); }
+function socForKm(km){ return km*whEff()/1000/S.kwh*100; }
 
 function buildPlan(rows){
   const soc0=+document.getElementById('soc').value;
@@ -1292,7 +1311,8 @@ function render(){
   if(route.length){
     const r=rangeNow();
     const d=document.createElement('div'); d.className='reach';
-    d.innerHTML=`${t('autonomy')} <b class="${r<80?'low':''}">${Math.round(r)} km</b> ${t('withCharge')}`;
+    d.innerHTML=`${t('autonomy')} <b class="${r<80?'low':''}">${Math.round(r)} km</b> `+
+      `${t('withCharge')} · ${S.vplan} km/h · ${Math.round(whEff())} Wh/km`;
     list.appendChild(d);
 
     const P=PLAN.plan;
@@ -1324,7 +1344,7 @@ function render(){
       box.innerHTML=`<span class="txt"><b>${P.length}</b> ${P.length>1?t('stopsN'):t('stopN')} · `+
         `<b>${fmtDur(tot*60)}</b> ${t('charging')}${eur!=null?` · ${t('tripTot')} <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
         `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}`+
-        (P.vFinal?`<br>${t('toDest')}: ${t('keep')} <b>${Math.round(P.vFinal)} km/h</b>`:'')+`</span>`+
+        (P.vFinal?`<br>${t('toDest')}: ${t('spSlow')} <b>${Math.round(P.vFinal)} km/h</b>`:'')+`</span>`+
         `<button id="usePlan">${t('use')}</button>`;
     }
     list.appendChild(box);
@@ -1438,7 +1458,7 @@ function openDetail(s){
         <div class="spec"><div class="k">${t('dSt')}</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?t('dOn'):t('dOff')}</div></div>
         <div class="spec"><div class="k">${t('dArr')}</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':t('dry')}</div></div>
         <div class="spec"><div class="k">${t('dEn')}</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
-        ${st&&st.vmax!==undefined?`<div class="spec"><div class="k">${t('dSpeed')}</div><div class="v" style="color:var(--live)">${st.vmax?Math.round(st.vmax)+' km/h':t('freeSp')}</div></div>`:''}
+        ${st?`<div class="spec"><div class="k">${t('dSpeed')}</div><div class="v" style="color:${st.vmax?'var(--signal)':'var(--live)'}">${st.vmax?Math.round(st.vmax):S.vplan} km/h</div></div>`:''}
         ${st?`<div class="spec"><div class="k">${t('thisCh')}</div><div class="v" style="color:var(--signal)">${st.eur!=null?'€ '+st.eur.toFixed(2):'—'}</div></div>
         <div class="spec"><div class="k">${t('runTot')}</div><div class="v">${st.cum!=null?'€ '+st.cum.toFixed(2):'—'}</div></div>`:''}
         ${(()=>{const f=costFull(s); return f?`<div class="spec"><div class="k">${t('fullCh')}</div><div class="v">€ ${f.eur.toFixed(2)}</div></div>
@@ -1639,13 +1659,14 @@ async function selectRoute(i){
   route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
   summary={km:cum[cum.length-1],sec:cumT[cumT.length-1]};
 
-  if(altCache[i]){ stations=altCache[i].st; pois=altCache[i].po; usingDemo=altCache[i].demo; render(); }
+  if(altCache[i]){ stations=altCache[i].st; pois=altCache[i].po;
+                   usingDemo=altCache[i].demo; ocmErr=altCache[i].err||''; render(); }
   else{
     render();                       // mostro subito la nuova rotta con i dati vecchi
     toast(t('tSeek'));
     await fetchOCM();
     pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : [];
-    altCache[i]={st:stations,po:pois,demo:usingDemo};
+    altCache[i]={st:stations,po:pois,demo:usingDemo,err:ocmErr};
     render();
     toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
   }
@@ -1730,7 +1751,7 @@ function paintSettings(){
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('refv',S.refv); v('avgkw',S.avgkw);
+  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve); v('refv',S.refv); v('vplan',S.vplan); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
@@ -1799,6 +1820,32 @@ document.getElementById('addOp').onclick=()=>{
 document.getElementById('newOp').addEventListener('keydown',e=>{
   if(e.key==='Enter') document.getElementById('addOp').click();
 });
+document.getElementById('testKey').onclick=async()=>{
+  const out=document.getElementById('testOut');
+  const chiave=document.getElementById('ockey').value.trim();
+  if(!chiave){ out.innerHTML=`<span style="color:var(--alert)">${t('testNo')}</span>`; return; }
+  out.textContent=t('testing');
+  const prova=async viaHeader=>{
+    const u=new URL('https://api.openchargemap.io/v3/poi/');
+    u.searchParams.set('output','json');
+    u.searchParams.set('latitude',me.lat); u.searchParams.set('longitude',me.lng);
+    u.searchParams.set('distance',50); u.searchParams.set('distanceunit','KM');
+    u.searchParams.set('maxresults',20); u.searchParams.set('compact','true');
+    const opt={};
+    if(viaHeader) opt.headers={'X-API-Key':chiave}; else u.searchParams.set('key',chiave);
+    const r=await fetch(u,opt);
+    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
+    return r.json();
+  };
+  try{
+    let d;
+    try{ d=await prova(false); }
+    catch(e){ if(e.status===401||e.status===403){ d=await prova(true); } else throw e; }
+    out.innerHTML=`<span style="color:var(--live)">${t('testOkA')} ${d.length} ${t('testOkB')}</span>`;
+  }catch(e){
+    out.innerHTML=`<span style="color:var(--alert)">${t('testFail')} ${descriviErrore(e)}</span>`;
+  }
+};
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
@@ -1808,6 +1855,7 @@ document.getElementById('saveSet').onclick=async()=>{
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
   S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
   S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
+  S.vplan=Math.max(60,Math.min(200,+g('vplan').value||130));
   S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
