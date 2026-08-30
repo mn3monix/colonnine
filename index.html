@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.8';
+const APP_VERSION='1.15.9';
 const APP_DATE='30.08.2026';
 
 
@@ -1221,25 +1221,38 @@ const OVERPASS=[
   'https://overpass.private.coffee/api/interpreter'
 ];
 async function fetchOSM(){
-  // punti radi: la ricerca "around" su una linea lunga è costosa per il server
-  const pts=[]; let last=-999;
-  for(let i=0;i<route.length;i++) if(cum[i]-last>40){ pts.push(route[i]); last=cum[i]; }
-  if(!pts.length) return [];
-  const raggio=Math.round(Math.min(10,Math.max(1,S.corridor))*1000);
-  const linea=pts.slice(0,60).map(p=>`${p.lat.toFixed(3)},${p.lng.toFixed(3)}`).join(',');
-  const q=`[out:json][timeout:60];node(around:${raggio},${linea})["amenity"="charging_station"];out body 2000;`;
+  // riquadri invece di "around": per Overpass sono indicizzati, quindi rapidissimi.
+  // la precisione la mettiamo noi dopo, filtrando sulla distanza dal percorso.
+  const pad=Math.min(12,Math.max(1,S.corridor))/111;
+  const box=[]; let i0=0;
+  while(i0<route.length-1 && box.length<20){
+    const partenza=cum[i0];
+    let i1=i0;
+    while(i1<route.length-1 && cum[i1]-partenza<150) i1++;
+    let s=90,w=180,n=-90,e=-180;
+    for(let i=i0;i<=i1;i++){
+      s=Math.min(s,route[i].lat); n=Math.max(n,route[i].lat);
+      w=Math.min(w,route[i].lng); e=Math.max(e,route[i].lng);
+    }
+    const kl=pad/Math.max(0.2,Math.cos((s+n)/2*Math.PI/180));
+    box.push(`${(s-pad).toFixed(3)},${(w-kl).toFixed(3)},${(n+pad).toFixed(3)},${(e+kl).toFixed(3)}`);
+    i0=i1;
+  }
+  if(!box.length) return [];
+  const corpo=box.map(b=>`node["amenity"="charging_station"](${b});`).join('');
+  const q=`[out:json][timeout:45];(${corpo});out body 4000;`;
 
   let ultimo=null;
   for(let k=0;k<OVERPASS.length;k++){
     try{
       const r=await fetchTimeout(OVERPASS[k],
         {method:'POST',body:'data='+encodeURIComponent(q),
-         headers:{'Content-Type':'application/x-www-form-urlencoded'}}, 60000);
+         headers:{'Content-Type':'application/x-www-form-urlencoded'}}, 45000);
       if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
       return leggiOSM(await r.json());
     }catch(e){
       ultimo=e;
-      if(k<OVERPASS.length-1) await new Promise(r=>setTimeout(r,1500));   // respiro fra i server
+      if(k<OVERPASS.length-1) await new Promise(r=>setTimeout(r,1200));
     }
   }
   throw ultimo||new Error('nessun server disponibile');
