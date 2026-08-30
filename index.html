@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.7';
+const APP_VERSION='1.15.8';
 const APP_DATE='30.08.2026';
 
 
@@ -611,6 +611,7 @@ it:{
  stopLab:"Sosta",
  retry:"Riprova",
  onlyOcm:"Hai scelto “Solo Open Charge Map”: passa ad Automatico nelle impostazioni per usare anche OpenStreetMap.",
+ searching:"ricerca in corso…",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -691,6 +692,7 @@ en:{
  stopLab:"Charge to",
  retry:"Retry",
  onlyOcm:"You chose “Open Charge Map only”: switch to Automatic in settings to also use OpenStreetMap.",
+ searching:"searching…",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -771,6 +773,7 @@ pl:{
  stopLab:"Ładuj do",
  retry:"Ponów",
  onlyOcm:"Wybrałeś „Tylko Open Charge Map”: przełącz na Automatycznie w ustawieniach, aby użyć też OpenStreetMap.",
+ searching:"szukam…",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1113,14 +1116,14 @@ async function fetchOCM(){
       if(viaHeader) opt.headers={'X-API-Key':S.ockey};
       else u.searchParams.set('key',S.ockey);
     }
-    const r=await fetchTimeout(u,opt,20000);
+    const r=await fetchTimeout(u,opt,8000);
     if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
     return r.json();
   }
 
   let usaHeader=false, diFila=0;
   for(const p of probes.slice(0,26)){
-    if(diFila>=3) break;          // il servizio non risponde: inutile insistere
+    if(diFila>=2) break;          // il servizio non risponde: inutile insistere
     tentate++;
     let dati=null;
     try{ dati=await chiedi(p,usaHeader); }
@@ -1156,15 +1159,18 @@ let fonte='', diario='mai eseguita';     // cosa è successo all'ultima ricerca
 async function fetchStations(){
   ocmErr=''; fonte='';
   const t0=new Date();
-  diario=`avviata ${fmtClock(t0)} · fonte ${S.source}`;
+  const passo=x=>{ diario=`${fmtClock(t0)} · ${x}`; try{ render(); }catch(e){} };
+  passo(`${S.source} · ${t('searching')}`);
   let got=[];
 
   if(S.source!=='osm'){
+    passo('Open Charge Map · '+t('searching'));
     try{ got=await fetchOCM(); }catch(e){ ocmErr=ocmErr||descriviErrore(e); }
     if(got.length) fonte='ocm';
   }
   if(!got.length && S.source!=='ocm'){
     try{
+      passo('OpenStreetMap · '+t('searching'));
       toast(t('tOsm')+'…');
       got=await fetchOSM();
       if(got.length) fonte='osm';
@@ -1193,7 +1199,7 @@ function descriviErrore(e){
   if(e&&e.status===403) return 'HTTP 403 — chiave non valida o non abilitata';
   if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra qualche minuto';
   if(e&&e.status) return 'HTTP '+e.status;
-  if(e&&e.name==='AbortError') return 'nessuna risposta entro 20 secondi';
+  if(e&&e.name==='AbortError') return 'nessuna risposta nel tempo massimo';
   if(e&&e.name==='TypeError') return 'richiesta bloccata dal browser (CORS, blocco pubblicità o rete)';
   return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
 }
