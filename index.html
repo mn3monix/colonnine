@@ -496,7 +496,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.10.1';
+const APP_VERSION='1.10.2';
 const APP_DATE='30.08.2026';
 
 
@@ -742,7 +742,7 @@ const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay
   .map(n=>{const c=CATALOG.find(x=>x.nm===n);
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
-let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:10, avgkw:110, car:'Tesla Model Y AWD (2025+)',
+let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:15, avgkw:110, car:'Tesla Model Y AWD (2025+)',
         refv:110, eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
@@ -801,7 +801,7 @@ function fmtClock(d){ return d.toLocaleTimeString(loc(),{hour:'2-digit',minute:'
 let map=null,traffic=null,dirRenderer=null,meMarker=null,placesSvc=null;
 let route=[],cum=[],cumT=[],hwy=[];
 let markers=[],stations=[],pois=[],selected=null,summary=null;
-let altRes=null,altProfs=[],altIdx=0,altCache={},usingDemo=true;
+let altRes=null,altProfs=[],altIdx=0,altCache={},usingDemo=true,ocmErr='';
 let me={lat:43.912,lng:10.223};
 
 function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
@@ -1008,35 +1008,66 @@ async function fetchOCM(){
   const probes=[]; let last=-999;
   for(let i=0;i<route.length;i++) if(cum[i]-last>60){ probes.push(route[i]); last=cum[i]; }
   const seen=new Set(),got=[];
-  for(const p of probes.slice(0,26)){
+  ocmErr='';
+  let tentate=0, riuscite=0;
+
+  async function chiedi(p,viaHeader){
     const u=new URL('https://api.openchargemap.io/v3/poi/');
     u.searchParams.set('output','json');
     u.searchParams.set('latitude',p.lat); u.searchParams.set('longitude',p.lng);
     u.searchParams.set('distance',35); u.searchParams.set('distanceunit','KM');
     u.searchParams.set('maxresults',60); u.searchParams.set('compact','true');
     u.searchParams.set('minpowerkw',S.minkw||50);
-    if(S.ockey) u.searchParams.set('key',S.ockey);
-    try{
-      const r=await fetch(u); if(!r.ok) continue;
-      for(const poi of await r.json()){
-        if(seen.has(poi.ID)) continue; seen.add(poi.ID);
-        const c=poi.Connections||[];
-        got.push({
-          name:poi.AddressInfo?.Title||'Colonnina',
-          town:poi.AddressInfo?.Town||'',
-          operator:poi.OperatorInfo?.Title||'—',
-          lat:poi.AddressInfo?.Latitude, lng:poi.AddressInfo?.Longitude,
-          kw:Math.max(0,...c.map(x=>x.PowerKW||0)),
-          pts:poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
-          live:poi.StatusType?poi.StatusType.IsOperational!==false:true,
-          declared:(poi.UsageCost||'').trim()
-        });
-      }
-    }catch(e){}
+    const opt={};
+    if(S.ockey){
+      if(viaHeader) opt.headers={'X-API-Key':S.ockey};
+      else u.searchParams.set('key',S.ockey);
+    }
+    const r=await fetch(u,opt);
+    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
+    return r.json();
   }
+
+  let usaHeader=false;
+  for(const p of probes.slice(0,26)){
+    tentate++;
+    let dati=null;
+    try{ dati=await chiedi(p,usaHeader); }
+    catch(err){
+      // se la chiave in coda all'indirizzo viene rifiutata, riprovo con l'intestazione
+      if(!usaHeader && S.ockey && (err.status===401||err.status===403)){
+        try{ dati=await chiedi(p,true); usaHeader=true; }
+        catch(e2){ ocmErr=ocmErr||descriviErrore(e2); }
+      } else ocmErr=ocmErr||descriviErrore(err);
+    }
+    if(!dati) continue;
+    riuscite++;
+    for(const poi of dati){
+      if(seen.has(poi.ID)) continue; seen.add(poi.ID);
+      const c=poi.Connections||[];
+      got.push({
+        name:poi.AddressInfo?.Title||'Colonnina',
+        town:poi.AddressInfo?.Town||'',
+        operator:poi.OperatorInfo?.Title||'—',
+        lat:poi.AddressInfo?.Latitude, lng:poi.AddressInfo?.Longitude,
+        kw:Math.max(0,...c.map(x=>x.PowerKW||0)),
+        pts:poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
+        live:poi.StatusType?poi.StatusType.IsOperational!==false:true,
+        declared:(poi.UsageCost||'').trim()
+      });
+    }
+  }
+  if(riuscite&&!got.length) ocmErr='0 risultati su '+riuscite+' zone';
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  if(usingDemo) toast(S.ockey?t('tDemoNo'):t('tDemoKey'));
+  if(usingDemo) toast(S.ockey?('Open Charge Map: '+(ocmErr||'nessun dato')):t('tDemoKey'));
+}
+function descriviErrore(e){
+  if(e&&e.status===401) return 'HTTP 401 — chiave rifiutata';
+  if(e&&e.status===403) return 'HTTP 403 — chiave non valida o mancante';
+  if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra poco';
+  if(e&&e.status) return 'HTTP '+e.status;
+  return 'rete bloccata o CORS';   // fetch fallita prima della risposta
 }
 
 /* ============================================================
@@ -1283,7 +1314,7 @@ function render(){
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? ' '+t('demoNote') : ' '+t('elseNote'))+
+          ? ' '+t('demoNote')+(ocmErr?` <b>(${ocmErr})</b>`:'') : ' '+t('elseNote'))+
         `</span>`+(P.length?`<button id="usePlan">${t('use')}</button>`:'');
     } else if(!P.length){
       box.innerHTML=`<span class="txt">${t('noStop')} <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
