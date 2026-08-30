@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.2';
+const APP_VERSION='1.15.3';
 const APP_DATE='30.08.2026';
 
 
@@ -2030,7 +2030,9 @@ document.getElementById('testKey').onclick=async()=>{
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
-  const prev=S.gkey, prevOc=S.ockey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
+  const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
+  // tutto ciò che cambia i dati delle colonnine: se cambia, si ricerca di nuovo
+  const primaDati=JSON.stringify([S.ockey,S.source,S.minkw,S.corridor]);
   const prevLang=S.lang; S.lang=g('lang').value;
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
@@ -2048,7 +2050,7 @@ document.getElementById('saveSet').onclick=async()=>{
   document.getElementById('settings').classList.remove('show');
   if(S.gkey&&S.gkey!==prev&&!map){ bootMap(); return; }
   // chiave OCM cambiata: rifaccio subito la ricerca, senza aspettare un nuovo Traccia
-  if(S.ockey!==prevOc && route.length){
+  if(JSON.stringify([S.ockey,S.source,S.minkw,S.corridor])!==primaDati && route.length){
     altCache={}; toast(t('tSeek'));
     await fetchStations(); render();
     toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
