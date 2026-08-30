@@ -466,7 +466,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.8';
+const APP_VERSION='1.8.1';
 const APP_DATE='30.08.2026';
 
 const CATS=[
@@ -540,7 +540,7 @@ function fmtClock(d){ return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute
 let map=null,traffic=null,dirRenderer=null,meMarker=null,placesSvc=null;
 let route=[],cum=[],cumT=[],hwy=[];
 let markers=[],stations=[],pois=[],selected=null,summary=null;
-let altRes=null,altProfs=[],altIdx=0,altCache={};
+let altRes=null,altProfs=[],altIdx=0,altCache={},usingDemo=true;
 let me={lat:43.912,lng:10.223};
 
 function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
@@ -742,8 +742,9 @@ async function fetchOCM(){
       }
     }catch(e){}
   }
+  usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  if(!got.length) toast(S.ockey?'Open Charge Map non risponde':'Serve la chiave Open Charge Map — set dimostrativo');
+  if(usingDemo) toast(S.ockey?'Open Charge Map non risponde — set dimostrativo':'Serve la chiave Open Charge Map — set dimostrativo');
 }
 
 /* ============================================================
@@ -902,7 +903,7 @@ function render(){
   if(summary){
     const eta=new Date(Date.now()+summary.sec*1000);
     const g=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
-    head.innerHTML=`<b>${rows.length}</b> colonnine${views.length?` · <b>${views.length}</b> da vedere`:''} · ${Math.round(summary.km)} km<br>`+
+    head.innerHTML=`<b>${rows.length}</b> colonnine${usingDemo?' (demo)':''}${views.length?` · <b>${views.length}</b> da vedere`:''} · ${Math.round(summary.km)} km<br>`+
       `${fmtDur(summary.sec)} · arrivo <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
   } else head.innerHTML=rows.length?`<b>${rows.length}</b> colonnine`:'—';
 
@@ -921,8 +922,10 @@ function render(){
       const tot=P.reduce((a,p)=>a+p.min,0);
       box.innerHTML=`<span class="txt bad">Piano incompleto: dopo ${dove} km non trovo colonnine raggiungibili.`+
         (P.length?` Le prime ${P.length} soste (${fmtDur(tot*60)}) reggono.`:'')+
-        ` Allarga la deviazione, abbassa la potenza minima o togli il filtro sugli operatori.</span>`+
-        (P.length?`<button id="usePlan">Usa</button>`:'');
+        (usingDemo
+          ? ` <b>Stai usando il set dimostrativo di 11 colonnine</b>, che lascia buchi enormi: inserisci la chiave Open Charge Map nelle impostazioni e ritraccia.`
+          : ` Allarga la deviazione, abbassa la potenza minima o togli il filtro sugli operatori.`)+
+        `</span>`+(P.length?`<button id="usePlan">Usa</button>`:'');
     } else if(!P.length){
       box.innerHTML=`<span class="txt">Arrivi a destinazione senza ricaricare, con circa <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
     } else {
