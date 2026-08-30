@@ -70,6 +70,8 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 #sheet{flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
   max-height:44vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
 .sheet-head{display:flex;align-items:baseline;justify-content:space-between;padding:11px 14px 8px;flex:none;gap:12px}
+.ver{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.02em;
+  color:var(--ice-dim);opacity:.65;text-transform:none;margin-left:7px;font-weight:400}
 .sheet-head h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;
   font-size:17px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim)}
 .sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
@@ -246,7 +248,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 
   <div id="sheet">
     <div class="sheet-head">
-      <h2>Sul tratto residuo</h2>
+      <h2>Sul tratto residuo<span class="ver" id="ver"></span></h2>
       <span class="sum" id="count">—</span>
     </div>
     <div id="stops">
@@ -264,7 +266,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 
 <div id="settings">
   <h2>Impostazioni</h2>
-  <p class="hint">Restano su questo dispositivo.</p>
+  <p class="hint">Restano su questo dispositivo. <span id="verSet"></span></p>
 
   <h4>Percorso</h4>
   <div class="sw"><span class="t">Evita le autostrade<small>Strade normali, tempi molto più lunghi</small></span>
@@ -434,6 +436,9 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
+const APP_VERSION='1.6';
+const APP_DATE='30.08.2026';
+
 const CATS=[
   {id:'panorami',nm:'Panorami e belvedere', kw:'belvedere punto panoramico Aussichtspunkt punkt widokowy viewpoint'},
   {id:'natura',  nm:'Laghi, cascate, gole', type:'natural_feature', kw:'lago cascata gola See Wasserfall jezioro'},
@@ -1228,6 +1233,8 @@ document.getElementById('go').onclick=trace;
 document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Enter') trace(); });
 
 (async()=>{
+  document.getElementById('ver').textContent='v'+APP_VERSION;
+  document.getElementById('verSet').textContent=`Versione ${APP_VERSION} del ${APP_DATE}.`;
   await load(); paintSoc();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
   stations=DEMO.slice(); bootMap(); renderStops(); applyWake(); render();
