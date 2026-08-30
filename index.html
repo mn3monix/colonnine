@@ -305,6 +305,12 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
       <span class="val" id="arrVal">15%</span>
     </div>
     <div class="soc duo">
+      <label for="dstArr" data-t="destLab">Destinazione</label>
+      <input id="dstArr" type="number" min="1" max="90" step="1" value="15">
+      <span class="sep"></span>
+      <span class="val">%</span>
+    </div>
+    <div class="soc duo">
       <label for="tminH" data-t="stopLab">Sosta</label>
       <input id="tminH" type="number" min="20" max="95" step="5" value="60">
       <span class="sep">→</span>
@@ -512,7 +518,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='2.1.2';
+const APP_VERSION='2.2';
 const APP_DATE='30.08.2026';
 
 
@@ -588,6 +594,7 @@ it:{ trace:"Traccia",
  searching:"ricerca in corso…", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
  destPh:"Destinazione — es. Bydgoszcz",
  acOld:"Suggerimenti non disponibili: abilita “Places API (New)” nella console Google e aggiungila alle restrizioni della chiave. Intanto puoi scrivere il nome per esteso.",
+ destLab:"Destinazione",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -660,6 +667,7 @@ en:{ trace:"Route",
  searching:"searching…", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
  destPh:"Destination — e.g. Bydgoszcz",
  acOld:"Suggestions unavailable: enable “Places API (New)” in the Google console and add it to the key restrictions. Meanwhile you can type the full name.",
+ destLab:"Destination",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -732,6 +740,7 @@ pl:{ trace:"Wyznacz",
  searching:"szukam…", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
  destPh:"Cel — np. Bydgoszcz",
  acOld:"Podpowiedzi niedostępne: włącz „Places API (New)” w konsoli Google i dodaj do ograniczeń klucza. Na razie wpisz pełną nazwę.",
+ destLab:"Cel",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -762,7 +771,7 @@ const DEFAULT_OPS=['Tesla Supercharger']
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
 let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:15, avgkw:110, car:'Tesla Model Y AWD (2025+)',
-        refv:110, vplan:130, tmin:60, tmax:80, eff:0.92, corridor:6, minkw:50,
+        refv:110, vplan:130, tmin:60, tmax:80, destsoc:15, eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         source:'auto', cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
         lang:'it', traffic:true, cats:['panorami','natura','passi','borghi'],
@@ -930,12 +939,13 @@ function socForKm(km){ return km*whEff()/1000/S.kwh*100; }
 function buildPlan(rows){
   const soc0=+document.getElementById('soc').value;
   const dest=summary?summary.km:(rows.length?rows[rows.length-1].km:0);
-  const TMIN=S.tmin||60, TMAX=S.tmax||80, ARR=S.reserve;
+  const TMIN=S.tmin||60, TMAX=S.tmax||80, ARR=S.reserve, DST=S.destsoc!=null?S.destsoc:S.reserve;
 
   // quanto carichi a una sosta: il minimo per la tratta seguente, ma mai
-  // meno della carica minima e mai oltre la massima
-  function bersaglio(arr,kmProssimo){
-    const serve=ARR+socForKm(kmProssimo);
+  // meno della carica minima e mai oltre la massima. L'ultima tratta punta
+  // alla carica che vuoi avere a destinazione, non a quella delle colonnine.
+  function bersaglio(arr,kmProssimo,ultima){
+    const serve=(ultima?DST:ARR)+socForKm(kmProssimo);
     return Math.min(TMAX, Math.max(serve, TMIN, arr));
   }
 
@@ -943,7 +953,7 @@ function buildPlan(rows){
   function catena(){
     const plan=[]; let pos=0, soc=soc0, fail=false;
     for(let guard=0; guard<25; guard++){
-      if(kmFromSoc(soc-ARR)>=dest-pos) break;
+      if(kmFromSoc(soc-DST)>=dest-pos) break;      // a destinazione conta DST
       const cand=rows.filter(s=>s.km>pos+1 && s.km-pos<=kmFromSoc(soc-ARR));
       if(!cand.length){ fail=true; break; }
       const maxKm=Math.max(...cand.map(c=>c.km));
@@ -966,7 +976,7 @@ function buildPlan(rows){
       plan[i].arr=soc-socForKm(plan[i].s.km-pos);
       plan[i].vmax=speedFor(plan[i].s.km-pos, soc, ARR);
       const nextKm=(i+1<plan.length)?plan[i+1].s.km:dest;
-      plan[i].target=bersaglio(plan[i].arr, nextKm-plan[i].s.km);
+      plan[i].target=bersaglio(plan[i].arr, nextKm-plan[i].s.km, i+1>=plan.length);
       plan[i].kwh=Math.max(0,(plan[i].target-plan[i].arr)/100*S.kwh)/S.eff;
       const o=opFor(plan[i].s.operator);
       plan[i].eur=o?plan[i].kwh*o.price+(o.fee||0):null;
@@ -976,7 +986,7 @@ function buildPlan(rows){
     }
     if(plan.length){
       const u=plan[plan.length-1];
-      plan.vFinal=speedFor(dest-u.s.km, u.target, ARR);
+      plan.vFinal=speedFor(dest-u.s.km, u.target, DST);
     }
     return plan;
   }
@@ -989,10 +999,10 @@ function buildPlan(rows){
       if(arr<ARR-0.01) return false;
       const idx=plan.indexOf(p);
       const nextKm=(idx+1<plan.length)?plan[idx+1].s.km:dest;
-      soc=bersaglio(arr,nextKm-p.s.km);
+      soc=bersaglio(arr,nextKm-p.s.km, idx+1>=plan.length);
       pos=p.s.km;
     }
-    return soc-socForKm(dest-pos) >= ARR-0.01;
+    return soc-socForKm(dest-pos) >= DST-0.01;
   }
 
   let {plan,fail}=catena();
@@ -1969,12 +1979,20 @@ function paintSoc(){
 }
 socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
 
+const dstEl=document.getElementById('dstArr');
+let dstTimer=null;
+dstEl.onchange=()=>{
+  S.destsoc=Math.max(1,Math.min(90,+dstEl.value||15));
+  dstEl.value=S.destsoc; render();
+  clearTimeout(dstTimer); dstTimer=setTimeout(save,400);
+};
+
 const tminEl=document.getElementById('tminH'), tmaxEl=document.getElementById('tmaxH');
 let duoTimer=null;
 function applicaDuo(){
   S.tmax=Math.min(100,Math.max(30,+tmaxEl.value||80));
   S.tmin=Math.min(S.tmax-5,Math.max(20,+tminEl.value||60));
-  tminEl.value=S.tmin; tmaxEl.value=S.tmax;
+  tminEl.value=S.tmin; tmaxEl.value=S.tmax; dstEl.value=S.destsoc;
   render(); if(selected&&!selected.poi) openDetail(selected);
   clearTimeout(duoTimer); duoTimer=setTimeout(save,400);
 }
@@ -2012,7 +2030,7 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
   await load(); applyI18n(); paintSoc();
   document.getElementById('vpl').value=S.vplan||130; paintVpl();
   document.getElementById('arr').value=S.reserve; paintArr();
-  tminEl.value=S.tmin; tmaxEl.value=S.tmax;
+  tminEl.value=S.tmin; tmaxEl.value=S.tmax; dstEl.value=S.destsoc;
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
   stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
   if(!S.gkey) toast(t('tKeyAsk'));
