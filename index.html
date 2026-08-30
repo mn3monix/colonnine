@@ -527,7 +527,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.15.3';
+const APP_VERSION='1.15.5';
 const APP_DATE='30.08.2026';
 
 
@@ -609,6 +609,7 @@ it:{
  lTmin:"Carica minima quando ti fermi (%)", lTmax:"Carica massima (%)", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
  arrLab:"Arrivo",
  stopLab:"Sosta",
+ retry:"Riprova",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -687,6 +688,7 @@ en:{
  lTmin:"Minimum charge when you stop (%)", lTmax:"Maximum charge (%)", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
  arrLab:"On arrival",
  stopLab:"Charge to",
+ retry:"Retry",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -765,6 +767,7 @@ pl:{
  lTmin:"Minimalny ładunek przy postoju (%)", lTmax:"Maksymalny ładunek (%)", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
  arrLab:"Po dojeździe",
  stopLab:"Ładuj do",
+ retry:"Ponów",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -1146,9 +1149,11 @@ async function fetchOCM(){
   return got;
 }
 
-let fonte='';                       // quale fonte ha prodotto i dati mostrati
+let fonte='', diario='mai eseguita';     // cosa è successo all'ultima ricerca
 async function fetchStations(){
   ocmErr=''; fonte='';
+  const t0=new Date();
+  diario=`avviata ${fmtClock(t0)} · fonte ${S.source}`;
   let got=[];
 
   if(S.source!=='osm'){
@@ -1166,6 +1171,9 @@ async function fetchStations(){
 
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
+  diario=`${fmtClock(t0)} · ${S.source} · ${got.length} colonnine`+
+         (ocmErr?` · ${ocmErr}`:'')+(osmNota?` · ${osmNota}`:'');
+  console.log('[colonnine]',diario);
   if(usingDemo) toast(S.source==='osm'?t('tOsmFail'):(S.ockey?('Open Charge Map: '+(ocmErr||'nessun dato')):t('tDemoKey')));
   else if(fonte==='osm') toast(`${got.length} · ${t('osmCredit')}`);
 }
@@ -1501,9 +1509,11 @@ function render(){
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? (S.source==='osm' ? ' '+t('tOsmFail') : ' '+t('demoNote'))+(ocmErr?` <b>(${ocmErr})</b>`:'')
+          ? (S.source==='osm' ? ' '+t('tOsmFail') : ' '+t('demoNote'))+
+            `<br><b style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">${diario}</b>`
           : ' '+t('elseNote'))+
-        `</span>`+(P.length?`<button id="usePlan">${t('use')}</button>`:'');
+        `</span>`+(usingDemo?`<button id="retryData">${t('retry')}</button>`
+                            :(P.length?`<button id="usePlan">${t('use')}</button>`:''));
     } else if(!P.length){
       box.innerHTML=`<span class="txt">${t('noStop')} <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
     } else {
@@ -1569,6 +1579,13 @@ function render(){
     el.onclick=()=>openDetail(s);
     list.appendChild(el);
   });
+  const rt=document.getElementById('retryData');
+  if(rt) rt.onclick=async()=>{
+    altCache={}; ocmErr=''; toast(t('tSeek'));
+    await fetchStations(); render();
+    toast(usingDemo ? (ocmErr||t('tOsmFail'))
+                    : `${filterAhead().length} ${t('chargers')}`);
+  };
   const up=document.getElementById('usePlan');
   if(up) up.onclick=async()=>{
     S.stops=PLAN.plan.slice(0,9).map(p=>({name:p.s.name,lat:p.s.lat,lng:p.s.lng,
