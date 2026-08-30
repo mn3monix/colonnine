@@ -76,8 +76,12 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .stn .right{text-align:right;font-family:'IBM Plex Mono',monospace;flex:none}
 .stn .km{font-size:19px;font-weight:600;letter-spacing:-.02em}
 .stn .km small{font-size:11px;color:var(--ice-dim);font-weight:400}
+.stn .tm{font-size:12.5px;color:var(--ice-dim);margin-top:1px}
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
 .stn .eur.none{color:var(--ice-dim)}
+.sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  color:var(--ice-dim);text-align:right;line-height:1.35}
+.sheet-head .sum b{color:var(--ice);font-weight:500}
 
 #detail{position:fixed;inset:0;background:rgba(5,12,17,.72);backdrop-filter:blur(6px);
   display:none;align-items:flex-end;z-index:40}
@@ -147,9 +151,9 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   border-radius:10px;padding:10px 12px;outline:none;min-width:0}
 .add-row input:focus{border-color:var(--signal)}
 
-.gear{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:10;
-  background:rgba(14,26,34,.9);border:1px solid var(--deep-3);border-radius:10px;
-  width:38px;height:38px;display:grid;place-items:center;font-size:17px}
+.gear{flex:none;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:10px;
+  width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--ice-dim)}
+.gear:active{border-color:var(--signal)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--deep-3);
   border:1px solid var(--ice-dim);border-radius:10px;padding:9px 15px;font-size:13.5px;
   z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
@@ -164,6 +168,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
     <div class="route-row">
       <input id="dest" type="text" placeholder="Destinazione — es. Bydgoszcz" autocomplete="off">
       <button class="btn primary" id="go">Traccia</button>
+      <button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
     </div>
     <div class="soc">
       <label for="soc">Carica ora</label>
@@ -181,13 +186,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   <div id="sheet">
     <div class="sheet-head">
       <h2>Sul tratto residuo</h2>
-      <span class="count" id="count">—</span>
+      <span class="sum" id="count">—</span>
     </div>
     <div id="list"></div>
   </div>
 </div>
-
-<button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
 
 <div id="detail" role="dialog" aria-modal="true"><div class="card" id="detailCard"></div></div>
 
@@ -330,8 +333,19 @@ function segDist(p,a,b){
    Stato
    ============================================================ */
 let map=null,traffic=null,dirRenderer=null,meMarker=null;
-let route=[],cum=[],markers=[],stations=[],selected=null;
+let route=[],cum=[],cumT=[],markers=[],stations=[],selected=null;
+let summary=null;
 let me={lat:43.912,lng:10.223};
+
+function fmtDur(sec){
+  if(!isFinite(sec)||sec<0) return '—';
+  const m=Math.round(sec/60);
+  if(m<60) return m+' min';
+  return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0');
+}
+function fmtClock(d){
+  return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
 
 function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
 function opFor(name){
@@ -351,16 +365,30 @@ function buildCum(){ cum=[0]; for(let i=1;i<route.length;i++) cum[i]=cum[i-1]+ha
 function myIndex(){ let b=0,bd=Infinity;
   for(let i=0;i<route.length;i++){ const d=hav(me,route[i]); if(d<bd){bd=d;b=i;} } return b; }
 
+// secondi di viaggio corrispondenti a una distanza percorsa lungo la rotta
+function timeAt(km){
+  if(!cumT.length) return NaN;
+  if(km<=0) return 0;
+  const tot=cum[cum.length-1];
+  if(km>=tot) return cumT[cumT.length-1];
+  let lo=0,hi=cum.length-1;
+  while(hi-lo>1){ const mid=(lo+hi)>>1; if(cum[mid]<=km) lo=mid; else hi=mid; }
+  const span=cum[hi]-cum[lo];
+  const f=span>0?(km-cum[lo])/span:0;
+  return cumT[lo]+f*(cumT[hi]-cumT[lo]);
+}
+
 function filterAhead(){
   if(!route.length) return stations.map(s=>({...s,km:hav(me,s)})).sort((a,b)=>a.km-b.km);
-  const i0=myIndex(), base=cum[i0], out=[];
+  const i0=myIndex(), base=cum[i0], baseT=timeAt(base), out=[];
   for(const s of stations){
     let bd=Infinity,at=0;
     for(let i=Math.max(0,i0-1);i<route.length-1;i++){
       const r=segDist(s,route[i],route[i+1]);
       if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); }
     }
-    if(bd<=S.corridor && at>=base-1) out.push({...s,km:at-base,off:bd});
+    if(bd<=S.corridor && at>=base-1)
+      out.push({...s,km:at-base,off:bd,sec:timeAt(at)-baseT});
   }
   return out.sort((a,b)=>a.km-b.km);
 }
@@ -434,7 +462,15 @@ function toast(m){
 
 function render(){
   const rows=filterAhead(), list=document.getElementById('list');
-  document.getElementById('count').textContent = rows.length ? rows.length+' colonnine' : '—';
+  const head=document.getElementById('count');
+  if(summary){
+    const eta=new Date(Date.now()+summary.sec*1000);
+    const giorni=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
+    head.innerHTML=`<b>${rows.length}</b> colonnine · ${Math.round(summary.km)} km<br>`+
+      `${fmtDur(summary.sec)} · arrivo <b>${fmtClock(eta)}</b>${giorni>0?' +'+giorni:''}`;
+  } else {
+    head.innerHTML = rows.length ? `<b>${rows.length}</b> colonnine` : '—';
+  }
   list.innerHTML='';
   if(!rows.length){
     list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga il corridoio nelle impostazioni.</p>';
@@ -452,6 +488,7 @@ function render(){
       </span>
       <span class="right">
         <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
+        ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
         <span class="eur ${c.eur==null?'none':''}">${c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?'tariffa ?':'—')}</span>
       </span>`;
     el.onclick=()=>openDetail(s);
@@ -477,6 +514,8 @@ function openDetail(s){
     </div>
     <div class="specs">
       <div class="spec"><div class="k">Distanza</div><div class="v">${s.km!=null?(s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'):'—'}</div></div>
+      <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
+      <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
       <div class="spec"><div class="k">Fuori percorso</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
       <div class="spec"><div class="k">Potenza</div><div class="v">${Math.round(s.kw)} kW</div></div>
       <div class="spec"><div class="k">Punti</div><div class="v">${s.pts||'—'}</div></div>
@@ -579,15 +618,47 @@ async function trace(){
   if(!dest) return toast('Scrivi una destinazione');
   if(!map) return toast('Serve la chiave Google per calcolare il percorso');
   new google.maps.DirectionsService().route(
-    {origin:me,destination:dest,travelMode:'DRIVING'},
+    { origin:me, destination:dest, travelMode:'DRIVING',
+      drivingOptions:{ departureTime:new Date(), trafficModel:'bestguess' } },
     async (res,st)=>{
       if(st!=='OK') return toast('Percorso non trovato: '+st);
       dirRenderer.setDirections(res);
-      route=res.routes[0].overview_path.map(p=>({lat:p.lat(),lng:p.lng()}));
-      buildCum(); toast('Cerco le colonnine…');
+
+      // profilo distanza+tempo costruito passo per passo, non sul tracciato generale:
+      // così il tempo di ogni colonnina tiene conto di autostrada e statale
+      route=[]; cum=[0]; cumT=[0];
+      let totSec=0;
+      for(const leg of res.routes[0].legs){
+        // se il traffico è disponibile, usalo per scalare i tempi dei singoli passi
+        const base=leg.duration?.value||0;
+        const real=leg.duration_in_traffic?.value||base;
+        const k=base>0?real/base:1;
+        for(const step of leg.steps){
+          const pts=step.path||step.lat_lngs||[];
+          if(pts.length<2) continue;
+          const sSec=(step.duration?.value||0)*k;
+          let sKm=0; const seg=[];
+          for(let i=1;i<pts.length;i++){
+            const a={lat:pts[i-1].lat(),lng:pts[i-1].lng()};
+            const b={lat:pts[i].lat(),lng:pts[i].lng()};
+            const d=hav(a,b); sKm+=d; seg.push({p:b,d});
+          }
+          if(!route.length) route.push({lat:pts[0].lat(),lng:pts[0].lng()});
+          for(const {p,d} of seg){
+            route.push(p);
+            cum.push(cum[cum.length-1]+d);
+            cumT.push(cumT[cumT.length-1]+(sKm>0?sSec*(d/sKm):0));
+          }
+          totSec+=sSec;
+        }
+      }
+      summary={ km:cum[cum.length-1], sec:cumT[cumT.length-1] };
+
+      toast('Cerco le colonnine…');
       await fetchOCM(); render();
       const nuovi=unconfigured().length;
-      toast('Percorso: '+Math.round(cum.at(-1))+' km'+(nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
+      toast(`${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
+            (nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
     });
 }
 
