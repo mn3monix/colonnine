@@ -353,16 +353,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <input type="checkbox" id="traffic"></div>
 
   <h4 data-t="hChar">Colonnine</h4>
-  <div class="field">
-    <label for="source" data-t="lSource"></label>
-    <select id="source">
-      <option value="auto" data-t="srcAuto"></option>
-      <option value="ocm" data-t="srcOcm"></option>
-      <option value="osm" data-t="srcOsm"></option>
-      <option value="tesla" data-t="srcTesla"></option>
-    </select>
-  </div>
-  <p class="hint" data-t="hintSrc"></p>
   <div class="field" style="margin-top:9px">
     <label for="cmode" data-t="lWhere">Dove cercarle</label>
     <select id="cmode">
@@ -405,12 +395,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
     <label for="gkey" data-t="lGkey"></label>
     <input id="gkey" type="text" placeholder="AIza…" autocomplete="off" spellcheck="false">
   </div>
-  <div class="field">
-    <label for="ockey" data-t="lOckey"></label>
-    <input id="ockey" type="text" data-tp="ockeyPh" autocomplete="off" spellcheck="false">
-  </div>
-  <button class="btn ghost" id="testKey" style="width:100%" data-t="testKey"></button>
-  <div id="testOut" class="hint" style="margin-top:8px"></div>
 
   <h4 data-t="hCar">Auto</h4>
   <div class="field">
@@ -441,10 +425,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
   <p class="hint" data-t="hintAvg"></p>
   <p class="hint" data-t="hintSp"></p>
   <p class="hint" data-t="hintCar"></p>
-
-  <h4 data-t="hFound">Trovati sul percorso</h4>
-  <p class="hint" data-t="foundTx"></p>
-  <div class="found" id="found"></div>
 
   <h4 data-t="hOps">I tuoi operatori</h4>
   <div class="op-head"><span></span><span data-t="cUse">Usa</span><span data-t="cOp">Operatore</span><span>€/kWh</span><span>Fee</span><span></span></div>
@@ -528,7 +508,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.16.2';
+const APP_VERSION='2.0';
 const APP_DATE='30.08.2026';
 
 
@@ -542,7 +522,7 @@ it:{
  pfFast:"Veloce", pfFastS:"il più rapido", pfSce:"Panoramico", pfSceS:"cosa vedere",
  pfChe:"Economico", pfCheS:"evita pedaggi", socLab:"Carica ora",
  mapOff:"Mappa non attiva", mapOffTx:"Inserisci la chiave Google Maps nelle impostazioni per vedere mappa e traffico. L'elenco qui sotto funziona comunque.",
- sheet:"Sul tratto residuo", chargers:"colonnine", toSee:"da vedere", arrival:"arrivo",
+ sheet:"Sul tratto residuo", chargers:"Supercharger", toSee:"da vedere", arrival:"arrivo",
  straight:"Distanze in linea d'aria. Premi <b>Traccia</b> per avere chilometri reali, tempi, carica all'arrivo e piano delle soste.",
  autonomy:"Autonomia utile", withCharge:"con la carica di adesso",
  stopsN:"soste", stopN:"sosta", charging:"di ricarica", arrIncl:"Arrivo previsto", inclStops:"soste incluse",
@@ -552,7 +532,7 @@ it:{
  lowG:"e non trovo colonnine davanti a te.",
  planCut:"Piano interrotto dopo", planCut2:"da lì non trovo colonnine raggiungibili.", planCut3:"La prima", planCut3b:"Le prime",
  planCut4:"sosta", planCut4b:"soste", hold:"regge.", holdP:"reggono.",
- demoNote:"<b>Stai usando il set dimostrativo di 11 colonnine</b>: inserisci la chiave Open Charge Map e ritraccia.",
+ demoNote:"<b>Set dimostrativo di 8 Supercharger</b>: il registro non è raggiungibile, premi Riprova.",
  elseNote:"In alternativa allarga la deviazione massima o abbassa la potenza minima.",
  empty:"Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.",
  arriveAt:"arrivi", dry:"a secco", tariffQ:"tariffa ?", kmOut:"km fuori", reviews:"recensioni", seeCat:"Da vedere",
@@ -588,7 +568,7 @@ it:{
  foundTx:"Operatori incontrati lungo la strada che non hai ancora configurato.",
  foundNone:"Nessuno per ora. Traccia un percorso e torna qui.",
  cUse:"Usa", cOp:"Operatore", newOpPh:"Aggiungi a mano — es. Atlante", add:"Aggiungi",
- saveClose:"Salva e chiudi", keysTx:"Chiave Google: Maps JavaScript API, Places API, Directions API.<br>Chiave Open Charge Map: openchargemap.org/site/profile/applications",
+ saveClose:"Salva e chiudi", keysTx:"Serve la sola chiave Google: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Impostazioni salvate", tRecalc:"Premi Traccia per ricalcolare il percorso",
  tNoDest:"Scrivi una destinazione", tNoKey:"Serve la chiave Google per calcolare il percorso",
  tCalc:"Calcolo i percorsi…", tNotFound:"Percorso non trovato:", tCompare:"Confronto le alternative…",
@@ -606,7 +586,7 @@ it:{
  testKey:"Prova la chiave", testing:"Provo…", testNo:"Nessuna chiave inserita", testOkA:"Funziona:", testOkB:"colonnine trovate vicino a te", testFail:"Non funziona:",
  lVplan:"Velocità che intendi tenere (km/h)", hintVplan:"È il limite che rispetti in autostrada: 130 in Italia e Austria, 140 in Polonia, libera in molti tratti tedeschi. Tutti i calcoli — autonomia, carica all&#39;arrivo, costi — partono dal consumo a questa velocità.", spOk:"ok a", spSlow:"rallenta a",
  vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.",
- lSource:"Da dove prendere le colonnine", srcAuto:"Automatico — prima Open Charge Map, poi OpenStreetMap", srcOcm:"Solo Open Charge Map (serve la chiave)", srcOsm:"Solo OpenStreetMap (nessuna chiave)", hintSrc:"OpenStreetMap non richiede chiavi e risponde sempre, ma non conosce lo stato di funzionamento né i prezzi dichiarati. Open Charge Map è più ricco quando è raggiungibile.", osmCredit:"Dati colonnine © contributori OpenStreetMap", tOsm:"Dati da OpenStreetMap", tOsmFail:"Anche OpenStreetMap non risponde",
+ lSource:"Da dove prendere le colonnine", srcAuto:"Automatico — prima Open Charge Map, poi OpenStreetMap", srcOcm:"Solo Open Charge Map (serve la chiave)", srcOsm:"Solo OpenStreetMap (nessuna chiave)", hintSrc:"OpenStreetMap non richiede chiavi e risponde sempre, ma non conosce lo stato di funzionamento né i prezzi dichiarati. Open Charge Map è più ricco quando è raggiungibile.", osmCredit:"Dati colonnine © contributori OpenStreetMap", tOsm:"Dati da OpenStreetMap", tOsmFail:"supercharge.info non risponde",
  lTmin:"Carica minima quando ti fermi (%)", lTmax:"Carica massima (%)", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
  arrLab:"Arrivo",
  stopLab:"Sosta",
@@ -624,7 +604,7 @@ en:{
  pfFast:"Fast", pfFastS:"quickest", pfSce:"Scenic", pfSceS:"what to see",
  pfChe:"Cheap", pfCheS:"avoids tolls", socLab:"Charge now",
  mapOff:"Map not active", mapOffTx:"Add your Google Maps key in settings to see the map and traffic. The list below works anyway.",
- sheet:"On the road ahead", chargers:"chargers", toSee:"to see", arrival:"arrival",
+ sheet:"On the road ahead", chargers:"Superchargers", toSee:"to see", arrival:"arrival",
  straight:"Straight-line distances. Press <b>Route</b> for real distances, times, arrival charge and a stop plan.",
  autonomy:"Usable range", withCharge:"at the current charge",
  stopsN:"stops", stopN:"stop", charging:"charging", arrIncl:"Arrival", inclStops:"stops included",
@@ -634,7 +614,7 @@ en:{
  lowG:"and I find no chargers ahead of you.",
  planCut:"Plan stops after", planCut2:"beyond that I find no reachable chargers.", planCut3:"The first", planCut3b:"The first",
  planCut4:"stop", planCut4b:"stops", hold:"holds up.", holdP:"hold up.",
- demoNote:"<b>You are on the demo set of 11 chargers</b>: add your Open Charge Map key and route again.",
+ demoNote:"<b>Demo set of 8 Superchargers</b>: the registry is unreachable, press Retry.",
  elseNote:"Otherwise widen the maximum detour or lower the minimum power.",
  empty:"No chargers on the road ahead. Set a route, or widen the maximum detour in settings.",
  arriveAt:"arrive", dry:"empty", tariffQ:"tariff ?", kmOut:"km off route", reviews:"reviews", seeCat:"Worth seeing",
@@ -670,7 +650,7 @@ en:{
  foundTx:"Operators met along the road that you have not configured yet.",
  foundNone:"None yet. Set a route and come back here.",
  cUse:"Use", cOp:"Operator", newOpPh:"Add by hand — e.g. Atlante", add:"Add",
- saveClose:"Save and close", keysTx:"Google key: Maps JavaScript API, Places API, Directions API.<br>Open Charge Map key: openchargemap.org/site/profile/applications",
+ saveClose:"Save and close", keysTx:"Only the Google key is needed: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Settings saved", tRecalc:"Press Route to recalculate",
  tNoDest:"Type a destination", tNoKey:"A Google key is needed to compute the route",
  tCalc:"Computing routes…", tNotFound:"Route not found:", tCompare:"Comparing the alternatives…",
@@ -688,7 +668,7 @@ en:{
  testKey:"Test the key", testing:"Testing…", testNo:"No key entered", testOkA:"Works:", testOkB:"chargers found near you", testFail:"Not working:",
  lVplan:"Speed you intend to hold (km/h)", hintVplan:"The limit you actually respect on the motorway: 130 in Italy and Austria, 140 in Poland, unrestricted on many German stretches. Every figure — range, arrival charge, cost — starts from consumption at this speed.", spOk:"fine at", spSlow:"slow to",
  vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.",
- lSource:"Where to get chargers from", srcAuto:"Automatic — Open Charge Map first, then OpenStreetMap", srcOcm:"Open Charge Map only (key required)", srcOsm:"OpenStreetMap only (no key)", hintSrc:"OpenStreetMap needs no key and always answers, but knows nothing about working status or stated prices. Open Charge Map is richer when reachable.", osmCredit:"Charger data © OpenStreetMap contributors", tOsm:"Data from OpenStreetMap", tOsmFail:"OpenStreetMap is not answering either",
+ lSource:"Where to get chargers from", srcAuto:"Automatic — Open Charge Map first, then OpenStreetMap", srcOcm:"Open Charge Map only (key required)", srcOsm:"OpenStreetMap only (no key)", hintSrc:"OpenStreetMap needs no key and always answers, but knows nothing about working status or stated prices. Open Charge Map is richer when reachable.", osmCredit:"Charger data © OpenStreetMap contributors", tOsm:"Data from OpenStreetMap", tOsmFail:"supercharge.info is not answering",
  lTmin:"Minimum charge when you stop (%)", lTmax:"Maximum charge (%)", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
  arrLab:"On arrival",
  stopLab:"Charge to",
@@ -706,7 +686,7 @@ pl:{
  pfFast:"Szybko", pfFastS:"najszybciej", pfSce:"Widokowo", pfSceS:"co zobaczyć",
  pfChe:"Tanio", pfCheS:"omija opłaty", socLab:"Ładunek teraz",
  mapOff:"Mapa nieaktywna", mapOffTx:"Wpisz klucz Google Maps w ustawieniach, aby zobaczyć mapę i ruch. Lista poniżej działa mimo to.",
- sheet:"Na trasie przed tobą", chargers:"ładowarek", toSee:"do zobaczenia", arrival:"przyjazd",
+ sheet:"Na trasie przed tobą", chargers:"Superchargerów", toSee:"do zobaczenia", arrival:"przyjazd",
  straight:"Odległości w linii prostej. Naciśnij <b>Wyznacz</b>, aby mieć realne kilometry, czasy, ładunek na miejscu i plan postojów.",
  autonomy:"Zasięg użyteczny", withCharge:"przy obecnym ładunku",
  stopsN:"postoje", stopN:"postój", charging:"ładowania", arrIncl:"Przyjazd", inclStops:"z postojami",
@@ -716,7 +696,7 @@ pl:{
  lowG:"i nie widzę ładowarek przed tobą.",
  planCut:"Plan urywa się po", planCut2:"dalej nie znajduję osiągalnych ładowarek.", planCut3:"Pierwszy", planCut3b:"Pierwsze",
  planCut4:"postój", planCut4b:"postoje", hold:"się trzyma.", holdP:"się trzymają.",
- demoNote:"<b>Używasz zestawu demonstracyjnego 11 ładowarek</b>: wpisz klucz Open Charge Map i wyznacz trasę ponownie.",
+ demoNote:"<b>Zestaw demonstracyjny 8 Superchargerów</b>: rejestr niedostępny, naciśnij Ponów.",
  elseNote:"Możesz też zwiększyć maksymalne zboczenie albo obniżyć minimalną moc.",
  empty:"Brak ładowarek na trasie przed tobą. Wyznacz trasę albo zwiększ maksymalne zboczenie w ustawieniach.",
  arriveAt:"dojedziesz z", dry:"na zero", tariffQ:"taryfa ?", kmOut:"km od trasy", reviews:"opinii", seeCat:"Warte zobaczenia",
@@ -752,7 +732,7 @@ pl:{
  foundTx:"Operatorzy napotkani na trasie, których jeszcze nie skonfigurowałeś.",
  foundNone:"Na razie nikt. Wyznacz trasę i wróć tutaj.",
  cUse:"Użyj", cOp:"Operator", newOpPh:"Dodaj ręcznie — np. Atlante", add:"Dodaj",
- saveClose:"Zapisz i zamknij", keysTx:"Klucz Google: Maps JavaScript API, Places API, Directions API.<br>Klucz Open Charge Map: openchargemap.org/site/profile/applications",
+ saveClose:"Zapisz i zamknij", keysTx:"Potrzebny jest tylko klucz Google: Maps JavaScript API, Places API, Directions API.",
  tSaved:"Ustawienia zapisane", tRecalc:"Naciśnij Wyznacz, aby przeliczyć trasę",
  tNoDest:"Wpisz cel podróży", tNoKey:"Do wyznaczenia trasy potrzebny jest klucz Google",
  tCalc:"Liczę trasy…", tNotFound:"Nie znaleziono trasy:", tCompare:"Porównuję warianty…",
@@ -770,7 +750,7 @@ pl:{
  testKey:"Sprawdź klucz", testing:"Sprawdzam…", testNo:"Nie wpisano klucza", testOkA:"Działa:", testOkB:"ładowarek w pobliżu", testFail:"Nie działa:",
  lVplan:"Prędkość, którą zamierzasz trzymać (km/h)", hintVplan:"Limit, którego naprawdę przestrzegasz na autostradzie: 130 we Włoszech i Austrii, 140 w Polsce, bez ograniczeń na wielu odcinkach w Niemczech. Wszystkie wyliczenia — zasięg, ładunek po dojeździe, koszty — wychodzą od zużycia przy tej prędkości.", spOk:"ok przy", spSlow:"zwolnij do",
  vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.",
- lSource:"Skąd brać ładowarki", srcAuto:"Automatycznie — najpierw Open Charge Map, potem OpenStreetMap", srcOcm:"Tylko Open Charge Map (wymaga klucza)", srcOsm:"Tylko OpenStreetMap (bez klucza)", hintSrc:"OpenStreetMap nie wymaga klucza i zawsze odpowiada, ale nie zna stanu działania ani podanych cen. Open Charge Map jest bogatszy, gdy działa.", osmCredit:"Dane ładowarek © współtwórcy OpenStreetMap", tOsmFail:"OpenStreetMap też nie odpowiada", tOsm:"Dane z OpenStreetMap",
+ lSource:"Skąd brać ładowarki", srcAuto:"Automatycznie — najpierw Open Charge Map, potem OpenStreetMap", srcOcm:"Tylko Open Charge Map (wymaga klucza)", srcOsm:"Tylko OpenStreetMap (bez klucza)", hintSrc:"OpenStreetMap nie wymaga klucza i zawsze odpowiada, ale nie zna stanu działania ani podanych cen. Open Charge Map jest bogatszy, gdy działa.", osmCredit:"Dane ładowarek © współtwórcy OpenStreetMap", tOsmFail:"supercharge.info nie odpowiada", tOsm:"Dane z OpenStreetMap",
  lTmin:"Minimalny ładunek przy postoju (%)", lTmax:"Maksymalny ładunek (%)", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
  arrLab:"Po dojeździe",
  stopLab:"Ładuj do",
@@ -803,7 +783,7 @@ const CATS=[
 ];
 const PALETTE=['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
                '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
-const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay']
+const DEFAULT_OPS=['Tesla Supercharger']
   .map(n=>{const c=CATALOG.find(x=>x.nm===n);
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
@@ -816,7 +796,7 @@ let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:15, avgkw:110, car:'Tesla Mod
         stops:[], via:[], lastDest:'', awake:false,
         ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
 
-const KEY='colonnine.settings';
+const KEY='colonnine.settings.v2';
 async function load(){
   let raw=null;
   try{ raw=localStorage.getItem(KEY); }catch(e){}
@@ -1088,117 +1068,35 @@ function costTo80(s){
    ============================================================ */
 const DEMO=[
   {name:'Firenze Nord', operator:'Tesla Supercharger',lat:43.8109,lng:11.1002,kw:250,pts:16,live:true},
-  {name:'Modena Nord',  operator:'Ionity',            lat:44.7047,lng:10.9491,kw:350,pts:6, live:true},
-  {name:'Trento Sud',   operator:'Free To X',         lat:46.0287,lng:11.1218,kw:300,pts:8, live:true},
-  {name:'Brennero',     operator:'Ionity',            lat:47.0035,lng:11.5062,kw:350,pts:8, live:true},
-  {name:'Innsbruck Ost',operator:'Smatrics',          lat:47.2700,lng:11.4400,kw:150,pts:4, live:true},
-  {name:'München Süd',  operator:'EnBW',              lat:48.0602,lng:11.5503,kw:300,pts:8, live:true},
-  {name:'Nürnberg Ost', operator:'Aral pulse',        lat:49.4200,lng:11.1200,kw:350,pts:6, live:false},
-  {name:'Dresden Nord', operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
-  {name:'Wrocław',      operator:'GreenWay',          lat:51.1000,lng:17.0300,kw:150,pts:4, live:true},
-  {name:'Łódź Południe',operator:'ORLEN Charge',      lat:51.7300,lng:19.4500,kw:200,pts:6, live:true},
-  {name:'Poznań Wschód',operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
+  {name:'Modena Nord',  operator:'Tesla Supercharger',lat:44.7047,lng:10.9491,kw:250,pts:12,live:true},
+  {name:'Trento',       operator:'Tesla Supercharger',lat:46.0287,lng:11.1218,kw:250,pts:12,live:true},
+  {name:'Innsbruck',    operator:'Tesla Supercharger',lat:47.2700,lng:11.4400,kw:250,pts:10,live:true},
+  {name:'München Süd',  operator:'Tesla Supercharger',lat:48.0602,lng:11.5503,kw:250,pts:16,live:true},
+  {name:'Nürnberg',     operator:'Tesla Supercharger',lat:49.4200,lng:11.1200,kw:250,pts:12,live:true},
+  {name:'Dresden',      operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
+  {name:'Poznań',       operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
 ];
 
-async function fetchOCM(){
-  if(!route.length) return [];
-  const probes=[]; let last=-999;
-  for(let i=0;i<route.length;i++) if(cum[i]-last>60){ probes.push(route[i]); last=cum[i]; }
-  const seen=new Set(),got=[];
-  ocmErr='';
-  let tentate=0, riuscite=0;
 
-  async function chiedi(p,viaHeader){
-    const u=new URL('https://api.openchargemap.io/v3/poi/');
-    u.searchParams.set('output','json');
-    u.searchParams.set('latitude',p.lat); u.searchParams.set('longitude',p.lng);
-    u.searchParams.set('distance',35); u.searchParams.set('distanceunit','KM');
-    u.searchParams.set('maxresults',60); u.searchParams.set('compact','true');
-    u.searchParams.set('minpowerkw',S.minkw||50);
-    const opt={};
-    if(S.ockey){
-      if(viaHeader) opt.headers={'X-API-Key':S.ockey};
-      else u.searchParams.set('key',S.ockey);
-    }
-    const r=await fetchTimeout(u,opt,8000);
-    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
-    return r.json();
-  }
-
-  let usaHeader=false, diFila=0;
-  for(const p of probes.slice(0,26)){
-    if(diFila>=2) break;          // il servizio non risponde: inutile insistere
-    tentate++;
-    let dati=null;
-    try{ dati=await chiedi(p,usaHeader); }
-    catch(err){
-      // se la chiave in coda all'indirizzo viene rifiutata, riprovo con l'intestazione
-      if(!usaHeader && S.ockey && (err.status===401||err.status===403)){
-        try{ dati=await chiedi(p,true); usaHeader=true; }
-        catch(e2){ ocmErr=ocmErr||descriviErrore(e2); }
-      } else ocmErr=ocmErr||descriviErrore(err);
-    }
-    if(!dati){ diFila++; continue; }
-    diFila=0; riuscite++;
-    for(const poi of dati){
-      if(seen.has(poi.ID)) continue; seen.add(poi.ID);
-      const c=poi.Connections||[];
-      got.push({
-        name:poi.AddressInfo?.Title||'Colonnina',
-        town:poi.AddressInfo?.Town||'',
-        operator:poi.OperatorInfo?.Title||'—',
-        lat:poi.AddressInfo?.Latitude, lng:poi.AddressInfo?.Longitude,
-        kw:Math.max(0,...c.map(x=>x.PowerKW||0)),
-        pts:poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
-        live:poi.StatusType?poi.StatusType.IsOperational!==false:true,
-        declared:(poi.UsageCost||'').trim()
-      });
-    }
-  }
-  if(riuscite&&!got.length) ocmErr='0 risultati su '+riuscite+' zone';
-  return got;
-}
-
-let fonte='', diario='mai eseguita';     // cosa è successo all'ultima ricerca
+let fonte='', diario='mai eseguita';
 async function fetchStations(){
   ocmErr=''; fonte='';
   const t0=new Date();
   const passo=x=>{ diario=`${fmtClock(t0)} · ${x}`; try{ render(); }catch(e){} };
-  passo(`${S.source} · ${t('searching')}`);
-  let got=[];
+  passo(t('tTesla')+' · '+t('searching'));
 
-  if(S.source!=='osm'){
-    passo('Open Charge Map · '+t('searching'));
-    try{ got=await fetchOCM(); }catch(e){ ocmErr=ocmErr||descriviErrore(e); }
-    if(got.length) fonte='ocm';
-  }
-  if(!got.length && S.source!=='ocm' && S.source!=='tesla'){
-    try{
-      passo('OpenStreetMap · '+t('searching'));
-      toast(t('tOsm')+'…');
-      got=await fetchOSM();
-      if(got.length) fonte='osm';
-      else ocmErr=ocmErr||('OSM: nessuna colonnina utile — '+(osmNota||'nessun nodo restituito'));
-    }catch(e){ ocmErr=ocmErr||('OSM: '+descriviErrore(e)); }
-  }
-  if(!got.length && S.source!=='ocm' && S.source!=='osm'){
-    try{
-      passo(t('tTesla')+' · '+t('searching'));
-      got=await fetchTesla();
-      if(got.length) fonte='tesla';
-    }catch(e){ ocmErr=ocmErr||('supercharge.info: '+descriviErrore(e)); }
-  }
+  let got=[];
+  try{ got=await fetchTesla(); if(got.length) fonte='tesla'; }
+  catch(e){ ocmErr='supercharge.info: '+descriviErrore(e); }
 
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  if(usingDemo && S.source==='ocm') ocmErr=(ocmErr?ocmErr+' · ':'')+t('onlyOcm');
-  diario=`${fmtClock(t0)} · ${S.source} · ${got.length} colonnine`+
-         (ocmErr?` · ${ocmErr}`:'')+(osmNota?` · ${osmNota}`:'');
+  diario=`${fmtClock(t0)} · ${got.length} Supercharger`+(ocmErr?` · ${ocmErr}`:'');
   console.log('[colonnine]',diario);
-  if(usingDemo) toast(S.source==='osm'?t('tOsmFail'):(S.ockey?('Open Charge Map: '+(ocmErr||'nessun dato')):t('tDemoKey')));
-  else if(fonte==='osm') toast(`${got.length} · ${t('osmCredit')}`);
-  else if(fonte==='tesla') toast(`${got.length} · ${t('scCredit')}`);
+  if(usingDemo) toast(ocmErr||t('tOsmFail'));
+  else toast(`${got.length} · ${t('scCredit')}`);
 }
+
 // fetch che si arrende dopo n secondi invece di restare appesa
 async function fetchTimeout(url,opt,ms){
   const c=new AbortController();
@@ -1217,57 +1115,6 @@ function descriviErrore(e){
 }
 
 // ---------- OpenStreetMap via Overpass: nessuna chiave, una sola richiesta ----------
-function potenzaDaTag(tag){
-  let max=0;
-  for(const k in tag){
-    if(!/output|maxpower/i.test(k)) continue;
-    const m=String(tag[k]).match(/([\d.,]+)\s*k?W?/i);
-    if(m){ const v=parseFloat(m[1].replace(',','.')); if(v>max) max=v; }
-  }
-  return max;
-}
-let osmNota='';
-const OVERPASS=[
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter'
-];
-async function fetchOSM(){
-  // riquadri invece di "around": per Overpass sono indicizzati, quindi rapidissimi.
-  // la precisione la mettiamo noi dopo, filtrando sulla distanza dal percorso.
-  const pad=Math.min(12,Math.max(1,S.corridor))/111;
-  const box=[]; let i0=0;
-  while(i0<route.length-1 && box.length<20){
-    const partenza=cum[i0];
-    let i1=i0;
-    while(i1<route.length-1 && cum[i1]-partenza<150) i1++;
-    let s=90,w=180,n=-90,e=-180;
-    for(let i=i0;i<=i1;i++){
-      s=Math.min(s,route[i].lat); n=Math.max(n,route[i].lat);
-      w=Math.min(w,route[i].lng); e=Math.max(e,route[i].lng);
-    }
-    const kl=pad/Math.max(0.2,Math.cos((s+n)/2*Math.PI/180));
-    box.push(`${(s-pad).toFixed(3)},${(w-kl).toFixed(3)},${(n+pad).toFixed(3)},${(e+kl).toFixed(3)}`);
-    i0=i1;
-  }
-  if(!box.length) return [];
-  const corpo=box.map(b=>`node[amenity=charging_station](${b});`).join('');
-  const q=`[out:json][timeout:45];(${corpo});out body 4000;`;
-
-  // GET invece di POST: è una richiesta "semplice" per il browser, niente preflight CORS
-  let ultimo=null;
-  for(let k=0;k<OVERPASS.length;k++){
-    try{
-      const r=await fetchTimeout(OVERPASS[k]+'?data='+encodeURIComponent(q),{},45000);
-      if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
-      return leggiOSM(await r.json());
-    }catch(e){
-      ultimo=e;
-      if(k<OVERPASS.length-1) await new Promise(r=>setTimeout(r,1200));
-    }
-  }
-  throw ultimo||new Error('nessun server disponibile');
-}
 let scCache=null;                       // il registro mondiale si scarica una volta sola
 async function fetchTesla(){
   if(!scCache){
@@ -1290,36 +1137,6 @@ async function fetchTesla(){
   }
   return out;
 }
-function leggiOSM(d){
-  const out=[]; let grezzi=0, senzaPotenza=0;
-  const minkw=S.minkw||50;
-  for(const n of (d.elements||[])){
-    grezzi++;
-    const tg=n.tags||{};
-    const kw=potenzaDaTag(tg);
-    if(kw && kw < minkw) continue;
-    if(!kw){
-      // in OSM la potenza spesso manca: tengo comunque le prese da ricarica rapida
-      const rapida=Object.keys(tg).some(k=>/type2_combo|ccs|chademo|tesla_supercharger/i.test(k))
-                   || /ionity|tesla|supercharger|fastned|electra/i.test(tg.operator||tg.brand||'');
-      if(!rapida && minkw>22) continue;
-      senzaPotenza++;
-    }
-    out.push({
-      name: tg.name || tg.operator || 'Colonnina',
-      town: tg['addr:city'] || '',
-      operator: tg.operator || tg.brand || tg.network || '—',
-      lat: n.lat, lng: n.lon,
-      kw: kw || 0,
-      pts: parseInt(tg.capacity)||0,
-      live: true,
-      declared: (tg.fee==='no'?'gratuita':'')
-    });
-  }
-  osmNota=`${grezzi} nodi, ${out.length} tenuti${senzaPotenza?', '+senzaPotenza+' senza potenza dichiarata':''}`;
-  return out;
-}
-
 /* ============================================================
    Cose da vedere (solo profilo panoramico)
    ============================================================ */
@@ -1565,7 +1382,7 @@ function render(){
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? (S.source==='osm' ? ' '+t('tOsmFail') : ' '+t('demoNote'))+
+          ? ' '+t('demoNote')+
             `<br><b style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">${diario}</b>`
           : ' '+t('elseNote'))+
         `</span>`+(usingDemo?`<button id="retryData">${t('retry')}</button>`
@@ -1904,10 +1721,8 @@ async function trace(){
       diario='errore: '+(e&&e.message?e.message:e);
       render(); toast('Errore: '+(e&&e.message?e.message:e));
     }
-    const nuovi=unconfigured().length;
     toast(`${altProfs.length>1?altProfs.length+' '+t('tRoutes')+' · ':''}`+
-          `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
-          (nuovi?` · ${nuovi} ${t('tNewOps')}`:''));
+          `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`);
   });
 }
 
@@ -1962,16 +1777,6 @@ document.getElementById('routesRow').addEventListener('click',e=>{
   selectRoute(+b.dataset.rt);
 });
 
-function unconfigured(){
-  const m=new Map();
-  filterAhead().forEach(s=>{
-    if(opFor(s.operator)) return;
-    const n=(s.operator||'').trim();
-    if(!n||n==='—') return;
-    m.set(n,(m.get(n)||0)+1);
-  });
-  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
-}
 
 /* ============================================================
    Profili
@@ -2012,11 +1817,11 @@ function paintSettings(){
   document.getElementById('lang').value=S.lang||'it';
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
-  v('gkey',S.gkey||''); v('ockey',S.ockey||'');
+  v('gkey',S.gkey||'');
   v('kwh',S.kwh); v('wh',S.wh);  v('refv',S.refv); v('avgkw',S.avgkw);
   v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
   v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
-  v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode); v('source',S.source);
+  v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
   c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine); c('awake',S.awake); c('traffic',S.traffic!==false);
 
   const ops=document.getElementById('ops'); ops.innerHTML='';
@@ -2040,17 +1845,8 @@ function paintSettings(){
     cbox.appendChild(b);
   });
   document.getElementById('exclude').value=S.exclude||'';
-
-  const found=document.getElementById('found'); found.innerHTML='';
-  const list=unconfigured();
-  if(!list.length){
-    found.innerHTML=`<p class="hint" style="margin:0">${t('foundNone')}</p>`;
-  } else list.slice(0,24).forEach(([nm,n])=>{
-    const b=document.createElement('button'); b.className='chip'; b.dataset.add=nm;
-    b.innerHTML=`<span class="plus">+</span><b>${nm.slice(0,26)}</b><span class="n">${n}</span>`;
-    found.appendChild(b);
-  });
 }
+
 document.getElementById('ops').addEventListener('input',e=>{
   const t=e.target; if(!t.dataset.f) return;
   const o=S.ops[+t.dataset.i];
@@ -2070,10 +1866,6 @@ document.getElementById('cats').addEventListener('click',e=>{
   if(i>=0) S.cats.splice(i,1); else S.cats.push(id);
   paintSettings();
 });
-document.getElementById('found').addEventListener('click',e=>{
-  const b=e.target.closest('[data-add]'); if(!b) return;
-  addOperator(b.dataset.add); paintSettings();
-});
 document.getElementById('addOp').onclick=()=>{
   const inp=document.getElementById('newOp'),val=inp.value.trim();
   if(!val) return;
@@ -2082,47 +1874,21 @@ document.getElementById('addOp').onclick=()=>{
 document.getElementById('newOp').addEventListener('keydown',e=>{
   if(e.key==='Enter') document.getElementById('addOp').click();
 });
-document.getElementById('testKey').onclick=async()=>{
-  const out=document.getElementById('testOut');
-  const chiave=document.getElementById('ockey').value.trim();
-  if(!chiave){ out.innerHTML=`<span style="color:var(--alert)">${t('testNo')}</span>`; return; }
-  out.textContent=t('testing');
-  const prova=async viaHeader=>{
-    const u=new URL('https://api.openchargemap.io/v3/poi/');
-    u.searchParams.set('output','json');
-    u.searchParams.set('latitude',me.lat); u.searchParams.set('longitude',me.lng);
-    u.searchParams.set('distance',50); u.searchParams.set('distanceunit','KM');
-    u.searchParams.set('maxresults',20); u.searchParams.set('compact','true');
-    const opt={};
-    if(viaHeader) opt.headers={'X-API-Key':chiave}; else u.searchParams.set('key',chiave);
-    const r=await fetchTimeout(u,opt,20000);
-    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
-    return r.json();
-  };
-  try{
-    let d;
-    try{ d=await prova(false); }
-    catch(e){ if(e.status===401||e.status===403){ d=await prova(true); } else throw e; }
-    out.innerHTML=`<span style="color:var(--live)">${t('testOkA')} ${d.length} ${t('testOkB')}</span>`;
-  }catch(e){
-    out.innerHTML=`<span style="color:var(--alert)">${t('testFail')} ${descriviErrore(e)}</span>`;
-  }
-};
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
   const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
   // tutto ciò che cambia i dati delle colonnine: se cambia, si ricerca di nuovo
-  const primaDati=JSON.stringify([S.ockey,S.source,S.minkw,S.corridor]);
+  const primaDati=JSON.stringify([S.minkw,S.corridor]);
   const prevLang=S.lang; S.lang=g('lang').value;
-  S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
+  S.gkey=g('gkey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
   S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
   S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
   S.exclude=g('exclude').value;
-  S.cmode=g('cmode').value; S.source=g('source').value; S.onlyMine=g('onlyMine').checked;
+  S.cmode=g('cmode').value; S.onlyMine=g('onlyMine').checked;
   S.awake=g('awake').checked; applyWake();
   S.traffic=g('traffic').checked; if(traffic) traffic.setMap(S.traffic?map:null);
   S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
@@ -2131,7 +1897,7 @@ document.getElementById('saveSet').onclick=async()=>{
   document.getElementById('settings').classList.remove('show');
   if(S.gkey&&S.gkey!==prev&&!map){ bootMap(); return; }
   // chiave OCM cambiata: rifaccio subito la ricerca, senza aspettare un nuovo Traccia
-  if(JSON.stringify([S.ockey,S.source,S.minkw,S.corridor])!==primaDati && route.length){
+  if(JSON.stringify([S.minkw,S.corridor])!==primaDati && route.length){
     altCache={}; toast(t('tSeek'));
     await fetchStations(); render();
     toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
