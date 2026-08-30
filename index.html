@@ -505,7 +505,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.12';
+const APP_VERSION='1.12.1';
 const APP_DATE='30.08.2026';
 
 
@@ -1046,7 +1046,7 @@ async function fetchOCM(){
       if(viaHeader) opt.headers={'X-API-Key':S.ockey};
       else u.searchParams.set('key',S.ockey);
     }
-    const r=await fetch(u,opt);
+    const r=await fetchTimeout(u,opt,12000);
     if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
     return r.json();
   }
@@ -1085,12 +1085,21 @@ async function fetchOCM(){
   stations=got.length?got:DEMO.slice();
   if(usingDemo) toast(S.ockey?('Open Charge Map: '+(ocmErr||'nessun dato')):t('tDemoKey'));
 }
+// fetch che si arrende dopo n secondi invece di restare appesa
+async function fetchTimeout(url,opt,ms){
+  const c=new AbortController();
+  const tid=setTimeout(()=>c.abort(),ms||12000);
+  try{ return await fetch(url,Object.assign({},opt,{signal:c.signal})); }
+  finally{ clearTimeout(tid); }
+}
 function descriviErrore(e){
   if(e&&e.status===401) return 'HTTP 401 — chiave rifiutata';
-  if(e&&e.status===403) return 'HTTP 403 — chiave non valida o mancante';
-  if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra poco';
+  if(e&&e.status===403) return 'HTTP 403 — chiave non valida o non abilitata';
+  if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra qualche minuto';
   if(e&&e.status) return 'HTTP '+e.status;
-  return 'rete bloccata o CORS';   // fetch fallita prima della risposta
+  if(e&&e.name==='AbortError') return 'nessuna risposta entro 12 secondi';
+  if(e&&e.name==='TypeError') return 'richiesta bloccata dal browser (CORS, blocco pubblicità o rete)';
+  return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
 }
 
 /* ============================================================
@@ -1845,7 +1854,7 @@ document.getElementById('testKey').onclick=async()=>{
     u.searchParams.set('maxresults',20); u.searchParams.set('compact','true');
     const opt={};
     if(viaHeader) opt.headers={'X-API-Key':chiave}; else u.searchParams.set('key',chiave);
-    const r=await fetch(u,opt);
+    const r=await fetchTimeout(u,opt,12000);
     if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
     return r.json();
   };
