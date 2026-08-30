@@ -106,6 +106,13 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .stn .tm{font-size:12.5px;color:var(--ice-dim);margin-top:1px}
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
 .stn .eur.none{color:var(--ice-dim)}
+.stn.far{opacity:.42}
+.stn .arr{color:var(--live)}
+.stn .arr.low{color:var(--alert)}
+.reach{display:flex;align-items:center;gap:8px;padding:7px 14px 2px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ice-dim)}
+.reach b{color:var(--live);font-weight:500}
+.reach b.low{color:var(--alert)}
 /* riga punto di interesse */
 .stn.poi .op{color:var(--view)}
 .stn.poi .rate{font-size:14px;color:var(--view);margin-top:1px}
@@ -189,6 +196,8 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .chip b{font-weight:500}
 .chip .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ice-dim)}
 .chip .plus{color:var(--signal);font-size:17px;line-height:1}
+.chip.on{border-color:var(--view);background:rgba(201,162,39,.14);color:var(--ice)}
+.chip.on .plus{color:var(--view)}
 .add-row{display:flex;gap:8px;margin-top:9px}
 .add-row input{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);
   border-radius:10px;padding:10px 12px;outline:none;min-width:0}
@@ -281,6 +290,12 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
     <input type="checkbox" id="awake"></div>
 
   <h4>Cose da vedere</h4>
+  <p class="hint">Cosa cercare lungo il percorso panoramico. Ogni categoria in più è una ricerca in più, quindi tienine attive quattro o cinque.</p>
+  <div class="found" id="cats"></div>
+  <div class="field" style="margin-top:12px">
+    <label for="exclude">Escludi se il nome contiene (separati da virgola)</label>
+    <input id="exclude" type="text" placeholder="autodromo, outlet, stadio">
+  </div>
   <div class="field">
     <label for="minrate">Voto minimo delle recensioni</label>
     <input id="minrate" type="number" step="0.1" min="1" max="5" value="4.3">
@@ -289,7 +304,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
     <label for="minrev">Numero minimo di recensioni</label>
     <input id="minrev" type="number" step="50" min="0" value="300">
   </div>
-  <p class="hint">Cercate solo nel profilo Panoramico, entro 15 km dal percorso.</p>
 
   <h4>Chiavi</h4>
   <div class="field">
@@ -303,13 +317,26 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 
   <h4>Auto</h4>
   <div class="field">
+    <label for="car">Modello</label>
+    <select id="car"></select>
+  </div>
+  <div class="field">
     <label for="kwh">Capacità utile della batteria (kWh)</label>
-    <input id="kwh" type="number" step="0.5" value="75">
+    <input id="kwh" type="number" step="0.5" value="78">
+  </div>
+  <div class="field">
+    <label for="wh">Consumo reale (Wh/km)</label>
+    <input id="wh" type="number" step="5" value="185">
+  </div>
+  <div class="field">
+    <label for="reserve">Riserva minima all'arrivo (%)</label>
+    <input id="reserve" type="number" step="1" min="0" max="40" value="10">
   </div>
   <div class="field">
     <label for="eff">Rendimento di ricarica (0–1)</label>
     <input id="eff" type="number" step="0.01" value="0.92">
   </div>
+  <p class="hint">I valori del modello sono medie indicative su percorso misto. Dopo un viaggio vero, correggi il consumo con quello letto a bordo: è il parametro che cambia di più fra inverno ed estate, e in autostrada sale del 20–30%.</p>
 
   <h4>Trovati sul percorso</h4>
   <p class="hint">Operatori incontrati lungo la strada che non hai ancora configurato.</p>
@@ -367,15 +394,62 @@ const CATALOG=[
   {nm:'Electra',           color:'#B388FF',match:['electra']},
   {nm:'Plugsurfing',       color:'#FF9F1C',match:['plugsurfing']}
 ];
+const CARS=[
+  {nm:'Tesla Model Y AWD (2025+)',    kwh:78,   wh:185},
+  {nm:'Tesla Model Y RWD (2025+)',    kwh:62,   wh:165},
+  {nm:'Tesla Model Y LR AWD (2020-24)',kwh:75,  wh:190},
+  {nm:'Tesla Model 3 LR AWD',         kwh:75,   wh:175},
+  {nm:'Tesla Model 3 RWD',            kwh:57,   wh:155},
+  {nm:'Tesla Model S Long Range',     kwh:95,   wh:200},
+  {nm:'Tesla Model X Long Range',     kwh:95,   wh:225},
+  {nm:'VW ID.4 Pro',                  kwh:77,   wh:205},
+  {nm:'VW ID.3 Pro S',                kwh:77,   wh:180},
+  {nm:'Škoda Enyaq 85',               kwh:77,   wh:200},
+  {nm:'Cupra Born 77',                kwh:77,   wh:180},
+  {nm:'Audi Q4 e-tron 45',            kwh:77,   wh:200},
+  {nm:'Audi Q6 e-tron',               kwh:94.9, wh:205},
+  {nm:'BMW i4 eDrive40',              kwh:81.3, wh:180},
+  {nm:'BMW iX3',                      kwh:74,   wh:195},
+  {nm:'BMW iX xDrive50',              kwh:105,  wh:215},
+  {nm:'Mercedes EQE 350',             kwh:89,   wh:190},
+  {nm:'Hyundai Ioniq 5 (84 kWh)',     kwh:84,   wh:190},
+  {nm:'Kia EV6 AWD',                  kwh:84,   wh:195},
+  {nm:'Kia EV9',                      kwh:96,   wh:230},
+  {nm:'Volvo EX30',                   kwh:65,   wh:175},
+  {nm:'Volvo EX40',                   kwh:78,   wh:200},
+  {nm:'Polestar 2 Long Range',        kwh:79,   wh:185},
+  {nm:'Renault Scenic E-Tech',        kwh:87,   wh:180},
+  {nm:'Peugeot e-3008',               kwh:73,   wh:185},
+  {nm:'Fiat 600e',                    kwh:51,   wh:170},
+  {nm:'Ford Explorer EV',             kwh:77,   wh:200},
+  {nm:'Porsche Taycan',               kwh:89,   wh:210},
+  {nm:'Nissan Ariya 87',              kwh:87,   wh:195},
+  {nm:'MG4 77',                       kwh:74.4, wh:180},
+  {nm:'BYD Seal',                     kwh:82.5, wh:185}
+];
+const CATS=[
+  {id:'panorami',nm:'Panorami e belvedere', kw:'belvedere punto panoramico Aussichtspunkt punkt widokowy viewpoint'},
+  {id:'natura',  nm:'Laghi, cascate, gole', type:'natural_feature', kw:'lago cascata gola See Wasserfall jezioro'},
+  {id:'passi',   nm:'Passi e strade panoramiche', kw:'passo di montagna Bergpass strada panoramica Panoramastraße'},
+  {id:'borghi',  nm:'Borghi e centri storici', kw:'borgo centro storico Altstadt stare miasto'},
+  {id:'castelli',nm:'Castelli e abbazie', kw:'castello abbazia Burg Schloss Kloster zamek'},
+  {id:'parchi',  nm:'Parchi e giardini', type:'park'},
+  {id:'musei',   nm:'Musei e arte', type:'museum'},
+  {id:'terme',   nm:'Terme', kw:'terme Therme cieplice'},
+  {id:'cantine', nm:'Cantine e vino', kw:'cantina vinicola Weingut winnica'}
+];
 const PALETTE=['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
                '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
 const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay']
   .map(n=>{const c=CATALOG.find(x=>x.nm===n);
            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
-let S={ gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6, minkw:50,
+let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:10, car:'Tesla Model Y AWD (2025+)',
+        eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
+        cats:['panorami','natura','passi','borghi'],
+        exclude:'autodromo, circuito, outlet, stadio, luna park, centro commerciale',
         stops:[], lastDest:'', awake:false,
         ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
 
@@ -487,11 +561,22 @@ function aheadOf(arr,extra){
 const filterAhead=()=>aheadOf(stations);
 const poisAhead =()=>aheadOf(pois,{poi:true,radius:15});
 
-function costTo80(s){
+// carica residua stimata all'arrivo alla colonnina
+function socAt(km){
   const soc=+document.getElementById('soc').value;
-  const kwh=Math.max(0,(80-soc)/100*S.kwh)/S.eff;
+  if(!isFinite(km)) return soc;
+  return soc - (km*S.wh/1000)/S.kwh*100;
+}
+// autonomia residua fino alla riserva
+function rangeNow(){
+  const soc=+document.getElementById('soc').value;
+  return Math.max(0,(soc-S.reserve)/100*S.kwh*1000/S.wh);
+}
+function costTo80(s){
+  const arr=socAt(s.km);                      // si ricarica da qui, non dalla carica di adesso
+  const kwh=Math.max(0,(80-arr)/100*S.kwh)/S.eff;
   const o=opFor(s.operator);
-  return o?{kwh,eur:kwh*o.price+(o.fee||0),op:o}:{kwh,eur:null,op:null};
+  return o?{kwh,eur:kwh*o.price+(o.fee||0),op:o,arr}:{kwh,eur:null,op:null,arr};
 }
 
 /* ============================================================
@@ -549,29 +634,43 @@ async function fetchOCM(){
 /* ============================================================
    Cose da vedere (solo profilo panoramico)
    ============================================================ */
-function nearbyPromise(loc){
+function nearbyPromise(loc,cat){
   return new Promise(res=>{
     if(!placesSvc) return res([]);
-    placesSvc.nearbySearch(
-      {location:loc,radius:15000,type:'tourist_attraction'},
-      (r,st)=>res(st===google.maps.places.PlacesServiceStatus.OK&&r?r:[])
+    const req={location:loc,radius:15000};
+    if(cat.type) req.type=cat.type;
+    if(cat.kw) req.keyword=cat.kw;
+    placesSvc.nearbySearch(req,(r,st)=>
+      res(st===google.maps.places.PlacesServiceStatus.OK&&r?r.map(x=>({x,cat})):[])
     );
   });
 }
-async function fetchPOIs(pathArr,cumArr){
+function excluded(name){
+  const words=(S.exclude||'').split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);
+  const n=(name||'').toLowerCase();
+  return words.some(w=>n.includes(w));
+}
+async function fetchPOIs(pathArr,cumArr,light){
+  const cats=CATS.filter(c=>S.cats.includes(c.id));
+  if(!cats.length) return [];
+  const used=light?cats.slice(0,2):cats;
+  const spacing=light?110:70, cap=light?7:16;
   const probes=[]; let last=-999;
-  for(let i=0;i<pathArr.length;i++) if(cumArr[i]-last>70){ probes.push(pathArr[i]); last=cumArr[i]; }
-  const batch=probes.slice(0,20);
-  const res=await Promise.all(batch.map(p=>nearbyPromise(new google.maps.LatLng(p.lat,p.lng))));
+  for(let i=0;i<pathArr.length;i++) if(cumArr[i]-last>spacing){ probes.push(pathArr[i]); last=cumArr[i]; }
+  const jobs=[];
+  for(const p of probes.slice(0,cap))
+    for(const c of used) jobs.push(nearbyPromise(new google.maps.LatLng(p.lat,p.lng),c));
+  const res=await Promise.all(jobs);
   const seen=new Set(),out=[];
-  for(const list of res) for(const p of list){
+  for(const list of res) for(const {x:p,cat} of list){
     if(!p.place_id||seen.has(p.place_id)) continue;
     const rating=p.rating||0, rev=p.user_ratings_total||0;
     if(rating<S.minrate||rev<S.minrev) continue;
+    if(excluded(p.name)) continue;
     seen.add(p.place_id);
     out.push({ poi:true, name:p.name, place_id:p.place_id,
                lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
-               rating, rev, kind:(p.types||[])[0]||'' });
+               rating, rev, cat:cat.nm, catId:cat.id });
   }
   return out;
 }
@@ -654,6 +753,13 @@ function render(){
   } else head.innerHTML=rows.length?`<b>${rows.length}</b> colonnine`:'—';
 
   const list=document.getElementById('list'); list.innerHTML='';
+  if(route.length){
+    const r=rangeNow(), primaFuori=rows.find(x=>socAt(x.km)<S.reserve);
+    const d=document.createElement('div'); d.className='reach';
+    d.innerHTML=`Autonomia utile <b class="${r<80?'low':''}">${Math.round(r)} km</b>`+
+      (primaFuori?` · oltre ${Math.round(primaFuori.km)} km non ci arrivi`:' · tutte raggiungibili');
+    list.appendChild(d);
+  }
   if(!all.length){
     list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.</p>';
   }
@@ -665,7 +771,7 @@ function render(){
         <span class="bar" style="background:var(--view)"></span>
         <span class="mid">
           <span class="op">${isStop(s)?'✦':'◆'} ${s.name.slice(0,30)}</span>
-          <span class="name">${s.off.toFixed(0)} km fuori percorso · ${s.rev.toLocaleString('it-IT')} recensioni</span>
+          <span class="name">${s.cat||'Da vedere'} · ${s.off.toFixed(0)} km fuori · ${s.rev.toLocaleString('it-IT')} recensioni</span>
         </span>
         <span class="right">
           <span class="km">${s.km.toFixed(0)}<small> km</small></span>
@@ -674,7 +780,8 @@ function render(){
         </span>`;
     } else {
       const o=opFor(s.operator),c=costTo80(s);
-      el.className='stn';
+      const low=c.arr<S.reserve;
+      el.className='stn'+(low?' far':'');
       el.innerHTML=`
         <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
         <span class="mid">
@@ -682,7 +789,8 @@ function render(){
             <span class="dot ${s.live?'':'off'}"></span>${isStop(s)?'✦ ':''}${(s.operator||'—').slice(0,24)}
             ${s.onHwy?'<span class="hwy">A</span>':''}
           </span>
-          <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW</span>
+          <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW
+            ${route.length?`· <span class="arr ${low?'low':''}">arrivi ${c.arr>0?Math.round(c.arr)+'%':'a secco'}</span>`:''}</span>
         </span>
         <span class="right">
           <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
@@ -705,7 +813,7 @@ function openDetail(s){
   if(s.poi){
     card.innerHTML=`
       <h3 style="color:var(--view)">${s.name}</h3>
-      <p class="sub">${s.off.toFixed(1)} km fuori dal percorso</p>
+      <p class="sub">${s.cat||'Da vedere'} · ${s.off.toFixed(1)} km fuori dal percorso</p>
       <div class="readout">
         <div class="lbl">Voto delle recensioni</div>
         <div class="big view">★ ${s.rating.toFixed(1)}</div>
@@ -731,7 +839,7 @@ function openDetail(s){
         <div class="lbl">Costo per arrivare all'80%</div>
         ${c.eur!=null
           ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
-             <div class="calc">${c.kwh.toFixed(1)} kWh da ${soc}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
+             <div class="calc">${c.kwh.toFixed(1)} kWh da ${Math.max(0,Math.round(c.arr))}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
           : `<div class="big na">Servono ${c.kwh.toFixed(1)} kWh.<br>Aggiungi questo operatore per vedere il costo.</div>`}
         ${s.declared?`<div class="declared">Prezzo dichiarato all'operatore: <b>${s.declared.slice(0,90)}</b><br>Dato pubblico non verificato.</div>`:''}
       </div>
@@ -743,6 +851,7 @@ function openDetail(s){
         <div class="spec"><div class="k">Potenza</div><div class="v">${Math.round(s.kw)} kW</div></div>
         <div class="spec"><div class="k">Punti</div><div class="v">${s.pts||'—'}</div></div>
         <div class="spec"><div class="k">Stato</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?'Attiva':'Fuori servizio'}</div></div>
+        <div class="spec"><div class="k">Arrivi con</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':'a secco'}</div></div>
         <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
       </div>
       <div class="actions">
@@ -900,13 +1009,17 @@ async function trace(){
       for(let i=0;i<profs.length;i++){
         const p=profs[i];
         if(p.sec[p.sec.length-1]>fastest*1.3) continue;   // non oltre +30% di tempo
-        const found=await fetchPOIs(p.pts,p.km);
+        const found=await fetchPOIs(p.pts,p.km,true);
         const score=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
         if(score>bestScore){ bestScore=score; chosen=i; chosenPois=found; }
       }
       if(!placesSvc) toast('Places non disponibile con questa chiave');
     }
 
+    if(S.profile==='scenic'&&placesSvc){
+      toast('Cerco le categorie scelte…');
+      chosenPois=await fetchPOIs(profs[chosen].pts,profs[chosen].km,false);
+    }
     dirRenderer.setDirections(res);
     dirRenderer.setRouteIndex(chosen);
     const p=profs[chosen];
@@ -950,11 +1063,25 @@ document.getElementById('profiles').addEventListener('click',async e=>{
 /* ============================================================
    Impostazioni
    ============================================================ */
+function fillCars(){
+  const sel=document.getElementById('car');
+  if(sel.options.length) return;
+  CARS.forEach(c=>{ const o=document.createElement('option');
+    o.value=c.nm; o.textContent=`${c.nm} — ${c.kwh} kWh · ${c.wh} Wh/km`; sel.appendChild(o); });
+  const o=document.createElement('option'); o.value='__custom'; o.textContent='Personalizzata'; sel.appendChild(o);
+  sel.addEventListener('change',()=>{
+    const c=CARS.find(x=>x.nm===sel.value);
+    if(c){ document.getElementById('kwh').value=c.kwh; document.getElementById('wh').value=c.wh; }
+  });
+}
 function paintSettings(){
+  fillCars();
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
-  v('kwh',S.kwh); v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
+  v('kwh',S.kwh); v('wh',S.wh); v('reserve',S.reserve);
+  v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
+  v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
   v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
   c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine); c('awake',S.awake);
 
@@ -969,6 +1096,16 @@ function paintSettings(){
       <button class="del" data-del="${i}" aria-label="Rimuovi ${o.nm}">×</button>`;
     ops.appendChild(d);
   });
+
+  const cbox=document.getElementById('cats'); cbox.innerHTML='';
+  CATS.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='chip'+(S.cats.includes(c.id)?' on':'');
+    b.dataset.cat=c.id;
+    b.innerHTML=`<span class="plus">${S.cats.includes(c.id)?'✓':'+'}</span><b>${c.nm}</b>`;
+    cbox.appendChild(b);
+  });
+  document.getElementById('exclude').value=S.exclude||'';
 
   const found=document.getElementById('found'); found.innerHTML='';
   const list=unconfigured();
@@ -993,6 +1130,12 @@ document.getElementById('ops').addEventListener('click',e=>{
   const b=e.target.closest('[data-del]'); if(!b) return;
   S.ops.splice(+b.dataset.del,1); paintSettings();
 });
+document.getElementById('cats').addEventListener('click',e=>{
+  const b=e.target.closest('[data-cat]'); if(!b) return;
+  const id=b.dataset.cat, i=S.cats.indexOf(id);
+  if(i>=0) S.cats.splice(i,1); else S.cats.push(id);
+  paintSettings();
+});
 document.getElementById('found').addEventListener('click',e=>{
   const b=e.target.closest('[data-add]'); if(!b) return;
   addOperator(b.dataset.add); paintSettings();
@@ -1010,9 +1153,12 @@ document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
   const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
-  S.kwh=+g('kwh').value||75; S.eff=+g('eff').value||0.92;
+  S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
+  S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
+  S.car=g('car').value; S.eff=+g('eff').value||0.92;
   S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
   S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
+  S.exclude=g('exclude').value;
   S.cmode=g('cmode').value; S.onlyMine=g('onlyMine').checked;
   S.awake=g('awake').checked; applyWake();
   S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
