@@ -40,6 +40,10 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
 .route-row input{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
   border-radius:10px;padding:11px 13px;outline:none}
 .route-row input:focus{border-color:var(--signal)}
+.ac-new{flex:1;min-width:0;--gmp-mat-color-surface:var(--deep-2);
+  --gmp-mat-color-on-surface:var(--ice);--gmp-mat-color-outline:var(--deep-3);
+  --gmp-mat-color-primary:var(--signal);--gmp-mat-color-on-surface-variant:var(--ice-dim)}
+.via-row .ac-new{flex:1}
 .btn{background:var(--deep-3);border-radius:10px;padding:11px 15px;
   font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:16px;
   letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;display:inline-block}
@@ -508,7 +512,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='2.0.1';
+const APP_VERSION='2.1.1';
 const APP_DATE='30.08.2026';
 
 
@@ -583,6 +587,7 @@ it:{ trace:"Traccia",
  retry:"Riprova",
  searching:"ricerca in corso…", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
  destPh:"Destinazione — es. Bydgoszcz",
+ acOld:"Suggerimenti non disponibili: abilita “Places API (New)” nella console Google e aggiungila alle restrizioni della chiave. Intanto puoi scrivere il nome per esteso.",
  min:"min", hr:"h",
  cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
  cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
@@ -654,6 +659,7 @@ en:{ trace:"Route",
  retry:"Retry",
  searching:"searching…", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
  destPh:"Destination — e.g. Bydgoszcz",
+ acOld:"Suggestions unavailable: enable “Places API (New)” in the Google console and add it to the key restrictions. Meanwhile you can type the full name.",
  min:"min", hr:"h",
  cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
  cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
@@ -725,6 +731,7 @@ pl:{ trace:"Wyznacz",
  retry:"Ponów",
  searching:"szukam…", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
  destPh:"Cel — np. Bydgoszcz",
+ acOld:"Podpowiedzi niedostępne: włącz „Places API (New)” w konsoli Google i dodaj do ograniczeń klucza. Na razie wpisz pełną nazwę.",
  min:"min", hr:"godz",
  cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
  cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
@@ -850,6 +857,8 @@ const HWY_RE=/autostrad|autobahn|motorway|d[áa]lnic|autoput|\bBAB\b|\bA\s?\d{1,
    ============================================================ */
 function nearestOnRoute(s,i0){
   let bd=Infinity,at=0,idx=i0;
+  // scarto rapido: se è lontana in latitudine da tutto il tratto, non serve misurare
+
   for(let i=Math.max(0,i0-1);i<route.length-1;i++){
     const r=segDist(s,route[i],route[i+1]);
     if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); idx=i; }
@@ -1053,12 +1062,16 @@ async function fetchStations(){
   passo(t('tTesla')+' · '+t('searching'));
 
   let got=[];
-  try{ got=await fetchTesla(); if(got.length) fonte='tesla'; }
-  catch(e){ ocmErr='supercharge.info: '+descriviErrore(e); }
+  try{
+    const tutte=await fetchTesla();
+    got=vicineAlPercorso(tutte, Math.max(15,(S.corridor||6)+10));
+    if(got.length) fonte='tesla';
+  }catch(e){ ocmErr='supercharge.info: '+descriviErrore(e); }
 
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  diario=`${fmtClock(t0)} · ${got.length} Supercharger`+(ocmErr?` · ${ocmErr}`:'');
+  diario=`${fmtClock(t0)} · ${got.length} Supercharger sul percorso`+
+         (scCache?` (registro: ${scCache.length})`:'')+(ocmErr?` · ${ocmErr}`:'');
   console.log('[colonnine]',diario);
   if(usingDemo) toast(ocmErr||t('tOsmFail'));
   else toast(`${got.length} · ${t('scCredit')}`);
@@ -1079,6 +1092,31 @@ function descriviErrore(e){
   if(e&&e.name==='AbortError') return 'nessuna risposta nel tempo massimo';
   if(e&&e.name==='TypeError') return 'richiesta bloccata dal browser (CORS, blocco pubblicità o rete)';
   return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
+}
+
+// riduce una lista mondiale alle sole stazioni vicine al percorso.
+// prima un test sul rettangolo, poi la distanza da punti campionati: due passate
+// grossolane ma rapidissime, che evitano milioni di calcoli a ogni ridisegno.
+function vicineAlPercorso(lista,maxKm){
+  if(!route.length) return lista;
+  let s=90,w=180,n=-90,e=-180;
+  for(const p of route){
+    if(p.lat<s)s=p.lat; if(p.lat>n)n=p.lat;
+    if(p.lng<w)w=p.lng; if(p.lng>e)e=p.lng;
+  }
+  const dlat=maxKm/111, dlng=maxKm/(111*Math.max(0.2,Math.cos((s+n)/2*Math.PI/180)));
+  const campioni=[]; let last=-999;
+  for(let i=0;i<route.length;i++) if(cum[i]-last>10){ campioni.push(route[i]); last=cum[i]; }
+  const soglia=maxKm+12;                     // margine per il passo di campionamento
+  const out=[];
+  for(const x of lista){
+    if(x.lat<s-dlat||x.lat>n+dlat||x.lng<w-dlng||x.lng>e+dlng) continue;
+    for(const c of campioni){
+      if(Math.abs(c.lat-x.lat)>0.25) continue;
+      if(hav(c,x)<=soglia){ out.push(x); break; }
+    }
+  }
+  return out;
 }
 
 let scCache=null;                       // il registro mondiale si scarica una volta sola
@@ -1166,16 +1204,8 @@ function renderVias(){
     const btn=document.createElement('button');
     btn.textContent=v?'×':'+'; btn.dataset.vact=i; btn.setAttribute('aria-label',v?'×':'+');
     r.append(num,inp,btn); box.appendChild(r);
-    if(map&&google.maps.places){
-      try{
-        const ac=new google.maps.places.Autocomplete(inp);
-        ac.addListener('place_changed',()=>{
-          const p=ac.getPlace();
-          if(p&&p.geometry) setVia(i,p.name||p.formatted_address,
-                                   p.geometry.location.lat(),p.geometry.location.lng());
-        });
-      }catch(e){}
-    }
+    if(map&&google.maps.places)
+      attaccaSuggerimenti(inp,(nome,la,lo)=>setVia(i,nome,la,lo));
   });
 }
 async function setVia(i,name,lat,lng){
@@ -1582,7 +1612,7 @@ function bootMap(){
   sc.onerror=()=>{ toast(t('tKeyBad')); document.getElementById('nomap').classList.add('show'); };
   document.head.appendChild(sc);
 }
-window.initMap=function(){
+window.initMap=async function(){
   document.getElementById('map').classList.remove('hidden');
   document.getElementById('nomap').classList.remove('show');
   map=new google.maps.Map(document.getElementById('map'),{
@@ -1602,13 +1632,52 @@ window.initMap=function(){
   dirRenderer=new google.maps.DirectionsRenderer({map,suppressMarkers:true,
     polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9}});
   try{ placesSvc=new google.maps.places.PlacesService(map); }catch(e){ placesSvc=null; }
-  try{ new google.maps.places.Autocomplete(document.getElementById('dest')); }catch(e){}
+  attaccaSuggerimenti(document.getElementById('dest'),nome=>{ S.lastDest=nome; save(); });
   renderVias();          // ricreo le righe ora che il completamento è disponibile
   meMarker=new google.maps.Marker({map,position:me,zIndex:99,
     icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',
           fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
   watchMe(); render();
 };
+// Google ha due generazioni di completamento: provo la nuova, poi la vecchia
+let acNuovo=null;      // null = non ancora saputo, true/false = esito
+async function attaccaSuggerimenti(inp,quandoScelto){
+  if(!inp||!window.google||!google.maps) return;
+  // 1) nuova: elemento web PlaceAutocompleteElement
+  try{
+    const lib=await google.maps.importLibrary('places');
+    const El=lib.PlaceAutocompleteElement||google.maps.places.PlaceAutocompleteElement;
+    if(El){
+      const el=new El({});
+      el.className='ac-new';
+      el.setAttribute('placeholder',inp.placeholder||'');
+      inp.style.display='none';
+      inp.parentElement.insertBefore(el,inp);
+      el.addEventListener('gmp-select',async ev=>{
+        try{
+          const p=ev.placePrediction.toPlace();
+          await p.fetchFields({fields:['displayName','formattedAddress','location']});
+          const nome=p.displayName||p.formattedAddress||'';
+          inp.value=nome;
+          if(quandoScelto) quandoScelto(nome,p.location.lat(),p.location.lng());
+        }catch(e){ console.warn('[colonnine] scelta luogo',e); }
+      });
+      acNuovo=true; return;
+    }
+  }catch(e){ console.warn('[colonnine] Places nuova non disponibile',e); }
+  // 2) vecchia
+  try{
+    const ac=new google.maps.places.Autocomplete(inp);
+    ac.addListener('place_changed',()=>{
+      const p=ac.getPlace();
+      if(p&&p.geometry&&quandoScelto)
+        quandoScelto(p.name||p.formatted_address,p.geometry.location.lat(),p.geometry.location.lng());
+    });
+    acNuovo=false; return;
+  }catch(e){ console.warn('[colonnine] Places vecchia non disponibile',e); }
+  if(acNuovo===null){ acNuovo=false; toast(t('acOld')); }
+}
+
 function watchMe(){
   if(!navigator.geolocation) return;
   navigator.geolocation.watchPosition(p=>{
