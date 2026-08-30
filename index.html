@@ -466,7 +466,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.8.2';
+const APP_VERSION='1.8.3';
 const APP_DATE='30.08.2026';
 
 const CATS=[
@@ -909,6 +909,11 @@ function render(){
 
   PLAN = route.length ? buildPlan(rows) : {plan:[],fail:false,dest:0};
   const list=document.getElementById('list'); list.innerHTML='';
+  if(!route.length && rows.length){
+    const d=document.createElement('div'); d.className='reach';
+    d.innerHTML='Distanze in linea d\'aria. Premi <b>Traccia</b> per avere chilometri reali, tempi, carica all\'arrivo e piano delle soste.';
+    list.appendChild(d);
+  }
   if(route.length){
     const r=rangeNow();
     const d=document.createElement('div'); d.className='reach';
