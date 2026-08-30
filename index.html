@@ -15,6 +15,7 @@
   --deep:#0E1A22; --deep-2:#152632; --deep-3:#1E3543;
   --ice:#DCE8EE; --ice-dim:#7D97A5;
   --signal:#F2A93B; --live:#3ED598; --dead:#5A6B75; --alert:#E4572E;
+  --view:#C9A227;
   --radius:14px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -31,7 +32,7 @@ button{cursor:pointer;border:none;background:none}
 #nomap{flex:1;display:none;align-items:center;justify-content:center;text-align:center;padding:32px;color:var(--ice-dim)}
 #nomap.show{display:flex}
 
-header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px 12px 12px;flex:none}
+header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px 12px 11px;flex:none}
 .route-row{display:flex;gap:8px;align-items:center}
 .route-row input{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
   border-radius:10px;padding:11px 13px;outline:none}
@@ -42,8 +43,20 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .btn.primary{background:var(--signal);color:#20160A}
 .btn.ghost{background:transparent;border:1px solid var(--deep-3)}
 .btn:focus-visible,input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.gear{flex:none;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:10px;
+  width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--ice-dim)}
+.gear:active{border-color:var(--signal)}
 
-.soc{display:flex;align-items:center;gap:12px;margin-top:11px}
+/* profili di percorso */
+.profiles{display:flex;gap:6px;margin-top:9px}
+.pf{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:9px;
+  padding:8px 4px;font-family:'Barlow Condensed',sans-serif;font-size:13.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ice-dim);text-align:center;line-height:1.15}
+.pf.on{background:var(--deep-3);border-color:var(--signal);color:var(--ice)}
+.pf small{display:block;font-family:Inter,sans-serif;font-size:9.5px;letter-spacing:.02em;
+  text-transform:none;opacity:.65;margin-top:1px}
+
+.soc{display:flex;align-items:center;gap:12px;margin-top:10px}
 .soc label{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.09em;
   text-transform:uppercase;color:var(--ice-dim);flex:none}
 .soc input[type=range]{flex:1;-webkit-appearance:none;background:transparent;height:26px}
@@ -55,11 +68,13 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   min-width:56px;text-align:right;flex:none}
 
 #sheet{flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
-  max-height:46vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
-.sheet-head{display:flex;align-items:baseline;justify-content:space-between;padding:11px 14px 8px;flex:none}
+  max-height:44vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet-head{display:flex;align-items:baseline;justify-content:space-between;padding:11px 14px 8px;flex:none;gap:12px}
 .sheet-head h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;
   font-size:17px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim)}
-.sheet-head .count{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ice-dim)}
+.sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  color:var(--ice-dim);text-align:right;line-height:1.35}
+.sheet-head .sum b{color:var(--ice);font-weight:500}
 #list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 12px}
 
 .stn{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;
@@ -72,6 +87,8 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--live);flex:none}
 .dot.off{background:var(--alert)}
+.hwy{font-size:9px;letter-spacing:.08em;border:1px solid currentColor;border-radius:4px;
+  padding:0 3px;opacity:.75;font-family:'IBM Plex Mono',monospace}
 .stn .name{color:var(--ice-dim);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stn .right{text-align:right;font-family:'IBM Plex Mono',monospace;flex:none}
 .stn .km{font-size:19px;font-weight:600;letter-spacing:-.02em}
@@ -79,9 +96,9 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .stn .tm{font-size:12.5px;color:var(--ice-dim);margin-top:1px}
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
 .stn .eur.none{color:var(--ice-dim)}
-.sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-  color:var(--ice-dim);text-align:right;line-height:1.35}
-.sheet-head .sum b{color:var(--ice);font-weight:500}
+/* riga punto di interesse */
+.stn.poi .op{color:var(--view)}
+.stn.poi .rate{font-size:14px;color:var(--view);margin-top:1px}
 
 #detail{position:fixed;inset:0;background:rgba(5,12,17,.72);backdrop-filter:blur(6px);
   display:none;align-items:flex-end;z-index:40}
@@ -97,6 +114,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .readout .big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:46px;
   color:var(--signal);line-height:1.05;letter-spacing:-.03em;margin-top:2px}
 .readout .big.na{font-size:22px;color:var(--ice-dim);line-height:1.3;margin-top:6px}
+.readout .big.view{color:var(--view)}
 .readout .calc{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ice-dim);margin-top:8px}
 .declared{margin-top:10px;padding-top:10px;border-top:1px dashed var(--deep-3);
   font-size:12.5px;color:var(--ice-dim)}
@@ -119,27 +137,42 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   border-bottom:1px solid var(--deep-3);padding-bottom:6px}
 .field{margin-bottom:11px}
 .field label{display:block;font-size:12.5px;color:var(--ice-dim);margin-bottom:4px}
-.field input{width:100%;background:var(--deep-2);border:1px solid var(--deep-3);
+.field input,.field select{width:100%;background:var(--deep-2);border:1px solid var(--deep-3);
   border-radius:10px;padding:10px 12px;outline:none}
-.field input:focus{border-color:var(--signal)}
+.field input:focus,.field select:focus{border-color:var(--signal)}
 .hint{font-size:12.5px;color:var(--ice-dim);line-height:1.55}
+/* interruttori */
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--deep-3)}
+.sw:last-of-type{border-bottom:none}
+.sw .t{font-size:14.5px}
+.sw .t small{display:block;font-size:12px;color:var(--ice-dim);margin-top:1px}
+.sw input{appearance:none;width:46px;height:27px;border-radius:14px;background:var(--deep-3);
+  position:relative;flex:none;cursor:pointer;transition:background .18s;border:none;padding:0}
+.sw input:checked{background:var(--signal)}
+.sw input::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;
+  border-radius:50%;background:var(--ice);transition:transform .18s}
+.sw input:checked::after{transform:translateX(19px);background:#20160A}
 
-/* riga operatore configurato */
-.op-row{display:grid;grid-template-columns:30px 1fr 70px 58px 30px;gap:7px;align-items:center;
-  margin-bottom:7px}
-.op-row input[type=color]{width:30px;height:30px;padding:0;border:1px solid rgba(255,255,255,.18);
+.op-row{display:grid;grid-template-columns:28px 24px 1fr 66px 54px 26px;gap:6px;align-items:center;margin-bottom:7px}
+.op-row input[type=color]{width:28px;height:28px;padding:0;border:1px solid rgba(255,255,255,.18);
   border-radius:7px;background:transparent;cursor:pointer}
+.op-row input[type=checkbox]{appearance:none;width:22px;height:22px;border-radius:6px;
+  border:1px solid var(--deep-3);background:var(--deep-2);cursor:pointer;position:relative;margin:0}
+.op-row input[type=checkbox]:checked{background:var(--signal);border-color:var(--signal)}
+.op-row input[type=checkbox]:checked::after{content:'✓';position:absolute;inset:0;
+  display:grid;place-items:center;color:#20160A;font-size:14px;font-weight:700}
 .op-row .nm{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.05em;
   text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-row .nm.off{opacity:.4;text-decoration:line-through}
 .op-row input[type=number]{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:8px;
   padding:7px 6px;width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;outline:none}
 .op-row input[type=number]:focus{border-color:var(--signal)}
 .op-row .del{color:var(--ice-dim);font-size:19px;line-height:1;text-align:center}
-.op-head{display:grid;grid-template-columns:30px 1fr 70px 58px 30px;gap:7px;
+.op-head{display:grid;grid-template-columns:28px 24px 1fr 66px 54px 26px;gap:6px;
   font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim);margin-bottom:5px}
-.op-head span:nth-child(3),.op-head span:nth-child(4){text-align:center}
+.op-head span:nth-child(4),.op-head span:nth-child(5){text-align:center}
 
-/* scoperti sul percorso */
 .found{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
 .chip{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:20px;
   padding:7px 13px;font-size:13px;display:flex;align-items:center;gap:7px}
@@ -151,9 +184,6 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   border-radius:10px;padding:10px 12px;outline:none;min-width:0}
 .add-row input:focus{border-color:var(--signal)}
 
-.gear{flex:none;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:10px;
-  width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--ice-dim)}
-.gear:active{border-color:var(--signal)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--deep-3);
   border:1px solid var(--ice-dim);border-radius:10px;padding:9px 15px;font-size:13.5px;
   z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
@@ -169,6 +199,11 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
       <input id="dest" type="text" placeholder="Destinazione — es. Bydgoszcz" autocomplete="off">
       <button class="btn primary" id="go">Traccia</button>
       <button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
+    </div>
+    <div class="profiles" id="profiles">
+      <button class="pf on" data-pf="fast">Veloce<small>il più rapido</small></button>
+      <button class="pf" data-pf="scenic">Panoramico<small>cosa vedere</small></button>
+      <button class="pf" data-pf="cheap">Economico<small>evita pedaggi</small></button>
     </div>
     <div class="soc">
       <label for="soc">Carica ora</label>
@@ -198,14 +233,52 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
   <h2>Impostazioni</h2>
   <p class="hint">Restano su questo dispositivo.</p>
 
+  <h4>Percorso</h4>
+  <div class="sw"><span class="t">Evita le autostrade<small>Strade normali, tempi molto più lunghi</small></span>
+    <input type="checkbox" id="noHwy"></div>
+  <div class="sw"><span class="t">Evita i traghetti<small>Utile verso la Scandinavia o le isole</small></span>
+    <input type="checkbox" id="noFerry"></div>
+  <div class="sw"><span class="t">Evita i pedaggi<small>Sempre attivo nel profilo Economico</small></span>
+    <input type="checkbox" id="noToll"></div>
+
+  <h4>Colonnine</h4>
+  <div class="field">
+    <label for="cmode">Dove cercarle</label>
+    <select id="cmode">
+      <option value="corridor">Ovunque nel corridoio</option>
+      <option value="highway">Solo lungo l'autostrada</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="corr">Deviazione massima dal percorso (km)</label>
+    <input id="corr" type="number" step="0.5" min="0.5" value="6">
+  </div>
+  <div class="field">
+    <label for="minkw">Potenza minima (kW)</label>
+    <input id="minkw" type="number" step="10" min="11" value="50">
+  </div>
+  <div class="sw"><span class="t">Solo i miei operatori<small>Nasconde tutte le altre colonnine invece di mostrarle in grigio</small></span>
+    <input type="checkbox" id="onlyMine"></div>
+
+  <h4>Cose da vedere</h4>
+  <div class="field">
+    <label for="minrate">Voto minimo delle recensioni</label>
+    <input id="minrate" type="number" step="0.1" min="1" max="5" value="4.3">
+  </div>
+  <div class="field">
+    <label for="minrev">Numero minimo di recensioni</label>
+    <input id="minrev" type="number" step="50" min="0" value="300">
+  </div>
+  <p class="hint">Cercate solo nel profilo Panoramico, entro 15 km dal percorso.</p>
+
   <h4>Chiavi</h4>
   <div class="field">
-    <label for="gkey">Google Maps API key — mappa, traffico, percorso</label>
+    <label for="gkey">Google Maps API key</label>
     <input id="gkey" type="text" placeholder="AIza…" autocomplete="off" spellcheck="false">
   </div>
   <div class="field">
-    <label for="ockey">Open Charge Map API key — database colonnine</label>
-    <input id="ockey" type="text" placeholder="facoltativa" autocomplete="off" spellcheck="false">
+    <label for="ockey">Open Charge Map API key</label>
+    <input id="ockey" type="text" placeholder="necessaria per le colonnine reali" autocomplete="off" spellcheck="false">
   </div>
 
   <h4>Auto</h4>
@@ -217,29 +290,22 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
     <label for="eff">Rendimento di ricarica (0–1)</label>
     <input id="eff" type="number" step="0.01" value="0.92">
   </div>
-  <div class="field">
-    <label for="corr">Larghezza del corridoio (km dal percorso)</label>
-    <input id="corr" type="number" step="1" value="6">
-  </div>
 
   <h4>Trovati sul percorso</h4>
-  <p class="hint">Operatori incontrati lungo la strada che non hai ancora configurato. Toccane uno per aggiungerlo con un colore.</p>
+  <p class="hint">Operatori incontrati lungo la strada che non hai ancora configurato.</p>
   <div class="found" id="found"></div>
 
   <h4>I tuoi operatori</h4>
-  <div class="op-head">
-    <span></span><span>Operatore</span><span>€/kWh</span><span>Fee</span><span></span>
-  </div>
+  <div class="op-head"><span></span><span>Usa</span><span>Operatore</span><span>€/kWh</span><span>Fee</span><span></span></div>
   <div id="ops"></div>
   <div class="add-row">
     <input id="newOp" type="text" placeholder="Aggiungi a mano — es. Atlante" autocomplete="off">
     <button class="btn ghost" id="addOp">Aggiungi</button>
   </div>
-  <p class="hint" style="margin-top:9px">Chi non è in elenco resta grigio sulla mappa, con il pallino verde se attivo.</p>
 
   <button class="btn primary" id="saveSet" style="width:100%;margin-top:22px;padding:14px">Salva e chiudi</button>
   <p class="hint" style="margin-top:18px">
-    Chiave Google: console.cloud.google.com → Maps JavaScript API, Places API, Directions API.<br>
+    Chiave Google: Maps JavaScript API, Places API, Directions API.<br>
     Chiave Open Charge Map: openchargemap.org/site/profile/applications
   </p>
 </div>
@@ -248,61 +314,57 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 
 <script>
 /* ============================================================
-   Catalogo operatori — usato per riconoscere e colorare
+   Catalogo operatori
    ============================================================ */
-const CATALOG = [
-  // corridoio Italia
-  {nm:'Tesla Supercharger', color:'#E82127', match:['tesla','supercharger']},
-  {nm:'Ionity',             color:'#00E1E1', match:['ionity']},
-  {nm:'Free To X',          color:'#00B5AD', match:['free to x','freetox']},
-  {nm:'Enel X Way',         color:'#8DC63F', match:['enel']},
-  {nm:'Be Charge',          color:'#00A0DF', match:['be charge','becharge','be power']},
-  {nm:'Ewiva',              color:'#FF6B35', match:['ewiva']},
-  {nm:'Atlante',            color:'#7B61FF', match:['atlante']},
-  {nm:'A2A E-Moving',       color:'#3ED598', match:['a2a','e-moving']},
-  {nm:'Duferco',            color:'#F25C54', match:['duferco']},
-  {nm:'Neogy',              color:'#00C2A8', match:['neogy']},
-  // Austria / Germania
-  {nm:'EnBW',               color:'#00A9E0', match:['enbw']},
-  {nm:'Smatrics',           color:'#B0D236', match:['smatrics']},
-  {nm:'Fastned',            color:'#FFD400', match:['fastned']},
-  {nm:'Aral pulse',         color:'#0090D4', match:['aral','pulse']},
-  {nm:'Shell Recharge',     color:'#FBCE07', match:['shell','recharge','newmotion']},
-  {nm:'Allego',             color:'#00B2A9', match:['allego']},
-  {nm:'EWE Go',             color:'#E30613', match:['ewe']},
-  {nm:'Elli / VW',          color:'#00B0F0', match:['elli','volkswagen']},
-  {nm:'Mer',                color:'#00D084', match:['mer ']},
-  // Cechia / Slovacchia
-  {nm:'ČEZ',                color:'#F58220', match:['cez','čez']},
-  {nm:'E.ON',               color:'#E2001A', match:['e.on','eon']},
-  {nm:'PRE',                color:'#009EE0', match:['pre ']},
-  // Polonia
-  {nm:'ORLEN Charge',       color:'#E30613', match:['orlen','benzina']},
-  {nm:'GreenWay',           color:'#8DC63F', match:['greenway','green way']},
-  {nm:'Powerdot',           color:'#FF4E50', match:['powerdot','power dot']},
-  {nm:'Elocity',            color:'#6C5CE7', match:['elocity']},
-  {nm:'Noxo',               color:'#00CEC9', match:['noxo']},
-  {nm:'Ekoen',              color:'#A3CB38', match:['ekoen']},
-  // roaming / MSP
-  {nm:'Electra',            color:'#B388FF', match:['electra']},
-  {nm:'Plugsurfing',        color:'#FF9F1C', match:['plugsurfing']}
+const CATALOG=[
+  {nm:'Tesla Supercharger',color:'#E82127',match:['tesla','supercharger']},
+  {nm:'Ionity',            color:'#00E1E1',match:['ionity']},
+  {nm:'Free To X',         color:'#00B5AD',match:['free to x','freetox']},
+  {nm:'Enel X Way',        color:'#8DC63F',match:['enel']},
+  {nm:'Be Charge',         color:'#00A0DF',match:['be charge','becharge','be power']},
+  {nm:'Ewiva',             color:'#FF6B35',match:['ewiva']},
+  {nm:'Atlante',           color:'#7B61FF',match:['atlante']},
+  {nm:'A2A E-Moving',      color:'#3ED598',match:['a2a','e-moving']},
+  {nm:'Duferco',           color:'#F25C54',match:['duferco']},
+  {nm:'Neogy',             color:'#00C2A8',match:['neogy']},
+  {nm:'EnBW',              color:'#00A9E0',match:['enbw']},
+  {nm:'Smatrics',          color:'#B0D236',match:['smatrics']},
+  {nm:'Fastned',           color:'#FFD400',match:['fastned']},
+  {nm:'Aral pulse',        color:'#0090D4',match:['aral','pulse']},
+  {nm:'Shell Recharge',    color:'#FBCE07',match:['shell','recharge','newmotion']},
+  {nm:'Allego',            color:'#00B2A9',match:['allego']},
+  {nm:'EWE Go',            color:'#E30613',match:['ewe']},
+  {nm:'Elli / VW',         color:'#00B0F0',match:['elli','volkswagen']},
+  {nm:'Mer',               color:'#00D084',match:['mer ']},
+  {nm:'ČEZ',               color:'#F58220',match:['cez','čez']},
+  {nm:'E.ON',              color:'#E2001A',match:['e.on','eon']},
+  {nm:'ORLEN Charge',      color:'#E30613',match:['orlen','benzina']},
+  {nm:'GreenWay',          color:'#8DC63F',match:['greenway','green way']},
+  {nm:'Powerdot',          color:'#FF4E50',match:['powerdot','power dot']},
+  {nm:'Elocity',           color:'#6C5CE7',match:['elocity']},
+  {nm:'Noxo',              color:'#00CEC9',match:['noxo']},
+  {nm:'Ekoen',             color:'#A3CB38',match:['ekoen']},
+  {nm:'Electra',           color:'#B388FF',match:['electra']},
+  {nm:'Plugsurfing',       color:'#FF9F1C',match:['plugsurfing']}
 ];
-const PALETTE = ['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
-                 '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
+const PALETTE=['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
+               '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
+const DEFAULT_OPS=['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay']
+  .map(n=>{const c=CATALOG.find(x=>x.nm===n);
+           return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
 
-const DEFAULT_OPS = ['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay']
-  .map(n=>{ const c=CATALOG.find(x=>x.nm===n);
-            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0}; });
-
-let S = { gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6,
-          ops: JSON.parse(JSON.stringify(DEFAULT_OPS)) };
+let S={ gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6, minkw:50,
+        profile:'fast', noHwy:false, noFerry:false, noToll:false,
+        cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
+        ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
 
 const mem={};
 async function load(){
   try{ const r=await window.storage.get('settings');
        if(r&&r.value) S=Object.assign(S,JSON.parse(r.value)); }
   catch(e){ if(mem.settings) S=Object.assign(S,JSON.parse(mem.settings)); }
-  S.ops.forEach(o=>{ if(!o.match||!o.match.length) o.match=[o.nm.toLowerCase()]; });
+  S.ops.forEach(o=>{ if(!o.match||!o.match.length) o.match=[o.nm.toLowerCase()];
+                     if(o.use===undefined) o.use=true; });
 }
 async function save(){
   const v=JSON.stringify(S); mem.settings=v;
@@ -310,42 +372,38 @@ async function save(){
 }
 
 /* ============================================================
-   Geometria
+   Geometria e formati
    ============================================================ */
 const R=6371;
 function hav(a,b){
-  const dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lng-a.lng)*Math.PI/180;
-  const la1=a.lat*Math.PI/180, la2=b.lat*Math.PI/180;
+  const dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;
+  const la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180;
   const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
   return 2*R*Math.asin(Math.sqrt(h));
 }
 function segDist(p,a,b){
   const k=Math.cos(a.lat*Math.PI/180);
-  const px=(p.lng-a.lng)*k, py=p.lat-a.lat;
-  const bx=(b.lng-a.lng)*k, by=b.lat-a.lat;
+  const px=(p.lng-a.lng)*k,py=p.lat-a.lat;
+  const bx=(b.lng-a.lng)*k,by=b.lat-a.lat;
   const L=bx*bx+by*by;
   let t=L>0?(px*bx+py*by)/L:0; t=Math.max(0,Math.min(1,t));
-  const dx=px-t*bx, dy=py-t*by;
-  return { d:Math.sqrt(dx*dx+dy*dy)*111.32, t };
+  const dx=px-t*bx,dy=py-t*by;
+  return {d:Math.sqrt(dx*dx+dy*dy)*111.32,t};
 }
+function fmtDur(sec){
+  if(!isFinite(sec)||sec<0) return '—';
+  const m=Math.round(sec/60);
+  return m<60 ? m+' min' : Math.floor(m/60)+'h '+String(m%60).padStart(2,'0');
+}
+function fmtClock(d){ return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
 
 /* ============================================================
    Stato
    ============================================================ */
-let map=null,traffic=null,dirRenderer=null,meMarker=null;
-let route=[],cum=[],cumT=[],markers=[],stations=[],selected=null;
-let summary=null;
+let map=null,traffic=null,dirRenderer=null,meMarker=null,placesSvc=null;
+let route=[],cum=[],cumT=[],hwy=[];
+let markers=[],stations=[],pois=[],selected=null,summary=null;
 let me={lat:43.912,lng:10.223};
-
-function fmtDur(sec){
-  if(!isFinite(sec)||sec<0) return '—';
-  const m=Math.round(sec/60);
-  if(m<60) return m+' min';
-  return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0');
-}
-function fmtClock(d){
-  return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-}
 
 function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
 function opFor(name){
@@ -360,12 +418,8 @@ function nextColor(){
   const used=S.ops.map(o=>o.color.toUpperCase());
   return PALETTE.find(c=>!used.includes(c))||PALETTE[S.ops.length%PALETTE.length];
 }
-
-function buildCum(){ cum=[0]; for(let i=1;i<route.length;i++) cum[i]=cum[i-1]+hav(route[i-1],route[i]); }
 function myIndex(){ let b=0,bd=Infinity;
-  for(let i=0;i<route.length;i++){ const d=hav(me,route[i]); if(d<bd){bd=d;b=i;} } return b; }
-
-// secondi di viaggio corrispondenti a una distanza percorsa lungo la rotta
+  for(let i=0;i<route.length;i++){const d=hav(me,route[i]); if(d<bd){bd=d;b=i;}} return b; }
 function timeAt(km){
   if(!cumT.length) return NaN;
   if(km<=0) return 0;
@@ -373,62 +427,81 @@ function timeAt(km){
   if(km>=tot) return cumT[cumT.length-1];
   let lo=0,hi=cum.length-1;
   while(hi-lo>1){ const mid=(lo+hi)>>1; if(cum[mid]<=km) lo=mid; else hi=mid; }
-  const span=cum[hi]-cum[lo];
-  const f=span>0?(km-cum[lo])/span:0;
+  const span=cum[hi]-cum[lo], f=span>0?(km-cum[lo])/span:0;
   return cumT[lo]+f*(cumT[hi]-cumT[lo]);
 }
 
-function filterAhead(){
-  if(!route.length) return stations.map(s=>({...s,km:hav(me,s)})).sort((a,b)=>a.km-b.km);
-  const i0=myIndex(), base=cum[i0], baseT=timeAt(base), out=[];
-  for(const s of stations){
-    let bd=Infinity,at=0;
-    for(let i=Math.max(0,i0-1);i<route.length-1;i++){
-      const r=segDist(s,route[i],route[i+1]);
-      if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); }
+/* riconosce se un passo del percorso è autostradale, dal testo dell'indicazione */
+const HWY_RE=/autostrad|autobahn|motorway|d[áa]lnic|autoput|\bBAB\b|\bA\s?\d{1,3}\b|\bE\s?\d{1,3}\b|\bD\s?\d{1,2}\b|\bS\s?\d{1,2}\b/i;
+
+/* ============================================================
+   Filtri
+   ============================================================ */
+function nearestOnRoute(s,i0){
+  let bd=Infinity,at=0,idx=i0;
+  for(let i=Math.max(0,i0-1);i<route.length-1;i++){
+    const r=segDist(s,route[i],route[i+1]);
+    if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); idx=i; }
+  }
+  return {off:bd,at,idx};
+}
+function aheadOf(arr,extra){
+  if(!route.length) return arr.map(s=>({...s,km:hav(me,s)})).sort((a,b)=>a.km-b.km);
+  const i0=myIndex(),base=cum[i0],baseT=timeAt(base),out=[];
+  const lim = extra&&extra.radius ? extra.radius : S.corridor;
+  for(const s of arr){
+    if(!extra?.poi){
+      const o=opFor(s.operator);
+      if(o && o.use===false) continue;              // operatore disattivato
+      if(!o && S.onlyMine) continue;                // tengo solo i miei
     }
-    if(bd<=S.corridor && at>=base-1)
-      out.push({...s,km:at-base,off:bd,sec:timeAt(at)-baseT});
+    const r=nearestOnRoute(s,i0);
+    if(r.off>lim || r.at<base-1) continue;
+    const onHwy=!!hwy[r.idx];
+    if(!extra?.poi && S.cmode==='highway' && !(onHwy && r.off<=2)) continue;
+    out.push({...s,km:r.at-base,off:r.off,sec:timeAt(r.at)-baseT,onHwy});
   }
   return out.sort((a,b)=>a.km-b.km);
 }
+const filterAhead=()=>aheadOf(stations);
+const poisAhead =()=>aheadOf(pois,{poi:true,radius:15});
 
 function costTo80(s){
   const soc=+document.getElementById('soc').value;
   const kwh=Math.max(0,(80-soc)/100*S.kwh)/S.eff;
   const o=opFor(s.operator);
-  return o ? { kwh, eur:kwh*o.price+(o.fee||0), op:o } : { kwh, eur:null, op:null };
+  return o?{kwh,eur:kwh*o.price+(o.fee||0),op:o}:{kwh,eur:null,op:null};
 }
 
 /* ============================================================
-   Dati
+   Dati colonnine
    ============================================================ */
 const DEMO=[
-  {name:'Firenze Nord',  operator:'Tesla Supercharger',lat:43.8109,lng:11.1002,kw:250,pts:16,live:true},
-  {name:'Modena Nord',   operator:'Ionity',            lat:44.7047,lng:10.9491,kw:350,pts:6, live:true},
-  {name:'Trento Sud',    operator:'Free To X',         lat:46.0287,lng:11.1218,kw:300,pts:8, live:true},
-  {name:'Brennero',      operator:'Ionity',            lat:47.0035,lng:11.5062,kw:350,pts:8, live:true},
-  {name:'Innsbruck Ost', operator:'Smatrics',          lat:47.2700,lng:11.4400,kw:150,pts:4, live:true},
-  {name:'München Süd',   operator:'EnBW',              lat:48.0602,lng:11.5503,kw:300,pts:8, live:true},
-  {name:'Nürnberg Ost',  operator:'Aral pulse',        lat:49.4200,lng:11.1200,kw:350,pts:6, live:false},
-  {name:'Dresden Nord',  operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
-  {name:'Wrocław',       operator:'GreenWay',          lat:51.1000,lng:17.0300,kw:150,pts:4, live:true},
-  {name:'Łódź Południe', operator:'ORLEN Charge',      lat:51.7300,lng:19.4500,kw:200,pts:6, live:true},
-  {name:'Poznań Wschód', operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
+  {name:'Firenze Nord', operator:'Tesla Supercharger',lat:43.8109,lng:11.1002,kw:250,pts:16,live:true},
+  {name:'Modena Nord',  operator:'Ionity',            lat:44.7047,lng:10.9491,kw:350,pts:6, live:true},
+  {name:'Trento Sud',   operator:'Free To X',         lat:46.0287,lng:11.1218,kw:300,pts:8, live:true},
+  {name:'Brennero',     operator:'Ionity',            lat:47.0035,lng:11.5062,kw:350,pts:8, live:true},
+  {name:'Innsbruck Ost',operator:'Smatrics',          lat:47.2700,lng:11.4400,kw:150,pts:4, live:true},
+  {name:'München Süd',  operator:'EnBW',              lat:48.0602,lng:11.5503,kw:300,pts:8, live:true},
+  {name:'Nürnberg Ost', operator:'Aral pulse',        lat:49.4200,lng:11.1200,kw:350,pts:6, live:false},
+  {name:'Dresden Nord', operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
+  {name:'Wrocław',      operator:'GreenWay',          lat:51.1000,lng:17.0300,kw:150,pts:4, live:true},
+  {name:'Łódź Południe',operator:'ORLEN Charge',      lat:51.7300,lng:19.4500,kw:200,pts:6, live:true},
+  {name:'Poznań Wschód',operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
 ];
 
 async function fetchOCM(){
   if(!route.length){ stations=DEMO.slice(); return; }
   const probes=[]; let last=-999;
   for(let i=0;i<route.length;i++) if(cum[i]-last>60){ probes.push(route[i]); last=cum[i]; }
-  const seen=new Set(), got=[];
+  const seen=new Set(),got=[];
   for(const p of probes.slice(0,26)){
     const u=new URL('https://api.openchargemap.io/v3/poi/');
     u.searchParams.set('output','json');
     u.searchParams.set('latitude',p.lat); u.searchParams.set('longitude',p.lng);
     u.searchParams.set('distance',35); u.searchParams.set('distanceunit','KM');
     u.searchParams.set('maxresults',60); u.searchParams.set('compact','true');
-    u.searchParams.set('minpowerkw',50);
+    u.searchParams.set('minpowerkw',S.minkw||50);
     if(S.ockey) u.searchParams.set('key',S.ockey);
     try{
       const r=await fetch(u); if(!r.ok) continue;
@@ -436,20 +509,50 @@ async function fetchOCM(){
         if(seen.has(poi.ID)) continue; seen.add(poi.ID);
         const c=poi.Connections||[];
         got.push({
-          name: poi.AddressInfo?.Title||'Colonnina',
-          town: poi.AddressInfo?.Town||'',
-          operator: poi.OperatorInfo?.Title||'—',
-          lat: poi.AddressInfo?.Latitude, lng: poi.AddressInfo?.Longitude,
-          kw: Math.max(0,...c.map(x=>x.PowerKW||0)),
-          pts: poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
-          live: poi.StatusType ? poi.StatusType.IsOperational!==false : true,
-          declared: (poi.UsageCost||'').trim()
+          name:poi.AddressInfo?.Title||'Colonnina',
+          town:poi.AddressInfo?.Town||'',
+          operator:poi.OperatorInfo?.Title||'—',
+          lat:poi.AddressInfo?.Latitude, lng:poi.AddressInfo?.Longitude,
+          kw:Math.max(0,...c.map(x=>x.PowerKW||0)),
+          pts:poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
+          live:poi.StatusType?poi.StatusType.IsOperational!==false:true,
+          declared:(poi.UsageCost||'').trim()
         });
       }
     }catch(e){}
   }
-  stations = got.length?got:DEMO.slice();
-  if(!got.length) toast('Open Charge Map non risponde — mostro il set dimostrativo');
+  stations=got.length?got:DEMO.slice();
+  if(!got.length) toast(S.ockey?'Open Charge Map non risponde':'Serve la chiave Open Charge Map — set dimostrativo');
+}
+
+/* ============================================================
+   Cose da vedere (solo profilo panoramico)
+   ============================================================ */
+function nearbyPromise(loc){
+  return new Promise(res=>{
+    if(!placesSvc) return res([]);
+    placesSvc.nearbySearch(
+      {location:loc,radius:15000,type:'tourist_attraction'},
+      (r,st)=>res(st===google.maps.places.PlacesServiceStatus.OK&&r?r:[])
+    );
+  });
+}
+async function fetchPOIs(pathArr,cumArr){
+  const probes=[]; let last=-999;
+  for(let i=0;i<pathArr.length;i++) if(cumArr[i]-last>70){ probes.push(pathArr[i]); last=cumArr[i]; }
+  const batch=probes.slice(0,20);
+  const res=await Promise.all(batch.map(p=>nearbyPromise(new google.maps.LatLng(p.lat,p.lng))));
+  const seen=new Set(),out=[];
+  for(const list of res) for(const p of list){
+    if(!p.place_id||seen.has(p.place_id)) continue;
+    const rating=p.rating||0, rev=p.user_ratings_total||0;
+    if(rating<S.minrate||rev<S.minrev) continue;
+    seen.add(p.place_id);
+    out.push({ poi:true, name:p.name, place_id:p.place_id,
+               lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
+               rating, rev, kind:(p.types||[])[0]||'' });
+  }
+  return out;
 }
 
 /* ============================================================
@@ -457,112 +560,160 @@ async function fetchOCM(){
    ============================================================ */
 function toast(m){
   const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3400);
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3600);
 }
 
 function render(){
-  const rows=filterAhead(), list=document.getElementById('list');
+  const rows=filterAhead();
+  const views=S.profile==='scenic'?poisAhead():[];
+  const all=[...rows,...views].sort((a,b)=>a.km-b.km);
   const head=document.getElementById('count');
   if(summary){
     const eta=new Date(Date.now()+summary.sec*1000);
-    const giorni=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
-    head.innerHTML=`<b>${rows.length}</b> colonnine · ${Math.round(summary.km)} km<br>`+
-      `${fmtDur(summary.sec)} · arrivo <b>${fmtClock(eta)}</b>${giorni>0?' +'+giorni:''}`;
-  } else {
-    head.innerHTML = rows.length ? `<b>${rows.length}</b> colonnine` : '—';
+    const g=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
+    head.innerHTML=`<b>${rows.length}</b> colonnine${views.length?` · <b>${views.length}</b> da vedere`:''} · ${Math.round(summary.km)} km<br>`+
+      `${fmtDur(summary.sec)} · arrivo <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
+  } else head.innerHTML=rows.length?`<b>${rows.length}</b> colonnine`:'—';
+
+  const list=document.getElementById('list'); list.innerHTML='';
+  if(!all.length){
+    list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.</p>';
   }
-  list.innerHTML='';
-  if(!rows.length){
-    list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga il corridoio nelle impostazioni.</p>';
-  }
-  rows.slice(0,80).forEach(s=>{
-    const o=opFor(s.operator), c=costTo80(s);
-    const el=document.createElement('button'); el.className='stn';
-    el.innerHTML=`
-      <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
-      <span class="mid">
-        <span class="op" style="color:${o?o.color:'var(--ice-dim)'}">
-          <span class="dot ${s.live?'':'off'}"></span>${(s.operator||'—').slice(0,28)}
+  all.slice(0,90).forEach(s=>{
+    const el=document.createElement('button');
+    if(s.poi){
+      el.className='stn poi';
+      el.innerHTML=`
+        <span class="bar" style="background:var(--view)"></span>
+        <span class="mid">
+          <span class="op">◆ ${s.name.slice(0,30)}</span>
+          <span class="name">${s.off.toFixed(0)} km fuori percorso · ${s.rev.toLocaleString('it-IT')} recensioni</span>
         </span>
-        <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW</span>
-      </span>
-      <span class="right">
-        <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
-        ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
-        <span class="eur ${c.eur==null?'none':''}">${c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?'tariffa ?':'—')}</span>
-      </span>`;
+        <span class="right">
+          <span class="km">${s.km.toFixed(0)}<small> km</small></span>
+          ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
+          <span class="rate">★ ${s.rating.toFixed(1)}</span>
+        </span>`;
+    } else {
+      const o=opFor(s.operator),c=costTo80(s);
+      el.className='stn';
+      el.innerHTML=`
+        <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
+        <span class="mid">
+          <span class="op" style="color:${o?o.color:'var(--ice-dim)'}">
+            <span class="dot ${s.live?'':'off'}"></span>${(s.operator||'—').slice(0,24)}
+            ${s.onHwy?'<span class="hwy">A</span>':''}
+          </span>
+          <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW</span>
+        </span>
+        <span class="right">
+          <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
+          ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
+          <span class="eur ${c.eur==null?'none':''}">${c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?'tariffa ?':'—')}</span>
+        </span>`;
+    }
     el.onclick=()=>openDetail(s);
     list.appendChild(el);
   });
-  drawMarkers(rows);
+  drawMarkers(rows,views);
 }
 
 function openDetail(s){
   selected=s;
-  const o=opFor(s.operator), c=costTo80(s), soc=+document.getElementById('soc').value;
-  const cat=!o?catalogFor(s.operator):null;
-  document.getElementById('detailCard').innerHTML=`
-    <h3 style="color:${o?o.color:'var(--ice)'}">${s.operator||'Operatore ignoto'}</h3>
-    <p class="sub">${s.name}${s.town?' · '+s.town:''}</p>
-    <div class="readout">
-      <div class="lbl">Costo per arrivare all'80%</div>
-      ${c.eur!=null
-        ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
-           <div class="calc">${c.kwh.toFixed(1)} kWh da ${soc}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
-        : `<div class="big na">Servono ${c.kwh.toFixed(1)} kWh.<br>Aggiungi questo operatore nelle impostazioni per vedere il costo.</div>`}
-      ${s.declared?`<div class="declared">Prezzo dichiarato all'operatore: <b>${s.declared.slice(0,90)}</b><br>Dato pubblico non verificato, la tua tariffa può essere diversa.</div>`:''}
-    </div>
-    <div class="specs">
-      <div class="spec"><div class="k">Distanza</div><div class="v">${s.km!=null?(s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'):'—'}</div></div>
-      <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
-      <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
-      <div class="spec"><div class="k">Fuori percorso</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
-      <div class="spec"><div class="k">Potenza</div><div class="v">${Math.round(s.kw)} kW</div></div>
-      <div class="spec"><div class="k">Punti</div><div class="v">${s.pts||'—'}</div></div>
-      <div class="spec"><div class="k">Stato</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?'Attiva':'Fuori servizio'}</div></div>
-      <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
-    </div>
-    <div class="actions">
-      ${!o?`<button class="btn" id="quickAdd">Aggiungi operatore</button>`:''}
-      <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
-      <button class="btn" id="closeD">Chiudi</button>
-    </div>`;
+  const soc=+document.getElementById('soc').value;
+  const card=document.getElementById('detailCard');
+
+  if(s.poi){
+    card.innerHTML=`
+      <h3 style="color:var(--view)">${s.name}</h3>
+      <p class="sub">${s.off.toFixed(1)} km fuori dal percorso</p>
+      <div class="readout">
+        <div class="lbl">Voto delle recensioni</div>
+        <div class="big view">★ ${s.rating.toFixed(1)}</div>
+        <div class="calc">${s.rev.toLocaleString('it-IT')} recensioni su Google</div>
+      </div>
+      <div class="specs">
+        <div class="spec"><div class="k">Distanza</div><div class="v">${s.km.toFixed(0)} km</div></div>
+        <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
+        <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
+        <div class="spec"><div class="k">Deviazione</div><div class="v">${s.off.toFixed(1)} km</div></div>
+      </div>
+      <div class="actions">
+        <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}&query_place_id=${s.place_id}">Dettagli</a>
+        <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
+        <button class="btn" id="closeD">Chiudi</button>
+      </div>`;
+  } else {
+    const o=opFor(s.operator),c=costTo80(s);
+    card.innerHTML=`
+      <h3 style="color:${o?o.color:'var(--ice)'}">${s.operator||'Operatore ignoto'}</h3>
+      <p class="sub">${s.name}${s.town?' · '+s.town:''}${s.onHwy?' · sull\'autostrada':''}</p>
+      <div class="readout">
+        <div class="lbl">Costo per arrivare all'80%</div>
+        ${c.eur!=null
+          ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
+             <div class="calc">${c.kwh.toFixed(1)} kWh da ${soc}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
+          : `<div class="big na">Servono ${c.kwh.toFixed(1)} kWh.<br>Aggiungi questo operatore per vedere il costo.</div>`}
+        ${s.declared?`<div class="declared">Prezzo dichiarato all'operatore: <b>${s.declared.slice(0,90)}</b><br>Dato pubblico non verificato.</div>`:''}
+      </div>
+      <div class="specs">
+        <div class="spec"><div class="k">Distanza</div><div class="v">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'}</div></div>
+        <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
+        <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
+        <div class="spec"><div class="k">Deviazione</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
+        <div class="spec"><div class="k">Potenza</div><div class="v">${Math.round(s.kw)} kW</div></div>
+        <div class="spec"><div class="k">Punti</div><div class="v">${s.pts||'—'}</div></div>
+        <div class="spec"><div class="k">Stato</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?'Attiva':'Fuori servizio'}</div></div>
+        <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
+      </div>
+      <div class="actions">
+        ${!o?`<button class="btn" id="quickAdd">Aggiungi operatore</button>`:''}
+        <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
+        <button class="btn" id="closeD">Chiudi</button>
+      </div>`;
+  }
   document.getElementById('detail').classList.add('show');
   document.getElementById('closeD').onclick=()=>document.getElementById('detail').classList.remove('show');
   const qa=document.getElementById('quickAdd');
   if(qa) qa.onclick=async()=>{
-    addOperator(s.operator);
-    await save();
+    addOperator(s.operator); await save();
     document.getElementById('detail').classList.remove('show');
-    render(); toast(s.operator+' aggiunto — imposta il prezzo nelle impostazioni');
+    render(); toast(s.operator+' aggiunto — imposta il prezzo in ⚙');
   };
 }
 document.getElementById('detail').onclick=e=>{ if(e.target.id==='detail') e.target.classList.remove('show'); };
 
-function addOperator(rawName){
-  const cat=catalogFor(rawName);
-  const nm=cat?cat.nm:rawName.trim();
+function addOperator(raw){
+  const cat=catalogFor(raw), nm=cat?cat.nm:(raw||'').trim();
   if(!nm) return false;
   if(S.ops.some(o=>o.nm.toLowerCase()===nm.toLowerCase())) return false;
-  S.ops.push({ nm, color: cat?cat.color:nextColor(),
-               match: cat?cat.match.slice():[nm.toLowerCase()],
-               price:0.50, fee:0 });
+  S.ops.push({nm,color:cat?cat.color:nextColor(),
+              match:cat?cat.match.slice():[nm.toLowerCase()],price:0.50,fee:0,use:true});
   return true;
 }
 
-function drawMarkers(rows){
+function drawMarkers(rows,views){
   if(!map) return;
   markers.forEach(m=>m.setMap(null)); markers=[];
   rows.forEach(s=>{
     const o=opFor(s.operator);
     const mk=new google.maps.Marker({
-      position:{lat:s.lat,lng:s.lng}, map, title:`${s.operator} — ${s.name}`,
-      zIndex:o?20:5,
-      icon:{ path:google.maps.SymbolPath.CIRCLE, scale:o?9:5.5,
-             fillColor:o?o.color:'#5A6B75', fillOpacity:o?1:.85,
-             strokeColor:s.live?'#3ED598':'#E4572E', strokeWeight:o?2.5:2 }
+      position:{lat:s.lat,lng:s.lng},map,title:`${s.operator} — ${s.name}`,zIndex:o?20:5,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:o?9:5.5,
+            fillColor:o?o.color:'#5A6B75',fillOpacity:o?1:.85,
+            strokeColor:s.live?'#3ED598':'#E4572E',strokeWeight:o?2.5:2}
     });
     mk.addListener('click',()=>openDetail(s));
+    markers.push(mk);
+  });
+  (views||[]).forEach(p=>{
+    const mk=new google.maps.Marker({
+      position:{lat:p.lat,lng:p.lng},map,title:`${p.name} — ★ ${p.rating}`,zIndex:30,
+      label:{text:p.rating.toFixed(1),color:'#20160A',fontSize:'10px',fontWeight:'700'},
+      icon:{path:'M 0,-12 L 12,0 L 0,12 L -12,0 Z',fillColor:'#C9A227',fillOpacity:1,
+            strokeColor:'#20160A',strokeWeight:1.5,scale:1,labelOrigin:new google.maps.Point(0,0)}
+    });
+    mk.addListener('click',()=>openDetail(p));
     markers.push(mk);
   });
 }
@@ -582,7 +733,7 @@ window.initMap=function(){
   document.getElementById('map').classList.remove('hidden');
   document.getElementById('nomap').classList.remove('show');
   map=new google.maps.Map(document.getElementById('map'),{
-    center:me, zoom:8, disableDefaultUI:true, zoomControl:true, gestureHandling:'greedy',
+    center:me,zoom:8,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',
     styles:[
       {elementType:'geometry',stylers:[{color:'#16262F'}]},
       {elementType:'labels.text.fill',stylers:[{color:'#7D97A5'}]},
@@ -595,15 +746,15 @@ window.initMap=function(){
     ]
   });
   traffic=new google.maps.TrafficLayer(); traffic.setMap(map);
-  dirRenderer=new google.maps.DirectionsRenderer({ map, suppressMarkers:true,
-    polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9} });
-  new google.maps.places.Autocomplete(document.getElementById('dest'));
+  dirRenderer=new google.maps.DirectionsRenderer({map,suppressMarkers:true,
+    polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9}});
+  try{ placesSvc=new google.maps.places.PlacesService(map); }catch(e){ placesSvc=null; }
+  try{ new google.maps.places.Autocomplete(document.getElementById('dest')); }catch(e){}
   meMarker=new google.maps.Marker({map,position:me,zIndex:99,
     icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',
           fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
   watchMe(); render();
 };
-
 function watchMe(){
   if(!navigator.geolocation) return;
   navigator.geolocation.watchPosition(p=>{
@@ -613,84 +764,123 @@ function watchMe(){
   },()=>{},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
 }
 
+/* costruisce distanza, tempo e flag autostradale dai singoli passi */
+function profileOf(routeObj){
+  const pts=[],km=[0],sec=[0],isH=[];
+  for(const leg of routeObj.legs){
+    const base=leg.duration?.value||0;
+    const real=leg.duration_in_traffic?.value||base;
+    const k=base>0?real/base:1;
+    for(const step of leg.steps){
+      const path=step.path||step.lat_lngs||[];
+      if(path.length<2) continue;
+      const txt=(step.instructions||'')+' '+(step.summary||'');
+      const h=HWY_RE.test(txt.replace(/<[^>]+>/g,' '));
+      const sSec=(step.duration?.value||0)*k;
+      let sKm=0; const seg=[];
+      for(let i=1;i<path.length;i++){
+        const a={lat:path[i-1].lat(),lng:path[i-1].lng()};
+        const b={lat:path[i].lat(),lng:path[i].lng()};
+        const d=hav(a,b); sKm+=d; seg.push({p:b,d});
+      }
+      if(!pts.length){ pts.push({lat:path[0].lat(),lng:path[0].lng()}); isH.push(h); }
+      for(const {p,d} of seg){
+        pts.push(p); km.push(km[km.length-1]+d);
+        sec.push(sec[sec.length-1]+(sKm>0?sSec*(d/sKm):0)); isH.push(h);
+      }
+    }
+  }
+  return {pts,km,sec,isH};
+}
+
 async function trace(){
   const dest=document.getElementById('dest').value.trim();
   if(!dest) return toast('Scrivi una destinazione');
   if(!map) return toast('Serve la chiave Google per calcolare il percorso');
-  new google.maps.DirectionsService().route(
-    { origin:me, destination:dest, travelMode:'DRIVING',
-      drivingOptions:{ departureTime:new Date(), trafficModel:'bestguess' } },
-    async (res,st)=>{
-      if(st!=='OK') return toast('Percorso non trovato: '+st);
-      dirRenderer.setDirections(res);
+  const req={ origin:me,destination:dest,travelMode:'DRIVING',
+    avoidHighways:!!S.noHwy, avoidFerries:!!S.noFerry,
+    avoidTolls: S.profile==='cheap' ? true : !!S.noToll,
+    provideRouteAlternatives: S.profile==='scenic',
+    drivingOptions:{departureTime:new Date(),trafficModel:'bestguess'} };
 
-      // profilo distanza+tempo costruito passo per passo, non sul tracciato generale:
-      // così il tempo di ogni colonnina tiene conto di autostrada e statale
-      route=[]; cum=[0]; cumT=[0];
-      let totSec=0;
-      for(const leg of res.routes[0].legs){
-        // se il traffico è disponibile, usalo per scalare i tempi dei singoli passi
-        const base=leg.duration?.value||0;
-        const real=leg.duration_in_traffic?.value||base;
-        const k=base>0?real/base:1;
-        for(const step of leg.steps){
-          const pts=step.path||step.lat_lngs||[];
-          if(pts.length<2) continue;
-          const sSec=(step.duration?.value||0)*k;
-          let sKm=0; const seg=[];
-          for(let i=1;i<pts.length;i++){
-            const a={lat:pts[i-1].lat(),lng:pts[i-1].lng()};
-            const b={lat:pts[i].lat(),lng:pts[i].lng()};
-            const d=hav(a,b); sKm+=d; seg.push({p:b,d});
-          }
-          if(!route.length) route.push({lat:pts[0].lat(),lng:pts[0].lng()});
-          for(const {p,d} of seg){
-            route.push(p);
-            cum.push(cum[cum.length-1]+d);
-            cumT.push(cumT[cumT.length-1]+(sKm>0?sSec*(d/sKm):0));
-          }
-          totSec+=sSec;
-        }
+  toast('Calcolo il percorso…');
+  new google.maps.DirectionsService().route(req,async (res,st)=>{
+    if(st!=='OK') return toast('Percorso non trovato: '+st);
+
+    let chosen=0, chosenPois=[];
+    const profs=res.routes.map(profileOf);
+
+    if(S.profile==='scenic' && placesSvc){
+      toast('Cerco cosa vedere lungo le alternative…');
+      const fastest=Math.min(...profs.map(p=>p.sec[p.sec.length-1]));
+      let bestScore=-1;
+      for(let i=0;i<profs.length;i++){
+        const p=profs[i];
+        if(p.sec[p.sec.length-1]>fastest*1.3) continue;   // non oltre +30% di tempo
+        const found=await fetchPOIs(p.pts,p.km);
+        const score=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
+        if(score>bestScore){ bestScore=score; chosen=i; chosenPois=found; }
       }
-      summary={ km:cum[cum.length-1], sec:cumT[cumT.length-1] };
+      if(!placesSvc) toast('Places non disponibile con questa chiave');
+    }
 
-      toast('Cerco le colonnine…');
-      await fetchOCM(); render();
-      const nuovi=unconfigured().length;
-      toast(`${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
-            (nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
-    });
+    dirRenderer.setDirections(res);
+    dirRenderer.setRouteIndex(chosen);
+    const p=profs[chosen];
+    route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
+    summary={km:cum[cum.length-1],sec:cumT[cumT.length-1]};
+    pois=chosenPois;
+
+    toast('Cerco le colonnine…');
+    await fetchOCM(); render();
+    const nuovi=unconfigured().length;
+    toast(`${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
+          (pois.length?` · ${poisAhead().length} da vedere`:'')+
+          (nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
+  });
 }
 
-/* ============================================================
-   Operatori scoperti
-   ============================================================ */
 function unconfigured(){
-  const map2=new Map();
+  const m=new Map();
   filterAhead().forEach(s=>{
     if(opFor(s.operator)) return;
     const n=(s.operator||'').trim();
     if(!n||n==='—') return;
-    map2.set(n,(map2.get(n)||0)+1);
+    m.set(n,(m.get(n)||0)+1);
   });
-  return [...map2.entries()].sort((a,b)=>b[1]-a[1]);
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
 }
+
+/* ============================================================
+   Profili
+   ============================================================ */
+document.getElementById('profiles').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-pf]'); if(!b) return;
+  S.profile=b.dataset.pf;
+  document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
+  await save();
+  if(S.profile!=='scenic'){ pois=[]; }
+  render();
+  if(route.length) toast('Premi Traccia per ricalcolare con questo profilo');
+});
 
 /* ============================================================
    Impostazioni
    ============================================================ */
 function paintSettings(){
-  document.getElementById('gkey').value=S.gkey||'';
-  document.getElementById('ockey').value=S.ockey||'';
-  document.getElementById('kwh').value=S.kwh;
-  document.getElementById('eff').value=S.eff;
-  document.getElementById('corr').value=S.corridor;
+  const v=(id,val)=>document.getElementById(id).value=val;
+  const c=(id,val)=>document.getElementById(id).checked=!!val;
+  v('gkey',S.gkey||''); v('ockey',S.ockey||'');
+  v('kwh',S.kwh); v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
+  v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
+  c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine);
 
   const ops=document.getElementById('ops'); ops.innerHTML='';
   S.ops.forEach((o,i)=>{
     const d=document.createElement('div'); d.className='op-row';
     d.innerHTML=`<input type="color" value="${o.color}" data-i="${i}" data-f="color" aria-label="Colore ${o.nm}">
-      <span class="nm">${o.nm}</span>
+      <input type="checkbox" ${o.use!==false?'checked':''} data-i="${i}" data-f="use" aria-label="Usa ${o.nm}">
+      <span class="nm ${o.use===false?'off':''}">${o.nm}</span>
       <input type="number" step="0.01" value="${o.price}" data-i="${i}" data-f="price" aria-label="Euro al kWh ${o.nm}">
       <input type="number" step="0.10" value="${o.fee||0}" data-i="${i}" data-f="fee" aria-label="Fee ${o.nm}">
       <button class="del" data-del="${i}" aria-label="Rimuovi ${o.nm}">×</button>`;
@@ -700,20 +890,21 @@ function paintSettings(){
   const found=document.getElementById('found'); found.innerHTML='';
   const list=unconfigured();
   if(!list.length){
-    found.innerHTML='<p class="hint" style="margin:0">Nessuno per ora. Traccia un percorso e torna qui: gli operatori incontrati compariranno in questo riquadro.</p>';
-  } else {
-    list.slice(0,24).forEach(([nm,n])=>{
-      const b=document.createElement('button'); b.className='chip'; b.dataset.add=nm;
-      b.innerHTML=`<span class="plus">+</span><b>${nm.slice(0,26)}</b><span class="n">${n}</span>`;
-      found.appendChild(b);
-    });
-  }
+    found.innerHTML='<p class="hint" style="margin:0">Nessuno per ora. Traccia un percorso e torna qui.</p>';
+  } else list.slice(0,24).forEach(([nm,n])=>{
+    const b=document.createElement('button'); b.className='chip'; b.dataset.add=nm;
+    b.innerHTML=`<span class="plus">+</span><b>${nm.slice(0,26)}</b><span class="n">${n}</span>`;
+    found.appendChild(b);
+  });
 }
-
 document.getElementById('ops').addEventListener('input',e=>{
   const t=e.target; if(!t.dataset.f) return;
   const o=S.ops[+t.dataset.i];
-  o[t.dataset.f] = t.dataset.f==='color' ? t.value : (+t.value||0);
+  if(t.dataset.f==='use'){
+    o.use=t.checked;
+    t.parentElement.querySelector('.nm').classList.toggle('off',!t.checked);
+  } else if(t.dataset.f==='color'){ o.color=t.value; }
+  else { o[t.dataset.f]=+t.value||0; }
 });
 document.getElementById('ops').addEventListener('click',e=>{
   const b=e.target.closest('[data-del]'); if(!b) return;
@@ -724,27 +915,28 @@ document.getElementById('found').addEventListener('click',e=>{
   addOperator(b.dataset.add); paintSettings();
 });
 document.getElementById('addOp').onclick=()=>{
-  const inp=document.getElementById('newOp'), v=inp.value.trim();
-  if(!v) return;
-  if(addOperator(v)){ inp.value=''; paintSettings(); }
-  else toast('Operatore già presente');
+  const inp=document.getElementById('newOp'),val=inp.value.trim();
+  if(!val) return;
+  if(addOperator(val)){ inp.value=''; paintSettings(); } else toast('Operatore già presente');
 };
 document.getElementById('newOp').addEventListener('keydown',e=>{
   if(e.key==='Enter') document.getElementById('addOp').click();
 });
-
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
-  const prev=S.gkey;
-  S.gkey=document.getElementById('gkey').value.trim();
-  S.ockey=document.getElementById('ockey').value.trim();
-  S.kwh=+document.getElementById('kwh').value||75;
-  S.eff=+document.getElementById('eff').value||0.92;
-  S.corridor=+document.getElementById('corr').value||6;
+  const g=id=>document.getElementById(id);
+  const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
+  S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
+  S.kwh=+g('kwh').value||75; S.eff=+g('eff').value||0.92;
+  S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
+  S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
+  S.cmode=g('cmode').value; S.onlyMine=g('onlyMine').checked;
+  S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
   await save();
   document.getElementById('settings').classList.remove('show');
-  if(S.gkey && S.gkey!==prev && !map) bootMap(); else render();
-  toast('Impostazioni salvate');
+  if(S.gkey&&S.gkey!==prev&&!map) bootMap(); else render();
+  const cambiato=JSON.stringify([S.noHwy,S.noFerry,S.noToll])!==prevRoute;
+  toast(cambiato&&route.length?'Premi Traccia per ricalcolare il percorso':'Impostazioni salvate');
 };
 
 const socEl=document.getElementById('soc');
@@ -752,12 +944,14 @@ function paintSoc(){
   document.getElementById('socVal').textContent=socEl.value+'%';
   socEl.style.setProperty('--pct',((socEl.value-1)/78*100)+'%');
 }
-socEl.oninput=()=>{ paintSoc(); render(); if(selected) openDetail(selected); };
+socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
 document.getElementById('go').onclick=trace;
 document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Enter') trace(); });
 
 (async()=>{
-  await load(); paintSoc(); stations=DEMO.slice(); bootMap(); render();
+  await load(); paintSoc();
+  document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
+  stations=DEMO.slice(); bootMap(); render();
   if(!S.gkey) toast('Apri ⚙ e inserisci la chiave Google Maps');
 })();
 </script>
