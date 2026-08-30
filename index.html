@@ -12,144 +12,91 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --deep:#0E1A22;        /* petrolio profondo — base */
-  --deep-2:#152632;      /* pannelli */
-  --deep-3:#1E3543;      /* bordi e superfici sollevate */
-  --ice:#DCE8EE;         /* testo primario */
-  --ice-dim:#7D97A5;     /* testo secondario */
-  --signal:#F2A93B;      /* ambra: il numero che conta */
-  --live:#3ED598;        /* verde: attiva e funzionante */
-  --dead:#5A6B75;        /* grigio: non preferita / non operativa */
-  --alert:#E4572E;
+  --deep:#0E1A22; --deep-2:#152632; --deep-3:#1E3543;
+  --ice:#DCE8EE; --ice-dim:#7D97A5;
+  --signal:#F2A93B; --live:#3ED598; --dead:#5A6B75; --alert:#E4572E;
   --radius:14px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden}
-body{
-  background:var(--deep);color:var(--ice);
-  font-family:Inter,system-ui,-apple-system,sans-serif;
-  font-size:15px;line-height:1.45;
-  padding-top:env(safe-area-inset-top);
-}
+body{background:var(--deep);color:var(--ice);
+  font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.45;
+  padding-top:env(safe-area-inset-top)}
 button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 
-/* ---------- struttura ---------- */
 #app{display:flex;flex-direction:column;height:100%}
 #map{flex:1;min-height:0;background:var(--deep-2)}
 #map.hidden{display:none}
 #nomap{flex:1;display:none;align-items:center;justify-content:center;text-align:center;padding:32px;color:var(--ice-dim)}
 #nomap.show{display:flex}
 
-/* ---------- barra alta ---------- */
-header{
-  background:var(--deep);border-bottom:1px solid var(--deep-3);
-  padding:10px 12px 12px;flex:none;
-}
+header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px 12px 12px;flex:none}
 .route-row{display:flex;gap:8px;align-items:center}
-.route-row input{
-  flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
-  border-radius:10px;padding:11px 13px;outline:none;
-}
+.route-row input{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
+  border-radius:10px;padding:11px 13px;outline:none}
 .route-row input:focus{border-color:var(--signal)}
-.btn{
-  background:var(--deep-3);border-radius:10px;padding:11px 15px;
+.btn{background:var(--deep-3);border-radius:10px;padding:11px 15px;
   font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:16px;
-  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;
-}
+  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;display:inline-block}
 .btn.primary{background:var(--signal);color:#20160A}
+.btn.ghost{background:transparent;border:1px solid var(--deep-3)}
 .btn:focus-visible,input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
-/* ---------- riga stato di carica ---------- */
 .soc{display:flex;align-items:center;gap:12px;margin-top:11px}
-.soc label{
-  font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ice-dim);flex:none;
-}
-.soc input[type=range]{
-  flex:1;-webkit-appearance:none;background:transparent;height:26px;
-}
-.soc input[type=range]::-webkit-slider-runnable-track{
-  height:5px;border-radius:3px;
-  background:linear-gradient(90deg,var(--signal) var(--pct,50%),var(--deep-3) var(--pct,50%));
-}
-.soc input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
-  background:var(--ice);margin-top:-10px;border:3px solid var(--deep);
-}
-.soc .val{
-  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;
-  min-width:56px;text-align:right;flex:none;
-}
+.soc label{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ice-dim);flex:none}
+.soc input[type=range]{flex:1;-webkit-appearance:none;background:transparent;height:26px}
+.soc input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--signal) var(--pct,50%),var(--deep-3) var(--pct,50%))}
+.soc input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;
+  border-radius:50%;background:var(--ice);margin-top:-10px;border:3px solid var(--deep)}
+.soc .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;
+  min-width:56px;text-align:right;flex:none}
 
-/* ---------- foglio inferiore ---------- */
-#sheet{
-  flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
-  max-height:46vh;display:flex;flex-direction:column;
-  padding-bottom:env(safe-area-inset-bottom);
-}
-.sheet-head{
-  display:flex;align-items:baseline;justify-content:space-between;
-  padding:11px 14px 8px;flex:none;
-}
-.sheet-head h2{
-  margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;
-  font-size:17px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim);
-}
+#sheet{flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
+  max-height:46vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet-head{display:flex;align-items:baseline;justify-content:space-between;padding:11px 14px 8px;flex:none}
+.sheet-head h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+  font-size:17px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim)}
 .sheet-head .count{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ice-dim)}
 #list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 12px}
 
-/* ---------- scheda colonnina ---------- */
-.stn{
-  display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;
+.stn{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;
   background:var(--deep);border:1px solid var(--deep-3);border-radius:var(--radius);
-  padding:11px 13px 11px 0;margin-bottom:8px;overflow:hidden;text-align:left;width:100%;
-}
+  padding:11px 13px 11px 0;margin-bottom:8px;overflow:hidden;text-align:left;width:100%}
 .stn:active{border-color:var(--signal)}
 .bar{grid-row:1;align-self:stretch;background:var(--dead);margin:-11px 0}
 .stn .mid{min-width:0}
-.stn .op{
-  font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;
-  letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px;
-}
+.stn .op{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;
+  letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--live);flex:none}
 .dot.off{background:var(--alert)}
-.stn .name{
-  color:var(--ice-dim);font-size:13.5px;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;
-}
+.stn .name{color:var(--ice-dim);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stn .right{text-align:right;font-family:'IBM Plex Mono',monospace;flex:none}
 .stn .km{font-size:19px;font-weight:600;letter-spacing:-.02em}
 .stn .km small{font-size:11px;color:var(--ice-dim);font-weight:400}
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
+.stn .eur.none{color:var(--ice-dim)}
 
-/* ---------- dettaglio ---------- */
-#detail{
-  position:fixed;inset:0;background:rgba(5,12,17,.72);backdrop-filter:blur(6px);
-  display:none;align-items:flex-end;z-index:40;
-}
+#detail{position:fixed;inset:0;background:rgba(5,12,17,.72);backdrop-filter:blur(6px);
+  display:none;align-items:flex-end;z-index:40}
 #detail.show{display:flex}
-.card{
-  background:var(--deep-2);width:100%;border-radius:20px 20px 0 0;
-  border-top:1px solid var(--deep-3);padding:20px 18px calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh;overflow-y:auto;
-}
+.card{background:var(--deep-2);width:100%;border-radius:20px 20px 0 0;border-top:1px solid var(--deep-3);
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto}
 .card h3{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.02em}
 .card .sub{color:var(--ice-dim);font-size:13.5px;margin:2px 0 18px}
-/* firma: il grande numero da strumentazione */
-.readout{
-  border:1px solid var(--deep-3);border-radius:var(--radius);
-  padding:16px 18px;background:linear-gradient(180deg,var(--deep) 0%,#0B151C 100%);
-}
-.readout .lbl{
-  font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ice-dim);
-}
-.readout .big{
-  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:46px;
-  color:var(--signal);line-height:1.05;letter-spacing:-.03em;margin-top:2px;
-}
+.readout{border:1px solid var(--deep-3);border-radius:var(--radius);padding:16px 18px;
+  background:linear-gradient(180deg,var(--deep) 0%,#0B151C 100%)}
+.readout .lbl{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ice-dim)}
+.readout .big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:46px;
+  color:var(--signal);line-height:1.05;letter-spacing:-.03em;margin-top:2px}
+.readout .big.na{font-size:22px;color:var(--ice-dim);line-height:1.3;margin-top:6px}
 .readout .calc{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ice-dim);margin-top:8px}
+.declared{margin-top:10px;padding-top:10px;border-top:1px dashed var(--deep-3);
+  font-size:12.5px;color:var(--ice-dim)}
+.declared b{color:var(--ice);font-family:'IBM Plex Mono',monospace;font-weight:500}
 .specs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--deep-3);
   border:1px solid var(--deep-3);border-radius:var(--radius);overflow:hidden;margin-top:12px}
 .spec{background:var(--deep-2);padding:11px 13px}
@@ -157,11 +104,10 @@ header{
   text-transform:uppercase;color:var(--ice-dim)}
 .spec .v{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-top:1px}
 .card .actions{display:flex;gap:8px;margin-top:14px}
-.card .actions .btn{flex:1;text-align:center}
+.card .actions .btn{flex:1;text-align:center;text-decoration:none}
 
-/* ---------- impostazioni ---------- */
-#settings{position:fixed;inset:0;background:var(--deep);z-index:50;display:none;
-  overflow-y:auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+#settings{position:fixed;inset:0;background:var(--deep);z-index:50;display:none;overflow-y:auto;
+  padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
 #settings.show{display:block}
 #settings h2{font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.04em;margin:0 0 4px}
 #settings h4{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.13em;
@@ -172,23 +118,43 @@ header{
 .field input{width:100%;background:var(--deep-2);border:1px solid var(--deep-3);
   border-radius:10px;padding:10px 12px;outline:none}
 .field input:focus{border-color:var(--signal)}
-.op-row{display:grid;grid-template-columns:26px 1fr 74px 62px;gap:8px;align-items:center;margin-bottom:7px}
-.swatch{width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.15)}
+.hint{font-size:12.5px;color:var(--ice-dim);line-height:1.55}
+
+/* riga operatore configurato */
+.op-row{display:grid;grid-template-columns:30px 1fr 70px 58px 30px;gap:7px;align-items:center;
+  margin-bottom:7px}
+.op-row input[type=color]{width:30px;height:30px;padding:0;border:1px solid rgba(255,255,255,.18);
+  border-radius:7px;background:transparent;cursor:pointer}
 .op-row .nm{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.05em;
   text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.op-row input{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:8px;
-  padding:7px 8px;width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;outline:none}
-.op-row input:focus{border-color:var(--signal)}
-.hint{font-size:12.5px;color:var(--ice-dim);line-height:1.55}
-.hint a{color:var(--signal)}
+.op-row input[type=number]{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:8px;
+  padding:7px 6px;width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;outline:none}
+.op-row input[type=number]:focus{border-color:var(--signal)}
+.op-row .del{color:var(--ice-dim);font-size:19px;line-height:1;text-align:center}
+.op-head{display:grid;grid-template-columns:30px 1fr 70px 58px 30px;gap:7px;
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim);margin-bottom:5px}
+.op-head span:nth-child(3),.op-head span:nth-child(4){text-align:center}
+
+/* scoperti sul percorso */
+.found{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.chip{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:20px;
+  padding:7px 13px;font-size:13px;display:flex;align-items:center;gap:7px}
+.chip b{font-weight:500}
+.chip .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ice-dim)}
+.chip .plus{color:var(--signal);font-size:17px;line-height:1}
+.add-row{display:flex;gap:8px;margin-top:9px}
+.add-row input{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);
+  border-radius:10px;padding:10px 12px;outline:none;min-width:0}
+.add-row input:focus{border-color:var(--signal)}
+
 .gear{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:10;
   background:rgba(14,26,34,.9);border:1px solid var(--deep-3);border-radius:10px;
   width:38px;height:38px;display:grid;place-items:center;font-size:17px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--deep-3);
   border:1px solid var(--ice-dim);border-radius:10px;padding:9px 15px;font-size:13.5px;
-  z-index:60;opacity:0;pointer-events:none;transition:opacity .25s}
+  z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
 #toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -223,9 +189,7 @@ header{
 
 <button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
 
-<div id="detail" role="dialog" aria-modal="true">
-  <div class="card" id="detailCard"></div>
-</div>
+<div id="detail" role="dialog" aria-modal="true"><div class="card" id="detailCard"></div></div>
 
 <div id="settings">
   <h2>Impostazioni</h2>
@@ -247,7 +211,7 @@ header{
     <input id="kwh" type="number" step="0.5" value="75">
   </div>
   <div class="field">
-    <label for="eff">Rendimento di ricarica (0–1) — perdite in colonnina</label>
+    <label for="eff">Rendimento di ricarica (0–1)</label>
     <input id="eff" type="number" step="0.01" value="0.92">
   </div>
   <div class="field">
@@ -255,13 +219,24 @@ header{
     <input id="corr" type="number" step="1" value="6">
   </div>
 
-  <h4>Operatori e tariffe</h4>
-  <p class="hint" style="margin-bottom:12px">Prezzo in €/kWh e fee fissa per sessione, come li paghi tu con le tue tessere. Chi non è in elenco resta grigio sulla mappa.</p>
+  <h4>Trovati sul percorso</h4>
+  <p class="hint">Operatori incontrati lungo la strada che non hai ancora configurato. Toccane uno per aggiungerlo con un colore.</p>
+  <div class="found" id="found"></div>
+
+  <h4>I tuoi operatori</h4>
+  <div class="op-head">
+    <span></span><span>Operatore</span><span>€/kWh</span><span>Fee</span><span></span>
+  </div>
   <div id="ops"></div>
+  <div class="add-row">
+    <input id="newOp" type="text" placeholder="Aggiungi a mano — es. Atlante" autocomplete="off">
+    <button class="btn ghost" id="addOp">Aggiungi</button>
+  </div>
+  <p class="hint" style="margin-top:9px">Chi non è in elenco resta grigio sulla mappa, con il pallino verde se attivo.</p>
 
   <button class="btn primary" id="saveSet" style="width:100%;margin-top:22px;padding:14px">Salva e chiudi</button>
   <p class="hint" style="margin-top:18px">
-    Chiave Google: console.cloud.google.com → abilita Maps JavaScript API, Directions API, Places API.<br>
+    Chiave Google: console.cloud.google.com → Maps JavaScript API, Places API, Directions API.<br>
     Chiave Open Charge Map: openchargemap.org/site/profile/applications
   </p>
 </div>
@@ -270,95 +245,122 @@ header{
 
 <script>
 /* ============================================================
-   Stato e persistenza
+   Catalogo operatori — usato per riconoscere e colorare
    ============================================================ */
-const DEFAULT_OPS = [
-  { key:'tesla',   nm:'Tesla Supercharger', color:'#E82127', price:0.45, fee:0 },
-  { key:'ionity',  nm:'Ionity',             color:'#00E1E1', price:0.39, fee:0 },
-  { key:'enbw',    nm:'EnBW',               color:'#00A9E0', price:0.59, fee:0 },
-  { key:'orlen',   nm:'ORLEN Charge',       color:'#E30613', price:0.42, fee:0 },
-  { key:'greenway',nm:'GreenWay',           color:'#8DC63F', price:0.52, fee:0 },
-  { key:'fastned', nm:'Fastned',            color:'#FFD400', price:0.59, fee:0 },
-  { key:'electra', nm:'Electra',            color:'#B388FF', price:0.49, fee:0 }
+const CATALOG = [
+  // corridoio Italia
+  {nm:'Tesla Supercharger', color:'#E82127', match:['tesla','supercharger']},
+  {nm:'Ionity',             color:'#00E1E1', match:['ionity']},
+  {nm:'Free To X',          color:'#00B5AD', match:['free to x','freetox']},
+  {nm:'Enel X Way',         color:'#8DC63F', match:['enel']},
+  {nm:'Be Charge',          color:'#00A0DF', match:['be charge','becharge','be power']},
+  {nm:'Ewiva',              color:'#FF6B35', match:['ewiva']},
+  {nm:'Atlante',            color:'#7B61FF', match:['atlante']},
+  {nm:'A2A E-Moving',       color:'#3ED598', match:['a2a','e-moving']},
+  {nm:'Duferco',            color:'#F25C54', match:['duferco']},
+  {nm:'Neogy',              color:'#00C2A8', match:['neogy']},
+  // Austria / Germania
+  {nm:'EnBW',               color:'#00A9E0', match:['enbw']},
+  {nm:'Smatrics',           color:'#B0D236', match:['smatrics']},
+  {nm:'Fastned',            color:'#FFD400', match:['fastned']},
+  {nm:'Aral pulse',         color:'#0090D4', match:['aral','pulse']},
+  {nm:'Shell Recharge',     color:'#FBCE07', match:['shell','recharge','newmotion']},
+  {nm:'Allego',             color:'#00B2A9', match:['allego']},
+  {nm:'EWE Go',             color:'#E30613', match:['ewe']},
+  {nm:'Elli / VW',          color:'#00B0F0', match:['elli','volkswagen']},
+  {nm:'Mer',                color:'#00D084', match:['mer ']},
+  // Cechia / Slovacchia
+  {nm:'ČEZ',                color:'#F58220', match:['cez','čez']},
+  {nm:'E.ON',               color:'#E2001A', match:['e.on','eon']},
+  {nm:'PRE',                color:'#009EE0', match:['pre ']},
+  // Polonia
+  {nm:'ORLEN Charge',       color:'#E30613', match:['orlen','benzina']},
+  {nm:'GreenWay',           color:'#8DC63F', match:['greenway','green way']},
+  {nm:'Powerdot',           color:'#FF4E50', match:['powerdot','power dot']},
+  {nm:'Elocity',            color:'#6C5CE7', match:['elocity']},
+  {nm:'Noxo',               color:'#00CEC9', match:['noxo']},
+  {nm:'Ekoen',              color:'#A3CB38', match:['ekoen']},
+  // roaming / MSP
+  {nm:'Electra',            color:'#B388FF', match:['electra']},
+  {nm:'Plugsurfing',        color:'#FF9F1C', match:['plugsurfing']}
 ];
+const PALETTE = ['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
+                 '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
 
-let S = {
-  gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6,
-  ops: JSON.parse(JSON.stringify(DEFAULT_OPS))
-};
+const DEFAULT_OPS = ['Tesla Supercharger','Ionity','EnBW','ORLEN Charge','GreenWay']
+  .map(n=>{ const c=CATALOG.find(x=>x.nm===n);
+            return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0}; });
 
-const mem = {};
+let S = { gkey:'', ockey:'', kwh:75, eff:0.92, corridor:6,
+          ops: JSON.parse(JSON.stringify(DEFAULT_OPS)) };
+
+const mem={};
 async function load(){
-  try{
-    const r = await window.storage.get('settings');
-    if(r && r.value) S = Object.assign(S, JSON.parse(r.value));
-  }catch(e){ if(mem.settings) S = Object.assign(S, JSON.parse(mem.settings)); }
+  try{ const r=await window.storage.get('settings');
+       if(r&&r.value) S=Object.assign(S,JSON.parse(r.value)); }
+  catch(e){ if(mem.settings) S=Object.assign(S,JSON.parse(mem.settings)); }
+  S.ops.forEach(o=>{ if(!o.match||!o.match.length) o.match=[o.nm.toLowerCase()]; });
 }
 async function save(){
-  const v = JSON.stringify(S);
-  mem.settings = v;
-  try{ await window.storage.set('settings', v); }catch(e){}
+  const v=JSON.stringify(S); mem.settings=v;
+  try{ await window.storage.set('settings',v); }catch(e){}
 }
 
 /* ============================================================
    Geometria
    ============================================================ */
-const R = 6371;
+const R=6371;
 function hav(a,b){
   const dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lng-a.lng)*Math.PI/180;
   const la1=a.lat*Math.PI/180, la2=b.lat*Math.PI/180;
   const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
   return 2*R*Math.asin(Math.sqrt(h));
 }
-// distanza punto-segmento in km, con proiezione piana locale
 function segDist(p,a,b){
   const k=Math.cos(a.lat*Math.PI/180);
   const px=(p.lng-a.lng)*k, py=p.lat-a.lat;
   const bx=(b.lng-a.lng)*k, by=b.lat-a.lat;
   const L=bx*bx+by*by;
-  let t = L>0 ? (px*bx+py*by)/L : 0;
-  t=Math.max(0,Math.min(1,t));
+  let t=L>0?(px*bx+py*by)/L:0; t=Math.max(0,Math.min(1,t));
   const dx=px-t*bx, dy=py-t*by;
-  return { d: Math.sqrt(dx*dx+dy*dy)*111.32, t };
+  return { d:Math.sqrt(dx*dx+dy*dy)*111.32, t };
 }
 
 /* ============================================================
-   Percorso e colonnine
+   Stato
    ============================================================ */
-let map=null, traffic=null, dirRenderer=null, meMarker=null;
-let route=[];          // [{lat,lng}] polilinea completa
-let cum=[];            // distanza cumulata in km
-let me={lat:43.912,lng:10.223}; // Lido di Camaiore come partenza di riserva
-let stations=[], markers=[], selected=null;
+let map=null,traffic=null,dirRenderer=null,meMarker=null;
+let route=[],cum=[],markers=[],stations=[],selected=null;
+let me={lat:43.912,lng:10.223};
 
+function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
 function opFor(name){
-  const n=(name||'').toLowerCase();
-  return S.ops.find(o=> n.includes(o.key) || n.includes(o.nm.toLowerCase().split(' ')[0]));
+  const n=norm(name); if(!n.trim()) return null;
+  return S.ops.find(o=>o.match.some(m=>n.includes(m.trim())))||null;
+}
+function catalogFor(name){
+  const n=norm(name);
+  return CATALOG.find(c=>c.match.some(m=>n.includes(m.trim())))||null;
+}
+function nextColor(){
+  const used=S.ops.map(o=>o.color.toUpperCase());
+  return PALETTE.find(c=>!used.includes(c))||PALETTE[S.ops.length%PALETTE.length];
 }
 
-function buildCum(){
-  cum=[0];
-  for(let i=1;i<route.length;i++) cum[i]=cum[i-1]+hav(route[i-1],route[i]);
-}
-
-// indice del punto del percorso più vicino a me → tutto ciò che sta dopo è "residuo"
-function myIndex(){
-  let best=0,bd=Infinity;
-  for(let i=0;i<route.length;i++){ const d=hav(me,route[i]); if(d<bd){bd=d;best=i;} }
-  return best;
-}
+function buildCum(){ cum=[0]; for(let i=1;i<route.length;i++) cum[i]=cum[i-1]+hav(route[i-1],route[i]); }
+function myIndex(){ let b=0,bd=Infinity;
+  for(let i=0;i<route.length;i++){ const d=hav(me,route[i]); if(d<bd){bd=d;b=i;} } return b; }
 
 function filterAhead(){
-  if(!route.length) return stations.map(s=>({...s,km:hav(me,s)}));
-  const i0=myIndex(), base=cum[i0];
-  const out=[];
+  if(!route.length) return stations.map(s=>({...s,km:hav(me,s)})).sort((a,b)=>a.km-b.km);
+  const i0=myIndex(), base=cum[i0], out=[];
   for(const s of stations){
-    let bd=Infinity, at=0;
+    let bd=Infinity,at=0;
     for(let i=Math.max(0,i0-1);i<route.length-1;i++){
       const r=segDist(s,route[i],route[i+1]);
       if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); }
     }
-    if(bd<=S.corridor && at>=base-1) out.push({...s, km: at-base, off: bd});
+    if(bd<=S.corridor && at>=base-1) out.push({...s,km:at-base,off:bd});
   }
   return out.sort((a,b)=>a.km-b.km);
 }
@@ -367,35 +369,31 @@ function costTo80(s){
   const soc=+document.getElementById('soc').value;
   const kwh=Math.max(0,(80-soc)/100*S.kwh)/S.eff;
   const o=opFor(s.operator);
-  if(!o) return { kwh, eur:null };
-  return { kwh, eur: kwh*o.price + o.fee, price:o.price, fee:o.fee };
+  return o ? { kwh, eur:kwh*o.price+(o.fee||0), op:o } : { kwh, eur:null, op:null };
 }
 
 /* ============================================================
-   Dati: Open Charge Map, con set dimostrativo di riserva
+   Dati
    ============================================================ */
-const DEMO = [
-  {name:'Firenze Nord',   operator:'Tesla Supercharger', lat:43.8109, lng:11.1002, kw:250, pts:16, live:true},
-  {name:'Modena Nord',    operator:'Ionity',             lat:44.7047, lng:10.9491, kw:350, pts:6,  live:true},
-  {name:'Trento Sud',     operator:'Tesla Supercharger', lat:46.0287, lng:11.1218, kw:250, pts:12, live:true},
-  {name:'Brennero',       operator:'Ionity',             lat:47.0035, lng:11.5062, kw:350, pts:8,  live:true},
-  {name:'Innsbruck Ost',  operator:'Smatrics',           lat:47.2700, lng:11.4400, kw:150, pts:4,  live:true},
-  {name:'München Süd',    operator:'EnBW',               lat:48.0602, lng:11.5503, kw:300, pts:8,  live:true},
-  {name:'Nürnberg Ost',   operator:'Ionity',             lat:49.4200, lng:11.1200, kw:350, pts:6,  live:false},
-  {name:'Dresden Nord',   operator:'Tesla Supercharger', lat:51.1000, lng:13.7300, kw:250, pts:12, live:true},
-  {name:'Wrocław',        operator:'GreenWay',           lat:51.1000, lng:17.0300, kw:150, pts:4,  live:true},
-  {name:'Łódź Południe',  operator:'ORLEN Charge',       lat:51.7300, lng:19.4500, kw:200, pts:6,  live:true},
-  {name:'Poznań Wschód',  operator:'Tesla Supercharger', lat:52.4000, lng:16.9800, kw:250, pts:8,  live:true}
+const DEMO=[
+  {name:'Firenze Nord',  operator:'Tesla Supercharger',lat:43.8109,lng:11.1002,kw:250,pts:16,live:true},
+  {name:'Modena Nord',   operator:'Ionity',            lat:44.7047,lng:10.9491,kw:350,pts:6, live:true},
+  {name:'Trento Sud',    operator:'Free To X',         lat:46.0287,lng:11.1218,kw:300,pts:8, live:true},
+  {name:'Brennero',      operator:'Ionity',            lat:47.0035,lng:11.5062,kw:350,pts:8, live:true},
+  {name:'Innsbruck Ost', operator:'Smatrics',          lat:47.2700,lng:11.4400,kw:150,pts:4, live:true},
+  {name:'München Süd',   operator:'EnBW',              lat:48.0602,lng:11.5503,kw:300,pts:8, live:true},
+  {name:'Nürnberg Ost',  operator:'Aral pulse',        lat:49.4200,lng:11.1200,kw:350,pts:6, live:false},
+  {name:'Dresden Nord',  operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
+  {name:'Wrocław',       operator:'GreenWay',          lat:51.1000,lng:17.0300,kw:150,pts:4, live:true},
+  {name:'Łódź Południe', operator:'ORLEN Charge',      lat:51.7300,lng:19.4500,kw:200,pts:6, live:true},
+  {name:'Poznań Wschód', operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
 ];
 
 async function fetchOCM(){
   if(!route.length){ stations=DEMO.slice(); return; }
-  // campiona il percorso ogni ~60 km e interroga OCM attorno a ciascun punto
   const probes=[]; let last=-999;
-  for(let i=0;i<route.length;i++){
-    if(cum[i]-last>60){ probes.push(route[i]); last=cum[i]; }
-  }
-  const seen=new Set(); const got=[];
+  for(let i=0;i<route.length;i++) if(cum[i]-last>60){ probes.push(route[i]); last=cum[i]; }
+  const seen=new Set(), got=[];
   for(const p of probes.slice(0,26)){
     const u=new URL('https://api.openchargemap.io/v3/poi/');
     u.searchParams.set('output','json');
@@ -410,18 +408,19 @@ async function fetchOCM(){
         if(seen.has(poi.ID)) continue; seen.add(poi.ID);
         const c=poi.Connections||[];
         got.push({
-          name: poi.AddressInfo?.Title || 'Colonnina',
-          town: poi.AddressInfo?.Town || '',
-          operator: poi.OperatorInfo?.Title || '—',
+          name: poi.AddressInfo?.Title||'Colonnina',
+          town: poi.AddressInfo?.Town||'',
+          operator: poi.OperatorInfo?.Title||'—',
           lat: poi.AddressInfo?.Latitude, lng: poi.AddressInfo?.Longitude,
           kw: Math.max(0,...c.map(x=>x.PowerKW||0)),
-          pts: poi.NumberOfPoints || c.reduce((a,x)=>a+(x.Quantity||1),0),
-          live: poi.StatusType ? poi.StatusType.IsOperational !== false : true
+          pts: poi.NumberOfPoints||c.reduce((a,x)=>a+(x.Quantity||1),0),
+          live: poi.StatusType ? poi.StatusType.IsOperational!==false : true,
+          declared: (poi.UsageCost||'').trim()
         });
       }
     }catch(e){}
   }
-  stations = got.length ? got : DEMO.slice();
+  stations = got.length?got:DEMO.slice();
   if(!got.length) toast('Open Charge Map non risponde — mostro il set dimostrativo');
 }
 
@@ -430,32 +429,30 @@ async function fetchOCM(){
    ============================================================ */
 function toast(m){
   const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3200);
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3400);
 }
 
 function render(){
-  const rows=filterAhead();
-  const list=document.getElementById('list');
+  const rows=filterAhead(), list=document.getElementById('list');
   document.getElementById('count').textContent = rows.length ? rows.length+' colonnine' : '—';
   list.innerHTML='';
   if(!rows.length){
     list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga il corridoio nelle impostazioni.</p>';
   }
-  rows.slice(0,60).forEach((s,i)=>{
+  rows.slice(0,80).forEach(s=>{
     const o=opFor(s.operator), c=costTo80(s);
-    const el=document.createElement('button');
-    el.className='stn';
+    const el=document.createElement('button'); el.className='stn';
     el.innerHTML=`
       <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
       <span class="mid">
         <span class="op" style="color:${o?o.color:'var(--ice-dim)'}">
-          <span class="dot ${s.live?'':'off'}"></span>${(s.operator||'—').slice(0,26)}
+          <span class="dot ${s.live?'':'off'}"></span>${(s.operator||'—').slice(0,28)}
         </span>
         <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW</span>
       </span>
       <span class="right">
         <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
-        <span class="eur">${c.eur!=null?'€ '+c.eur.toFixed(2):'—'}</span>
+        <span class="eur ${c.eur==null?'none':''}">${c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?'tariffa ?':'—')}</span>
       </span>`;
     el.onclick=()=>openDetail(s);
     list.appendChild(el);
@@ -465,15 +462,18 @@ function render(){
 
 function openDetail(s){
   selected=s;
-  const o=opFor(s.operator), c=costTo80(s);
-  const soc=+document.getElementById('soc').value;
+  const o=opFor(s.operator), c=costTo80(s), soc=+document.getElementById('soc').value;
+  const cat=!o?catalogFor(s.operator):null;
   document.getElementById('detailCard').innerHTML=`
     <h3 style="color:${o?o.color:'var(--ice)'}">${s.operator||'Operatore ignoto'}</h3>
     <p class="sub">${s.name}${s.town?' · '+s.town:''}</p>
     <div class="readout">
       <div class="lbl">Costo per arrivare all'80%</div>
-      <div class="big">${c.eur!=null?'€ '+c.eur.toFixed(2):'tariffa non impostata'}</div>
-      <div class="calc">${c.kwh.toFixed(1)} kWh da ${soc}% · ${o?('€ '+o.price.toFixed(2)+'/kWh'+(o.fee?' + € '+o.fee.toFixed(2)+' sessione':'')):'aggiungi l\'operatore nelle impostazioni'}</div>
+      ${c.eur!=null
+        ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
+           <div class="calc">${c.kwh.toFixed(1)} kWh da ${soc}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
+        : `<div class="big na">Servono ${c.kwh.toFixed(1)} kWh.<br>Aggiungi questo operatore nelle impostazioni per vedere il costo.</div>`}
+      ${s.declared?`<div class="declared">Prezzo dichiarato all'operatore: <b>${s.declared.slice(0,90)}</b><br>Dato pubblico non verificato, la tua tariffa può essere diversa.</div>`:''}
     </div>
     <div class="specs">
       <div class="spec"><div class="k">Distanza</div><div class="v">${s.km!=null?(s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'):'—'}</div></div>
@@ -484,32 +484,47 @@ function openDetail(s){
       <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
     </div>
     <div class="actions">
-      <a class="btn" style="text-decoration:none" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
+      ${!o?`<button class="btn" id="quickAdd">Aggiungi operatore</button>`:''}
+      <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>
       <button class="btn" id="closeD">Chiudi</button>
     </div>`;
   document.getElementById('detail').classList.add('show');
   document.getElementById('closeD').onclick=()=>document.getElementById('detail').classList.remove('show');
+  const qa=document.getElementById('quickAdd');
+  if(qa) qa.onclick=async()=>{
+    addOperator(s.operator);
+    await save();
+    document.getElementById('detail').classList.remove('show');
+    render(); toast(s.operator+' aggiunto — imposta il prezzo nelle impostazioni');
+  };
 }
 document.getElementById('detail').onclick=e=>{ if(e.target.id==='detail') e.target.classList.remove('show'); };
+
+function addOperator(rawName){
+  const cat=catalogFor(rawName);
+  const nm=cat?cat.nm:rawName.trim();
+  if(!nm) return false;
+  if(S.ops.some(o=>o.nm.toLowerCase()===nm.toLowerCase())) return false;
+  S.ops.push({ nm, color: cat?cat.color:nextColor(),
+               match: cat?cat.match.slice():[nm.toLowerCase()],
+               price:0.50, fee:0 });
+  return true;
+}
 
 function drawMarkers(rows){
   if(!map) return;
   markers.forEach(m=>m.setMap(null)); markers=[];
   rows.forEach(s=>{
     const o=opFor(s.operator);
-    markers.push(new google.maps.Marker({
-      position:{lat:s.lat,lng:s.lng}, map,
-      title:`${s.operator} — ${s.name}`,
+    const mk=new google.maps.Marker({
+      position:{lat:s.lat,lng:s.lng}, map, title:`${s.operator} — ${s.name}`,
       zIndex:o?20:5,
-      icon:{
-        path:google.maps.SymbolPath.CIRCLE,
-        scale:o?9:5.5,
-        fillColor:o?o.color:'#5A6B75',
-        fillOpacity:o?1:.85,
-        strokeColor:s.live?'#3ED598':'#E4572E',
-        strokeWeight:o?2.5:2
-      }
-    })).at(-1).addListener('click',()=>openDetail(s));
+      icon:{ path:google.maps.SymbolPath.CIRCLE, scale:o?9:5.5,
+             fillColor:o?o.color:'#5A6B75', fillOpacity:o?1:.85,
+             strokeColor:s.live?'#3ED598':'#E4572E', strokeWeight:o?2.5:2 }
+    });
+    mk.addListener('click',()=>openDetail(s));
+    markers.push(mk);
   });
 }
 
@@ -541,16 +556,13 @@ window.initMap=function(){
     ]
   });
   traffic=new google.maps.TrafficLayer(); traffic.setMap(map);
-  dirRenderer=new google.maps.DirectionsRenderer({
-    map, suppressMarkers:true,
-    polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9}
-  });
+  dirRenderer=new google.maps.DirectionsRenderer({ map, suppressMarkers:true,
+    polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9} });
   new google.maps.places.Autocomplete(document.getElementById('dest'));
   meMarker=new google.maps.Marker({map,position:me,zIndex:99,
-    icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',fillOpacity:1,
-          strokeColor:'#0E1A22',strokeWeight:3}});
-  watchMe();
-  render();
+    icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',
+          fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
+  watchMe(); render();
 };
 
 function watchMe(){
@@ -566,18 +578,31 @@ async function trace(){
   const dest=document.getElementById('dest').value.trim();
   if(!dest) return toast('Scrivi una destinazione');
   if(!map) return toast('Serve la chiave Google per calcolare il percorso');
-  const svc=new google.maps.DirectionsService();
-  svc.route({origin:me,destination:dest,travelMode:'DRIVING',provideRouteAlternatives:false},
+  new google.maps.DirectionsService().route(
+    {origin:me,destination:dest,travelMode:'DRIVING'},
     async (res,st)=>{
       if(st!=='OK') return toast('Percorso non trovato: '+st);
       dirRenderer.setDirections(res);
       route=res.routes[0].overview_path.map(p=>({lat:p.lat(),lng:p.lng()}));
-      buildCum();
-      toast('Cerco le colonnine…');
-      await fetchOCM();
-      render();
-      toast('Percorso: '+Math.round(cum.at(-1))+' km');
+      buildCum(); toast('Cerco le colonnine…');
+      await fetchOCM(); render();
+      const nuovi=unconfigured().length;
+      toast('Percorso: '+Math.round(cum.at(-1))+' km'+(nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
     });
+}
+
+/* ============================================================
+   Operatori scoperti
+   ============================================================ */
+function unconfigured(){
+  const map2=new Map();
+  filterAhead().forEach(s=>{
+    if(opFor(s.operator)) return;
+    const n=(s.operator||'').trim();
+    if(!n||n==='—') return;
+    map2.set(n,(map2.get(n)||0)+1);
+  });
+  return [...map2.entries()].sort((a,b)=>b[1]-a[1]);
 }
 
 /* ============================================================
@@ -589,51 +614,79 @@ function paintSettings(){
   document.getElementById('kwh').value=S.kwh;
   document.getElementById('eff').value=S.eff;
   document.getElementById('corr').value=S.corridor;
-  const box=document.getElementById('ops'); box.innerHTML='';
+
+  const ops=document.getElementById('ops'); ops.innerHTML='';
   S.ops.forEach((o,i)=>{
     const d=document.createElement('div'); d.className='op-row';
-    d.innerHTML=`<span class="swatch" style="background:${o.color}"></span>
+    d.innerHTML=`<input type="color" value="${o.color}" data-i="${i}" data-f="color" aria-label="Colore ${o.nm}">
       <span class="nm">${o.nm}</span>
-      <input type="number" step="0.01" value="${o.price}" data-i="${i}" data-f="price" aria-label="€/kWh ${o.nm}">
-      <input type="number" step="0.10" value="${o.fee}" data-i="${i}" data-f="fee" aria-label="Fee ${o.nm}">`;
-    box.appendChild(d);
+      <input type="number" step="0.01" value="${o.price}" data-i="${i}" data-f="price" aria-label="Euro al kWh ${o.nm}">
+      <input type="number" step="0.10" value="${o.fee||0}" data-i="${i}" data-f="fee" aria-label="Fee ${o.nm}">
+      <button class="del" data-del="${i}" aria-label="Rimuovi ${o.nm}">×</button>`;
+    ops.appendChild(d);
   });
+
+  const found=document.getElementById('found'); found.innerHTML='';
+  const list=unconfigured();
+  if(!list.length){
+    found.innerHTML='<p class="hint" style="margin:0">Nessuno per ora. Traccia un percorso e torna qui: gli operatori incontrati compariranno in questo riquadro.</p>';
+  } else {
+    list.slice(0,24).forEach(([nm,n])=>{
+      const b=document.createElement('button'); b.className='chip'; b.dataset.add=nm;
+      b.innerHTML=`<span class="plus">+</span><b>${nm.slice(0,26)}</b><span class="n">${n}</span>`;
+      found.appendChild(b);
+    });
+  }
 }
+
+document.getElementById('ops').addEventListener('input',e=>{
+  const t=e.target; if(!t.dataset.f) return;
+  const o=S.ops[+t.dataset.i];
+  o[t.dataset.f] = t.dataset.f==='color' ? t.value : (+t.value||0);
+});
+document.getElementById('ops').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del]'); if(!b) return;
+  S.ops.splice(+b.dataset.del,1); paintSettings();
+});
+document.getElementById('found').addEventListener('click',e=>{
+  const b=e.target.closest('[data-add]'); if(!b) return;
+  addOperator(b.dataset.add); paintSettings();
+});
+document.getElementById('addOp').onclick=()=>{
+  const inp=document.getElementById('newOp'), v=inp.value.trim();
+  if(!v) return;
+  if(addOperator(v)){ inp.value=''; paintSettings(); }
+  else toast('Operatore già presente');
+};
+document.getElementById('newOp').addEventListener('keydown',e=>{
+  if(e.key==='Enter') document.getElementById('addOp').click();
+});
+
 document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
 document.getElementById('saveSet').onclick=async()=>{
-  const prevKey=S.gkey;
+  const prev=S.gkey;
   S.gkey=document.getElementById('gkey').value.trim();
   S.ockey=document.getElementById('ockey').value.trim();
   S.kwh=+document.getElementById('kwh').value||75;
   S.eff=+document.getElementById('eff').value||0.92;
   S.corridor=+document.getElementById('corr').value||6;
-  document.querySelectorAll('#ops input').forEach(inp=>{
-    S.ops[+inp.dataset.i][inp.dataset.f]=+inp.value||0;
-  });
   await save();
   document.getElementById('settings').classList.remove('show');
-  if(S.gkey && S.gkey!==prevKey && !map) bootMap(); else render();
+  if(S.gkey && S.gkey!==prev && !map) bootMap(); else render();
   toast('Impostazioni salvate');
 };
 
 const socEl=document.getElementById('soc');
 function paintSoc(){
   document.getElementById('socVal').textContent=socEl.value+'%';
-  socEl.style.setProperty('--pct', ((socEl.value-1)/78*100)+'%');
+  socEl.style.setProperty('--pct',((socEl.value-1)/78*100)+'%');
 }
 socEl.oninput=()=>{ paintSoc(); render(); if(selected) openDetail(selected); };
 document.getElementById('go').onclick=trace;
 document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Enter') trace(); });
 
-/* ============================================================
-   Avvio
-   ============================================================ */
 (async()=>{
-  await load();
-  paintSoc();
-  stations=DEMO.slice();
-  bootMap();
-  render();
+  await load(); paintSoc(); stations=DEMO.slice(); bootMap(); render();
   if(!S.gkey) toast('Apri ⚙ e inserisci la chiave Google Maps');
 })();
 </script>
