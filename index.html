@@ -528,7 +528,7 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.16';
+const APP_VERSION='1.16.2';
 const APP_DATE='30.08.2026';
 
 
@@ -1251,15 +1251,14 @@ async function fetchOSM(){
     i0=i1;
   }
   if(!box.length) return [];
-  const corpo=box.map(b=>`node["amenity"="charging_station"](${b});`).join('');
+  const corpo=box.map(b=>`node[amenity=charging_station](${b});`).join('');
   const q=`[out:json][timeout:45];(${corpo});out body 4000;`;
 
+  // GET invece di POST: è una richiesta "semplice" per il browser, niente preflight CORS
   let ultimo=null;
   for(let k=0;k<OVERPASS.length;k++){
     try{
-      const r=await fetchTimeout(OVERPASS[k],
-        {method:'POST',body:'data='+encodeURIComponent(q),
-         headers:{'Content-Type':'application/x-www-form-urlencoded'}}, 45000);
+      const r=await fetchTimeout(OVERPASS[k]+'?data='+encodeURIComponent(q),{},45000);
       if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
       return leggiOSM(await r.json());
     }catch(e){
