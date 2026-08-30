@@ -48,6 +48,12 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .gear:active{border-color:var(--signal)}
 
 /* profili di percorso */
+.vias{display:none;flex-wrap:wrap;gap:6px;margin-top:8px}
+.vias.on{display:flex}
+.vc{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:18px;
+  padding:5px 8px 5px 11px;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.vc .n{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--signal)}
+.vc .x{color:var(--ice-dim);font-size:14px;line-height:1}
 .profiles{display:flex;gap:6px;margin-top:9px}
 .pf{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:9px;
   padding:8px 4px;font-family:'Barlow Condensed',sans-serif;font-size:13.5px;
@@ -121,6 +127,7 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 .stn .tm{font-size:12.5px;color:var(--ice-dim);margin-top:1px}
 .stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
 .stn .eur.none{color:var(--ice-dim)}
+.stn .cum{font-size:11.5px;color:var(--ice-dim);display:block;margin-top:1px}
 .stn.far{opacity:.42}
 .stn .arr{color:var(--live)}
 .stn .arr.low{color:var(--alert)}
@@ -248,17 +255,22 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 <div id="app">
   <header>
     <div class="route-row">
-      <input id="dest" type="text" placeholder="Destinazione — es. Bydgoszcz" autocomplete="off">
-      <button class="btn primary" id="go">Traccia</button>
+      <input id="dest" type="text" data-tp="destPh" autocomplete="off">
+      <button class="btn primary" id="go" data-t="trace">Traccia</button>
       <button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
     </div>
+    <div class="route-row" style="margin-top:8px">
+      <input id="via" type="text" data-tp="viaPh" autocomplete="off">
+      <button class="gear" id="viaAdd" aria-label="+">+</button>
+    </div>
+    <div class="vias" id="vias"></div>
     <div class="profiles" id="profiles">
-      <button class="pf on" data-pf="fast">Veloce<small>il più rapido</small></button>
-      <button class="pf" data-pf="scenic">Panoramico<small>cosa vedere</small></button>
-      <button class="pf" data-pf="cheap">Economico<small>evita pedaggi</small></button>
+      <button class="pf on" data-pf="fast"><span data-t="pfFast">Veloce</span><small data-t="pfFastS">il più rapido</small></button>
+      <button class="pf" data-pf="scenic"><span data-t="pfSce">Panoramico</span><small data-t="pfSceS">cosa vedere</small></button>
+      <button class="pf" data-pf="cheap"><span data-t="pfChe">Economico</span><small data-t="pfCheS">evita pedaggi</small></button>
     </div>
     <div class="soc">
-      <label for="soc">Carica ora</label>
+      <label for="soc" data-t="socLab">Carica ora</label>
       <input id="soc" type="range" min="1" max="79" value="42">
       <span class="val" id="socVal">42%</span>
     </div>
@@ -266,21 +278,21 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 
   <div id="map"></div>
   <div id="nomap"><div>
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px">Mappa non attiva</p>
-    <p class="hint" style="max-width:280px">Inserisci la chiave Google Maps nelle impostazioni per vedere mappa e traffico. L'elenco qui sotto funziona comunque.</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px" data-t="mapOff">Mappa non attiva</p>
+    <p class="hint" style="max-width:280px" data-t="mapOffTx"></p>
   </div></div>
 
   <div id="sheet">
     <div class="sheet-head">
-      <h2>Sul tratto residuo<span class="ver" id="ver"></span></h2>
+      <h2><span data-t="sheet">Sul tratto residuo</span><span class="ver" id="ver"></span></h2>
       <span class="sum" id="count">—</span>
     </div>
     <div id="routes"><div class="routes-row" id="routesRow"></div></div>
     <div id="stops">
       <div class="stops-row" id="stopsRow"></div>
       <div class="stops-act">
-        <a class="btn primary" id="navGo" href="#">Naviga con le soste</a>
-        <button class="btn ghost" id="stopsClear">Svuota</button>
+        <a class="btn primary" id="navGo" href="#" data-t="navStops">Naviga con le soste</a>
+        <button class="btn ghost" id="stopsClear" data-t="clear">Svuota</button>
       </div>
     </div>
     <div id="list"></div>
@@ -290,110 +302,110 @@ header{background:var(--deep);border-bottom:1px solid var(--deep-3);padding:10px
 <div id="detail" role="dialog" aria-modal="true"><div class="card" id="detailCard"></div></div>
 
 <div id="settings">
-  <h2>Impostazioni</h2>
-  <p class="hint">Restano su questo dispositivo. <span id="verSet"></span></p>
+  <h2 data-t="setT">Impostazioni</h2>
+  <p class="hint"><span data-t="setSub"></span> <span id="verSet"></span></p>
 
-  <h4>Percorso</h4>
-  <div class="sw"><span class="t">Evita le autostrade<small>Strade normali, tempi molto più lunghi</small></span>
+  <h4 data-t="hLang">Lingua</h4>
+  <div class="field"><select id="lang"></select></div>
+
+  <h4 data-t="hRoute">Percorso</h4>
+  <div class="sw"><span class="t"><span data-t="swHwy"></span><small data-t="swHwyS"></small></span>
     <input type="checkbox" id="noHwy"></div>
-  <div class="sw"><span class="t">Evita i traghetti<small>Utile verso la Scandinavia o le isole</small></span>
+  <div class="sw"><span class="t"><span data-t="swFer"></span><small data-t="swFerS"></small></span>
     <input type="checkbox" id="noFerry"></div>
-  <div class="sw"><span class="t">Evita i pedaggi<small>Sempre attivo nel profilo Economico</small></span>
+  <div class="sw"><span class="t"><span data-t="swToll"></span><small data-t="swTollS"></small></span>
     <input type="checkbox" id="noToll"></div>
 
-  <h4>Colonnine</h4>
+  <h4 data-t="hChar">Colonnine</h4>
   <div class="field">
-    <label for="cmode">Dove cercarle</label>
+    <label for="cmode" data-t="lWhere">Dove cercarle</label>
     <select id="cmode">
-      <option value="corridor">Ovunque nel corridoio</option>
-      <option value="highway">Solo lungo l'autostrada</option>
+      <option value="corridor" data-t="oCorr">Ovunque nel corridoio</option>
+      <option value="highway" data-t="oHwy">Solo lungo l'autostrada</option>
     </select>
   </div>
   <div class="field">
-    <label for="corr">Deviazione massima dal percorso (km)</label>
+    <label for="corr" data-t="lDev"></label>
     <input id="corr" type="number" step="0.5" min="0.5" value="6">
   </div>
   <div class="field">
-    <label for="minkw">Potenza minima (kW)</label>
+    <label for="minkw" data-t="lMinkw"></label>
     <input id="minkw" type="number" step="10" min="11" value="50">
   </div>
-  <div class="sw"><span class="t">Solo i miei operatori<small>Nasconde tutte le altre colonnine invece di mostrarle in grigio</small></span>
+  <div class="sw"><span class="t"><span data-t="swMine"></span><small data-t="swMineS"></small></span>
     <input type="checkbox" id="onlyMine"></div>
 
-  <div class="sw"><span class="t">Tieni lo schermo acceso<small>Mentre guardi l'elenco in viaggio</small></span>
+  <div class="sw"><span class="t"><span data-t="swWake"></span><small data-t="swWakeS"></small></span>
     <input type="checkbox" id="awake"></div>
 
-  <h4>Cose da vedere</h4>
-  <p class="hint">Cosa cercare lungo il percorso panoramico. Ogni categoria in più è una ricerca in più, quindi tienine attive quattro o cinque.</p>
+  <h4 data-t="hSee">Cose da vedere</h4>
+  <p class="hint" data-t="seeTx"></p>
   <div class="found" id="cats"></div>
   <div class="field" style="margin-top:12px">
-    <label for="exclude">Escludi se il nome contiene (separati da virgola)</label>
+    <label for="exclude" data-t="lExcl"></label>
     <input id="exclude" type="text" placeholder="autodromo, outlet, stadio">
   </div>
   <div class="field">
-    <label for="minrate">Voto minimo delle recensioni</label>
+    <label for="minrate" data-t="lRate"></label>
     <input id="minrate" type="number" step="0.1" min="1" max="5" value="4.3">
   </div>
   <div class="field">
-    <label for="minrev">Numero minimo di recensioni</label>
+    <label for="minrev" data-t="lRev"></label>
     <input id="minrev" type="number" step="50" min="0" value="300">
   </div>
 
-  <h4>Chiavi</h4>
+  <h4 data-t="hKeys">Chiavi</h4>
   <div class="field">
-    <label for="gkey">Google Maps API key</label>
+    <label for="gkey" data-t="lGkey"></label>
     <input id="gkey" type="text" placeholder="AIza…" autocomplete="off" spellcheck="false">
   </div>
   <div class="field">
-    <label for="ockey">Open Charge Map API key</label>
-    <input id="ockey" type="text" placeholder="necessaria per le colonnine reali" autocomplete="off" spellcheck="false">
+    <label for="ockey" data-t="lOckey"></label>
+    <input id="ockey" type="text" data-tp="ockeyPh" autocomplete="off" spellcheck="false">
   </div>
 
-  <h4>Auto</h4>
+  <h4 data-t="hCar">Auto</h4>
   <div class="field">
-    <label for="car">Modello</label>
+    <label for="car" data-t="lModel"></label>
     <select id="car"></select>
   </div>
   <div class="field">
-    <label for="kwh">Capacità utile della batteria (kWh)</label>
+    <label for="kwh" data-t="lKwh"></label>
     <input id="kwh" type="number" step="0.5" value="78">
   </div>
   <div class="field">
-    <label for="wh">Consumo reale (Wh/km)</label>
+    <label for="wh" data-t="lWh"></label>
     <input id="wh" type="number" step="5" value="185">
   </div>
   <div class="field">
-    <label for="reserve">Riserva minima all'arrivo (%)</label>
+    <label for="reserve" data-t="lRes"></label>
     <input id="reserve" type="number" step="1" min="0" max="40" value="10">
   </div>
   <div class="field">
-    <label for="avgkw">Potenza media di ricarica (kW)</label>
+    <label for="avgkw" data-t="lAvg"></label>
     <input id="avgkw" type="number" step="5" min="10" value="110">
   </div>
   <div class="field">
-    <label for="eff">Rendimento di ricarica (0–1)</label>
+    <label for="eff" data-t="lEff"></label>
     <input id="eff" type="number" step="0.01" value="0.92">
   </div>
-  <p class="hint">La potenza media è quella reale su tutta la sosta, non il picco: una Model Y su un Supercharger da 250 kW fa in media 100–130 kW da 10 a 80%.</p>
-  <p class="hint">I valori del modello sono medie indicative su percorso misto. Dopo un viaggio vero, correggi il consumo con quello letto a bordo: è il parametro che cambia di più fra inverno ed estate, e in autostrada sale del 20–30%.</p>
+  <p class="hint" data-t="hintAvg"></p>
+  <p class="hint" data-t="hintCar"></p>
 
-  <h4>Trovati sul percorso</h4>
-  <p class="hint">Operatori incontrati lungo la strada che non hai ancora configurato.</p>
+  <h4 data-t="hFound">Trovati sul percorso</h4>
+  <p class="hint" data-t="foundTx"></p>
   <div class="found" id="found"></div>
 
-  <h4>I tuoi operatori</h4>
-  <div class="op-head"><span></span><span>Usa</span><span>Operatore</span><span>€/kWh</span><span>Fee</span><span></span></div>
+  <h4 data-t="hOps">I tuoi operatori</h4>
+  <div class="op-head"><span></span><span data-t="cUse">Usa</span><span data-t="cOp">Operatore</span><span>€/kWh</span><span>Fee</span><span></span></div>
   <div id="ops"></div>
   <div class="add-row">
-    <input id="newOp" type="text" placeholder="Aggiungi a mano — es. Atlante" autocomplete="off">
-    <button class="btn ghost" id="addOp">Aggiungi</button>
+    <input id="newOp" type="text" data-tp="newOpPh" autocomplete="off">
+    <button class="btn ghost" id="addOp" data-t="add">Aggiungi</button>
   </div>
 
-  <button class="btn primary" id="saveSet" style="width:100%;margin-top:22px;padding:14px">Salva e chiudi</button>
-  <p class="hint" style="margin-top:18px">
-    Chiave Google: Maps JavaScript API, Places API, Directions API.<br>
-    Chiave Open Charge Map: openchargemap.org/site/profile/applications
-  </p>
+  <button class="btn primary" id="saveSet" style="width:100%;margin-top:22px;padding:14px" data-t="saveClose">Salva e chiudi</button>
+  <p class="hint" style="margin-top:18px" data-t="keysTx"></p>
 </div>
 
 <div id="toast"></div>
@@ -466,8 +478,228 @@ const CARS=[
   {nm:'MG4 77',                       kwh:74.4, wh:180},
   {nm:'BYD Seal',                     kwh:82.5, wh:185}
 ];
-const APP_VERSION='1.8.3';
+const APP_VERSION='1.9.2';
 const APP_DATE='30.08.2026';
+
+
+/* ============================================================
+   Lingue
+   ============================================================ */
+const LANGS={it:'Italiano',en:'English',pl:'Polski'};
+const TXT={
+it:{
+ destPh:"Destinazione — es. Bydgoszcz", trace:"Traccia",
+ pfFast:"Veloce", pfFastS:"il più rapido", pfSce:"Panoramico", pfSceS:"cosa vedere",
+ pfChe:"Economico", pfCheS:"evita pedaggi", socLab:"Carica ora",
+ mapOff:"Mappa non attiva", mapOffTx:"Inserisci la chiave Google Maps nelle impostazioni per vedere mappa e traffico. L'elenco qui sotto funziona comunque.",
+ sheet:"Sul tratto residuo", chargers:"colonnine", toSee:"da vedere", arrival:"arrivo",
+ straight:"Distanze in linea d'aria. Premi <b>Traccia</b> per avere chilometri reali, tempi, carica all'arrivo e piano delle soste.",
+ autonomy:"Autonomia utile", withCharge:"con la carica di adesso",
+ stopsN:"soste", stopN:"sosta", charging:"di ricarica", arrIncl:"Arrivo previsto", inclStops:"soste incluse",
+ use:"Usa", noStop:"Arrivi a destinazione senza ricaricare, con circa",
+ lowA:"Con il", lowB:"di carica e la riserva al", lowC:"fai", lowD:"ma la prima colonnina è a",
+ lowE:"Alza il cursore della carica se sei più carico di così", lowF:"oppure abbassa la riserva",
+ lowG:"e non trovo colonnine davanti a te.",
+ planCut:"Piano interrotto dopo", planCut2:"da lì non trovo colonnine raggiungibili.", planCut3:"Le prime",
+ planCut4:"soste", hold:"reggono.",
+ demoNote:"<b>Stai usando il set dimostrativo di 11 colonnine</b>: inserisci la chiave Open Charge Map e ritraccia.",
+ elseNote:"In alternativa allarga la deviazione massima o abbassa la potenza minima.",
+ empty:"Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.",
+ arriveAt:"arrivi", dry:"a secco", tariffQ:"tariffa ?", kmOut:"km fuori", reviews:"recensioni", seeCat:"Da vedere",
+ navStops:"Naviga con le soste", clear:"Svuota",
+ stopAdd:"Sosta +", stopOn:"Sosta ✓", navigate:"Naviga", close:"Chiudi", details:"Dettagli", opAdd:"Operatore +",
+ cost80:"Costo per arrivare all'80%", stopNo:"Sosta numero", ofPlan:"del piano",
+ youArrive:"Arrivi al", youCharge:"carichi fino al", about:"circa", at:"a",
+ needK:"Servono", addOpTx:"Aggiungi questo operatore per vedere il costo.",
+ declared:"Prezzo dichiarato all'operatore:", unver:"Dato pubblico non verificato.",
+ dDist:"Distanza", dTime:"Ci arrivi in", dEta:"Ora di arrivo", dDev:"Deviazione", dPow:"Potenza",
+ dPts:"Punti", dSt:"Stato", dOn:"Attiva", dOff:"Fuori servizio", dArr:"Arrivi con", dEn:"Energia",
+ onHwy:"sull'autostrada", ratingL:"Voto delle recensioni", revG:"recensioni su Google",
+ loadDesc:"Carico la descrizione…", noDesc:"Google non ha una descrizione per questo luogo.", srcG:"Descrizione di Google",
+ outOf:"km fuori dal percorso",
+ setT:"Impostazioni", setSub:"Restano su questo dispositivo.", version:"Versione", ofDate:"del",
+ hLang:"Lingua", hRoute:"Percorso", hChar:"Colonnine", hSee:"Cose da vedere", hKeys:"Chiavi",
+ hCar:"Auto", hFound:"Trovati sul percorso", hOps:"I tuoi operatori",
+ swHwy:"Evita le autostrade", swHwyS:"Strade normali, tempi molto più lunghi",
+ swFer:"Evita i traghetti", swFerS:"Utile verso la Scandinavia o le isole",
+ swToll:"Evita i pedaggi", swTollS:"Sempre attivo nel profilo Economico",
+ swMine:"Solo i miei operatori", swMineS:"Nasconde tutte le altre colonnine invece di mostrarle in grigio",
+ swWake:"Tieni lo schermo acceso", swWakeS:"Mentre guardi l'elenco in viaggio",
+ lWhere:"Dove cercarle", oCorr:"Ovunque nel corridoio", oHwy:"Solo lungo l'autostrada",
+ lDev:"Deviazione massima dal percorso (km)", lMinkw:"Potenza minima (kW)",
+ seeTx:"Cosa cercare lungo il percorso panoramico. Ogni categoria in più è una ricerca in più, quindi tienine attive quattro o cinque.",
+ lExcl:"Escludi se il nome contiene (separati da virgola)", lRate:"Voto minimo delle recensioni",
+ lRev:"Numero minimo di recensioni",
+ lGkey:"Google Maps API key", lOckey:"Open Charge Map API key", ockeyPh:"necessaria per le colonnine reali",
+ lModel:"Modello", lKwh:"Capacità utile della batteria (kWh)", lWh:"Consumo reale (Wh/km)",
+ lRes:"Riserva minima all'arrivo (%)", lAvg:"Potenza media di ricarica (kW)", lEff:"Rendimento di ricarica (0–1)",
+ hintAvg:"La potenza media è quella reale su tutta la sosta, non il picco: una Model Y su un Supercharger da 250 kW fa in media 100–130 kW da 10 a 80%.",
+ hintCar:"I valori del modello sono medie indicative su percorso misto. Dopo un viaggio vero, correggi il consumo con quello letto a bordo: è il parametro che cambia di più fra inverno ed estate, e in autostrada sale del 20–30%.",
+ foundTx:"Operatori incontrati lungo la strada che non hai ancora configurato.",
+ foundNone:"Nessuno per ora. Traccia un percorso e torna qui.",
+ cUse:"Usa", cOp:"Operatore", newOpPh:"Aggiungi a mano — es. Atlante", add:"Aggiungi",
+ saveClose:"Salva e chiudi", keysTx:"Chiave Google: Maps JavaScript API, Places API, Directions API.<br>Chiave Open Charge Map: openchargemap.org/site/profile/applications",
+ tSaved:"Impostazioni salvate", tRecalc:"Premi Traccia per ricalcolare il percorso",
+ tNoDest:"Scrivi una destinazione", tNoKey:"Serve la chiave Google per calcolare il percorso",
+ tCalc:"Calcolo i percorsi…", tNotFound:"Percorso non trovato:", tCompare:"Confronto le alternative…",
+ tSeek:"Cerco le colonnine su questa rotta…", tCats:"Cerco le categorie scelte…",
+ tRoutes:"percorsi", tNewOps:"operatori nuovi in ⚙",
+ tDemoKey:"Serve la chiave Open Charge Map — set dimostrativo", tDemoNo:"Open Charge Map non risponde — set dimostrativo",
+ tOpAdded:"aggiunto — imposta il prezzo in ⚙", tOpDup:"Operatore già presente",
+ tStopsSet:"Soste impostate — premi Naviga con le soste", tMaxStops:"Massimo 9 soste in un URL di Google Maps",
+ tKeyBad:"Chiave Google rifiutata", tKeyAsk:"Apri ⚙ e inserisci la chiave Google Maps",
+ tProfile:"Premi Traccia per ricalcolare con questo profilo",
+ viaPh:"Aggiungi tappa intermedia", viaNote:"Con le tappe Google non offre percorsi alternativi.",
+ thisCh:"Questa ricarica", fullCh:"Ricarica 10→80%", runTot:"Speso fino a qui", tripTot:"Totale del viaggio",
+ min:"min", hr:"h",
+ cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
+ cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
+ cat_musei:"Musei e arte", cat_terme:"Terme", cat_cantine:"Cantine e vino"
+},
+en:{
+ destPh:"Destination — e.g. Bydgoszcz", trace:"Route",
+ pfFast:"Fast", pfFastS:"quickest", pfSce:"Scenic", pfSceS:"what to see",
+ pfChe:"Cheap", pfCheS:"avoids tolls", socLab:"Charge now",
+ mapOff:"Map not active", mapOffTx:"Add your Google Maps key in settings to see the map and traffic. The list below works anyway.",
+ sheet:"On the road ahead", chargers:"chargers", toSee:"to see", arrival:"arrival",
+ straight:"Straight-line distances. Press <b>Route</b> for real distances, times, arrival charge and a stop plan.",
+ autonomy:"Usable range", withCharge:"at the current charge",
+ stopsN:"stops", stopN:"stop", charging:"charging", arrIncl:"Arrival", inclStops:"stops included",
+ use:"Use", noStop:"You reach the destination without charging, at about",
+ lowA:"At", lowB:"charge with a", lowC:"reserve you can do", lowD:"but the first charger is",
+ lowE:"Raise the charge slider if you are fuller than that", lowF:"or lower the reserve",
+ lowG:"and I find no chargers ahead of you.",
+ planCut:"Plan stops after", planCut2:"beyond that I find no reachable chargers.", planCut3:"The first",
+ planCut4:"stops", hold:"hold up.",
+ demoNote:"<b>You are on the demo set of 11 chargers</b>: add your Open Charge Map key and route again.",
+ elseNote:"Otherwise widen the maximum detour or lower the minimum power.",
+ empty:"No chargers on the road ahead. Set a route, or widen the maximum detour in settings.",
+ arriveAt:"arrive", dry:"empty", tariffQ:"tariff ?", kmOut:"km off route", reviews:"reviews", seeCat:"Worth seeing",
+ navStops:"Navigate with stops", clear:"Clear",
+ stopAdd:"Stop +", stopOn:"Stop ✓", navigate:"Navigate", close:"Close", details:"Details", opAdd:"Operator +",
+ cost80:"Cost to reach 80%", stopNo:"Stop number", ofPlan:"of the plan",
+ youArrive:"You arrive at", youCharge:"charge up to", about:"about", at:"at",
+ needK:"You need", addOpTx:"Add this operator to see the cost.",
+ declared:"Price stated by the operator:", unver:"Public data, unverified.",
+ dDist:"Distance", dTime:"You get there in", dEta:"Arrival time", dDev:"Detour", dPow:"Power",
+ dPts:"Points", dSt:"Status", dOn:"Working", dOff:"Out of service", dArr:"You arrive with", dEn:"Energy",
+ onHwy:"on the motorway", ratingL:"Review score", revG:"reviews on Google",
+ loadDesc:"Loading the description…", noDesc:"Google has no description for this place.", srcG:"Description by Google",
+ outOf:"km off the route",
+ setT:"Settings", setSub:"Kept on this device.", version:"Version", ofDate:"of",
+ hLang:"Language", hRoute:"Route", hChar:"Chargers", hSee:"Worth seeing", hKeys:"Keys",
+ hCar:"Car", hFound:"Found along the route", hOps:"Your operators",
+ swHwy:"Avoid motorways", swHwyS:"Ordinary roads, much longer times",
+ swFer:"Avoid ferries", swFerS:"Useful towards Scandinavia or the islands",
+ swToll:"Avoid tolls", swTollS:"Always on in the Cheap profile",
+ swMine:"Only my operators", swMineS:"Hides every other charger instead of greying it out",
+ swWake:"Keep the screen on", swWakeS:"While you watch the list on the road",
+ lWhere:"Where to look", oCorr:"Anywhere in the corridor", oHwy:"Only along the motorway",
+ lDev:"Maximum detour from the route (km)", lMinkw:"Minimum power (kW)",
+ seeTx:"What to look for along the scenic route. Every extra category is an extra search, so keep four or five active.",
+ lExcl:"Exclude if the name contains (comma separated)", lRate:"Minimum review score",
+ lRev:"Minimum number of reviews",
+ lGkey:"Google Maps API key", lOckey:"Open Charge Map API key", ockeyPh:"needed for real chargers",
+ lModel:"Model", lKwh:"Usable battery capacity (kWh)", lWh:"Real consumption (Wh/km)",
+ lRes:"Minimum reserve on arrival (%)", lAvg:"Average charging power (kW)", lEff:"Charging efficiency (0–1)",
+ hintAvg:"Average power means the real average over the whole stop, not the peak: a Model Y on a 250 kW Supercharger averages 100–130 kW from 10 to 80%.",
+ hintCar:"Model figures are indicative averages on mixed roads. After a real trip, correct the consumption with the value from the car: it is the figure that swings most between winter and summer, and it rises 20–30% on the motorway.",
+ foundTx:"Operators met along the road that you have not configured yet.",
+ foundNone:"None yet. Set a route and come back here.",
+ cUse:"Use", cOp:"Operator", newOpPh:"Add by hand — e.g. Atlante", add:"Add",
+ saveClose:"Save and close", keysTx:"Google key: Maps JavaScript API, Places API, Directions API.<br>Open Charge Map key: openchargemap.org/site/profile/applications",
+ tSaved:"Settings saved", tRecalc:"Press Route to recalculate",
+ tNoDest:"Type a destination", tNoKey:"A Google key is needed to compute the route",
+ tCalc:"Computing routes…", tNotFound:"Route not found:", tCompare:"Comparing the alternatives…",
+ tSeek:"Looking for chargers on this route…", tCats:"Searching the chosen categories…",
+ tRoutes:"routes", tNewOps:"new operators in ⚙",
+ tDemoKey:"Open Charge Map key needed — demo set", tDemoNo:"Open Charge Map not responding — demo set",
+ tOpAdded:"added — set the price in ⚙", tOpDup:"Operator already there",
+ tStopsSet:"Stops set — press Navigate with stops", tMaxStops:"Nine stops maximum in a Google Maps URL",
+ tKeyBad:"Google key rejected", tKeyAsk:"Open ⚙ and add your Google Maps key",
+ tProfile:"Press Route to recalculate with this profile",
+ viaPh:"Add a waypoint", viaNote:"With waypoints Google offers no alternative routes.",
+ thisCh:"This charge", fullCh:"Full 10→80% charge", runTot:"Spent so far", tripTot:"Trip total",
+ min:"min", hr:"h",
+ cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
+ cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
+ cat_musei:"Museums and art", cat_terme:"Thermal baths", cat_cantine:"Wineries"
+},
+pl:{
+ destPh:"Cel — np. Bydgoszcz", trace:"Wyznacz",
+ pfFast:"Szybko", pfFastS:"najszybciej", pfSce:"Widokowo", pfSceS:"co zobaczyć",
+ pfChe:"Tanio", pfCheS:"omija opłaty", socLab:"Ładunek teraz",
+ mapOff:"Mapa nieaktywna", mapOffTx:"Wpisz klucz Google Maps w ustawieniach, aby zobaczyć mapę i ruch. Lista poniżej działa mimo to.",
+ sheet:"Na trasie przed tobą", chargers:"ładowarek", toSee:"do zobaczenia", arrival:"przyjazd",
+ straight:"Odległości w linii prostej. Naciśnij <b>Wyznacz</b>, aby mieć realne kilometry, czasy, ładunek na miejscu i plan postojów.",
+ autonomy:"Zasięg użyteczny", withCharge:"przy obecnym ładunku",
+ stopsN:"postoje", stopN:"postój", charging:"ładowania", arrIncl:"Przyjazd", inclStops:"z postojami",
+ use:"Użyj", noStop:"Dojedziesz bez ładowania, z około",
+ lowA:"Przy", lowB:"ładunku i rezerwie", lowC:"przejedziesz", lowD:"ale pierwsza ładowarka jest za",
+ lowE:"Podnieś suwak ładunku, jeśli masz więcej", lowF:"albo zmniejsz rezerwę",
+ lowG:"i nie widzę ładowarek przed tobą.",
+ planCut:"Plan urywa się po", planCut2:"dalej nie znajduję osiągalnych ładowarek.", planCut3:"Pierwsze",
+ planCut4:"postoje", hold:"się trzymają.",
+ demoNote:"<b>Używasz zestawu demonstracyjnego 11 ładowarek</b>: wpisz klucz Open Charge Map i wyznacz trasę ponownie.",
+ elseNote:"Możesz też zwiększyć maksymalne zboczenie albo obniżyć minimalną moc.",
+ empty:"Brak ładowarek na trasie przed tobą. Wyznacz trasę albo zwiększ maksymalne zboczenie w ustawieniach.",
+ arriveAt:"dojedziesz z", dry:"na zero", tariffQ:"taryfa ?", kmOut:"km od trasy", reviews:"opinii", seeCat:"Warte zobaczenia",
+ navStops:"Nawiguj z postojami", clear:"Wyczyść",
+ stopAdd:"Postój +", stopOn:"Postój ✓", navigate:"Nawiguj", close:"Zamknij", details:"Szczegóły", opAdd:"Operator +",
+ cost80:"Koszt doładowania do 80%", stopNo:"Postój numer", ofPlan:"planu",
+ youArrive:"Dojeżdżasz z", youCharge:"ładujesz do", about:"około", at:"przy",
+ needK:"Potrzeba", addOpTx:"Dodaj tego operatora, aby zobaczyć koszt.",
+ declared:"Cena podana przez operatora:", unver:"Dane publiczne, niezweryfikowane.",
+ dDist:"Odległość", dTime:"Dojedziesz w", dEta:"Godzina przyjazdu", dDev:"Zboczenie", dPow:"Moc",
+ dPts:"Punkty", dSt:"Stan", dOn:"Czynna", dOff:"Nieczynna", dArr:"Dojeżdżasz z", dEn:"Energia",
+ onHwy:"przy autostradzie", ratingL:"Ocena opinii", revG:"opinii w Google",
+ loadDesc:"Wczytuję opis…", noDesc:"Google nie ma opisu tego miejsca.", srcG:"Opis Google",
+ outOf:"km od trasy",
+ setT:"Ustawienia", setSub:"Zostają na tym urządzeniu.", version:"Wersja", ofDate:"z",
+ hLang:"Język", hRoute:"Trasa", hChar:"Ładowarki", hSee:"Co zobaczyć", hKeys:"Klucze",
+ hCar:"Samochód", hFound:"Znalezione na trasie", hOps:"Twoi operatorzy",
+ swHwy:"Omijaj autostrady", swHwyS:"Zwykłe drogi, dużo dłuższy czas",
+ swFer:"Omijaj promy", swFerS:"Przydatne w stronę Skandynawii lub wysp",
+ swToll:"Omijaj opłaty", swTollS:"Zawsze włączone w profilu Tanio",
+ swMine:"Tylko moi operatorzy", swMineS:"Ukrywa pozostałe ładowarki zamiast wyszarzać",
+ swWake:"Nie wygaszaj ekranu", swWakeS:"Gdy patrzysz na listę w trasie",
+ lWhere:"Gdzie szukać", oCorr:"Wszędzie w korytarzu", oHwy:"Tylko przy autostradzie",
+ lDev:"Maksymalne zboczenie z trasy (km)", lMinkw:"Minimalna moc (kW)",
+ seeTx:"Czego szukać na trasie widokowej. Każda dodatkowa kategoria to dodatkowe zapytanie, więc trzymaj cztery lub pięć.",
+ lExcl:"Pomiń, jeśli nazwa zawiera (po przecinku)", lRate:"Minimalna ocena",
+ lRev:"Minimalna liczba opinii",
+ lGkey:"Klucz Google Maps API", lOckey:"Klucz Open Charge Map API", ockeyPh:"potrzebny do prawdziwych ładowarek",
+ lModel:"Model", lKwh:"Użyteczna pojemność baterii (kWh)", lWh:"Realne zużycie (Wh/km)",
+ lRes:"Minimalna rezerwa na miejscu (%)", lAvg:"Średnia moc ładowania (kW)", lEff:"Sprawność ładowania (0–1)",
+ hintAvg:"Średnia moc to realna średnia z całego postoju, nie szczyt: Model Y na Superchargerze 250 kW osiąga średnio 100–130 kW od 10 do 80%.",
+ hintCar:"Wartości modelu to orientacyjne średnie na trasie mieszanej. Po prawdziwej podróży popraw zużycie tym z komputera auta: to parametr, który najbardziej zmienia się zimą i latem, a na autostradzie rośnie o 20–30%.",
+ foundTx:"Operatorzy napotkani na trasie, których jeszcze nie skonfigurowałeś.",
+ foundNone:"Na razie nikt. Wyznacz trasę i wróć tutaj.",
+ cUse:"Użyj", cOp:"Operator", newOpPh:"Dodaj ręcznie — np. Atlante", add:"Dodaj",
+ saveClose:"Zapisz i zamknij", keysTx:"Klucz Google: Maps JavaScript API, Places API, Directions API.<br>Klucz Open Charge Map: openchargemap.org/site/profile/applications",
+ tSaved:"Ustawienia zapisane", tRecalc:"Naciśnij Wyznacz, aby przeliczyć trasę",
+ tNoDest:"Wpisz cel podróży", tNoKey:"Do wyznaczenia trasy potrzebny jest klucz Google",
+ tCalc:"Liczę trasy…", tNotFound:"Nie znaleziono trasy:", tCompare:"Porównuję warianty…",
+ tSeek:"Szukam ładowarek na tej trasie…", tCats:"Szukam wybranych kategorii…",
+ tRoutes:"trasy", tNewOps:"nowych operatorów w ⚙",
+ tDemoKey:"Potrzebny klucz Open Charge Map — zestaw demo", tDemoNo:"Open Charge Map nie odpowiada — zestaw demo",
+ tOpAdded:"dodany — ustaw cenę w ⚙", tOpDup:"Operator już jest",
+ tStopsSet:"Postoje ustawione — naciśnij Nawiguj z postojami", tMaxStops:"Maksymalnie dziewięć postojów w adresie Google Maps",
+ tKeyBad:"Klucz Google odrzucony", tKeyAsk:"Otwórz ⚙ i wpisz klucz Google Maps",
+ tProfile:"Naciśnij Wyznacz, aby przeliczyć z tym profilem",
+ viaPh:"Dodaj punkt pośredni", viaNote:"Z punktami pośrednimi Google nie proponuje wariantów trasy.",
+ thisCh:"To ładowanie", fullCh:"Pełne ładowanie 10→80%", runTot:"Wydane do tej pory", tripTot:"Razem za podróż",
+ min:"min", hr:"godz",
+ cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
+ cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
+ cat_musei:"Muzea i sztuka", cat_terme:"Termy", cat_cantine:"Winnice"
+}};
+function t(k){ const L=TXT[S&&S.lang?S.lang:'it']||TXT.it; return L[k]!==undefined?L[k]:(TXT.it[k]||k); }
+function loc(){ return {it:'it-IT',en:'en-GB',pl:'pl-PL'}[S&&S.lang?S.lang:'it']; }
+function applyI18n(){
+  document.querySelectorAll('[data-t]').forEach(e=>{ e.innerHTML=t(e.dataset.t); });
+  document.querySelectorAll('[data-tp]').forEach(e=>{ e.placeholder=t(e.dataset.tp); });
+}
 
 const CATS=[
   {id:'panorami',nm:'Panorami e belvedere', kw:'belvedere punto panoramico Aussichtspunkt punkt widokowy viewpoint'},
@@ -490,9 +722,9 @@ let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:10, avgkw:110, car:'Tesla Mod
         eff:0.92, corridor:6, minkw:50,
         profile:'fast', noHwy:false, noFerry:false, noToll:false,
         cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
-        cats:['panorami','natura','passi','borghi'],
+        lang:'it', cats:['panorami','natura','passi','borghi'],
         exclude:'autodromo, circuito, outlet, stadio, luna park, centro commerciale',
-        stops:[], lastDest:'', awake:false,
+        stops:[], via:[], lastDest:'', awake:false,
         ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
 
 const mem={};
@@ -530,9 +762,9 @@ function segDist(p,a,b){
 function fmtDur(sec){
   if(!isFinite(sec)||sec<0) return '—';
   const m=Math.round(sec/60);
-  return m<60 ? m+' min' : Math.floor(m/60)+'h '+String(m%60).padStart(2,'0');
+  return m<60 ? m+' '+t('min') : Math.floor(m/60)+t('hr')+' '+String(m%60).padStart(2,'0');
 }
-function fmtClock(d){ return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
+function fmtClock(d){ return d.toLocaleTimeString(loc(),{hour:'2-digit',minute:'2-digit'}); }
 
 /* ============================================================
    Stato
@@ -659,6 +891,7 @@ function buildPlan(rows){
       const o=opFor(plan[i].s.operator);
       plan[i].eur=o?plan[i].kwh*o.price+(o.fee||0):null;
       plan[i].min=plan[i].kwh/Math.min(S.avgkw,plan[i].s.kw||S.avgkw)*60;
+      plan[i].cum=(i>0?(plan[i-1].cum||0):0)+(plan[i].eur||0);
       pos=plan[i].s.km; soc=plan[i].target;
     }
     return plan;
@@ -687,6 +920,12 @@ function socChain(km){
   return soc-socForKm(km-pos);
 }
 
+// costo di una sessione standard 10→80%, per confrontare gli operatori fra loro
+function costFull(s){
+  const o=opFor(s.operator); if(!o) return null;
+  const kwh=0.70*S.kwh/S.eff;
+  return {kwh, eur:kwh*o.price+(o.fee||0)};
+}
 function costTo80(s){
   const arr=socChain(s.km);                   // tiene conto delle soste precedenti
   const kwh=Math.max(0,(80-arr)/100*S.kwh)/S.eff;
@@ -744,7 +983,7 @@ async function fetchOCM(){
   }
   usingDemo=!got.length;
   stations=got.length?got:DEMO.slice();
-  if(usingDemo) toast(S.ockey?'Open Charge Map non risponde — set dimostrativo':'Serve la chiave Open Charge Map — set dimostrativo');
+  if(usingDemo) toast(S.ockey?t('tDemoNo'):t('tDemoKey'));
 }
 
 /* ============================================================
@@ -788,11 +1027,42 @@ async function fetchPOIs(pathArr,cumArr,light){
     try{ photo=p.photos&&p.photos[0]?p.photos[0].getUrl({maxWidth:900,maxHeight:560}):''; }catch(e){}
     out.push({ poi:true, name:p.name, place_id:p.place_id,
                lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
-               rating, rev, cat:cat.nm, catId:cat.id, photo,
+               rating, rev, cat:t('cat_'+cat.id), catId:cat.id, photo,
                vicinity:p.vicinity||'' });
   }
   return out;
 }
+
+/* ============================================================
+   Tappe intermedie scelte da te
+   ============================================================ */
+function renderVias(){
+  const box=document.getElementById('vias');
+  box.classList.toggle('on',S.via.length>0);
+  box.innerHTML='';
+  S.via.forEach((v,i)=>{
+    const c=document.createElement('span'); c.className='vc';
+    c.innerHTML=`<span class="n">${i+1}</span>${v.name.slice(0,26)}<button class="x" data-vrm="${i}" aria-label="×">×</button>`;
+    box.appendChild(c);
+  });
+}
+async function addVia(name,lat,lng){
+  name=(name||'').trim(); if(!name) return;
+  if(S.via.length>=8) return;
+  S.via.push(lat!=null?{name,lat,lng}:{name});
+  document.getElementById('via').value='';
+  await save(); renderVias();
+  if(route.length) toast(t('tRecalc'));
+}
+document.getElementById('vias').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-vrm]'); if(!b) return;
+  S.via.splice(+b.dataset.vrm,1); await save(); renderVias();
+  if(route.length) toast(t('tRecalc'));
+});
+document.getElementById('viaAdd').onclick=()=>addVia(document.getElementById('via').value);
+document.getElementById('via').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); addVia(e.target.value); }
+});
 
 /* ============================================================
    Soste e passaggio alla navigazione
@@ -803,7 +1073,7 @@ async function toggleStop(s){
   const i=S.stops.findIndex(x=>Math.abs(x.lat-s.lat)<1e-6&&Math.abs(x.lng-s.lng)<1e-6);
   if(i>=0) S.stops.splice(i,1);
   else{
-    if(S.stops.length>=MAX_STOPS) return toast('Massimo '+MAX_STOPS+' soste in un URL di Google Maps');
+    if(S.stops.length>=MAX_STOPS) return toast(t('tMaxStops'));
     S.stops.push({name:s.name,lat:s.lat,lng:s.lng,
                   operator:s.poi?'★ '+s.rating.toFixed(1):(s.operator||''),km:s.km});
   }
@@ -814,8 +1084,9 @@ function navUrl(){
   if(!S.stops.length) return '#';
   const dest=S.lastDest ? encodeURIComponent(S.lastDest)
                         : `${S.stops[S.stops.length-1].lat},${S.stops[S.stops.length-1].lng}`;
-  const way=(S.lastDest?S.stops:S.stops.slice(0,-1))
-              .map(s=>`${s.lat.toFixed(6)},${s.lng.toFixed(6)}`).join('|');
+  const pts=[...S.via.filter(v=>v.lat!=null).map(v=>({lat:v.lat,lng:v.lng,km:-1})),
+             ...(S.lastDest?S.stops:S.stops.slice(0,-1))];
+  const way=pts.map(s=>`${s.lat.toFixed(6)},${s.lng.toFixed(6)}`).join('|');
   return 'https://www.google.com/maps/dir/?api=1'+
          `&origin=${me.lat.toFixed(6)},${me.lng.toFixed(6)}`+
          `&destination=${dest}`+(way?`&waypoints=${encodeURIComponent(way)}`:'')+
@@ -876,9 +1147,9 @@ async function fillDescription(s){
   const txt=d&&d.editorial_summary&&d.editorial_summary.overview;
   box.classList.remove('load');
   if(txt){
-    box.innerHTML=`${txt}<span class="src">Descrizione di Google${d.formatted_address?' · '+d.formatted_address:''}</span>`;
+    box.innerHTML=`${txt}<span class="src">${t('srcG')}${d.formatted_address?' · '+d.formatted_address:''}</span>`;
   } else {
-    box.innerHTML=`Google non ha una descrizione per questo luogo.`+
+    box.innerHTML=t('noDesc')+
       `<span class="src">${s.cat}${d&&d.formatted_address?' · '+d.formatted_address:(s.vicinity?' · '+s.vicinity:'')}</span>`;
   }
   // se la ricerca non aveva foto, provo con quelle del dettaglio
@@ -903,21 +1174,21 @@ function render(){
   if(summary){
     const eta=new Date(Date.now()+summary.sec*1000);
     const g=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
-    head.innerHTML=`<b>${rows.length}</b> colonnine${usingDemo?' (demo)':''}${views.length?` · <b>${views.length}</b> da vedere`:''} · ${Math.round(summary.km)} km<br>`+
-      `${fmtDur(summary.sec)} · arrivo <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
-  } else head.innerHTML=rows.length?`<b>${rows.length}</b> colonnine`:'—';
+    head.innerHTML=`<b>${rows.length}</b> ${t('chargers')}${usingDemo?' (demo)':''}${views.length?` · <b>${views.length}</b> ${t('toSee')}`:''} · ${Math.round(summary.km)} km<br>`+
+      `${fmtDur(summary.sec)} · ${t('arrival')} <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
+  } else head.innerHTML=rows.length?`<b>${rows.length}</b> ${t('chargers')}`:'—';
 
   PLAN = route.length ? buildPlan(rows) : {plan:[],fail:false,dest:0};
   const list=document.getElementById('list'); list.innerHTML='';
   if(!route.length && rows.length){
     const d=document.createElement('div'); d.className='reach';
-    d.innerHTML='Distanze in linea d\'aria. Premi <b>Traccia</b> per avere chilometri reali, tempi, carica all\'arrivo e piano delle soste.';
+    d.innerHTML=t('straight');
     list.appendChild(d);
   }
   if(route.length){
     const r=rangeNow();
     const d=document.createElement('div'); d.className='reach';
-    d.innerHTML=`Autonomia utile <b class="${r<80?'low':''}">${Math.round(r)} km</b> con la carica di adesso`;
+    d.innerHTML=`${t('autonomy')} <b class="${r<80?'low':''}">${Math.round(r)} km</b> ${t('withCharge')}`;
     list.appendChild(d);
 
     const P=PLAN.plan;
@@ -928,33 +1199,31 @@ function render(){
       const prossima=rows.find(x=>x.km>1);
       let msg;
       if(!P.length){
-        msg=`Con il ${soc}% di carica e la riserva al ${S.reserve}% fai <b>${Math.round(r)} km</b>, `+
-            (prossima?`ma la prima colonnina è a <b>${Math.round(prossima.km)} km</b>.`:'e non trovo colonnine davanti a te.')+
-            ` Alza il cursore della carica se sei più carico di così`+
-            (S.reserve>5?`, oppure abbassa la riserva`:'')+`.`;
+        msg=`${t('lowA')} ${soc}% ${t('lowB')} ${S.reserve}% ${t('lowC')} <b>${Math.round(r)} km</b>, `+
+            (prossima?`${t('lowD')} <b>${Math.round(prossima.km)} km</b>.`:t('lowG'))+
+            ` ${t('lowE')}`+(S.reserve>5?`, ${t('lowF')}`:'')+`.`;
       } else {
-        msg=`Piano interrotto dopo <b>${Math.round(P[P.length-1].s.km)} km</b>: da lì non trovo colonnine raggiungibili. `+
-            `Le prime ${P.length} soste (${fmtDur(tot*60)}) reggono.`;
+        msg=`${t('planCut')} <b>${Math.round(P[P.length-1].s.km)} km</b>: ${t('planCut2')} `+
+            `${t('planCut3')} ${P.length} ${t('planCut4')} (${fmtDur(tot*60)}) ${t('hold')}`;
       }
       box.innerHTML=`<span class="txt bad">${msg}`+
         (usingDemo
-          ? ` <b>Stai usando il set dimostrativo di 11 colonnine</b>: inserisci la chiave Open Charge Map e ritraccia.`
-          : ` In alternativa allarga la deviazione massima o abbassa la potenza minima.`)+
-        `</span>`+(P.length?`<button id="usePlan">Usa</button>`:'');
+          ? ' '+t('demoNote') : ' '+t('elseNote'))+
+        `</span>`+(P.length?`<button id="usePlan">${t('use')}</button>`:'');
     } else if(!P.length){
-      box.innerHTML=`<span class="txt">Arrivi a destinazione senza ricaricare, con circa <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
+      box.innerHTML=`<span class="txt">${t('noStop')} <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
     } else {
       const tot=P.reduce((a,p)=>a+p.min,0);
       const eur=P.every(p=>p.eur!=null)?P.reduce((a,p)=>a+p.eur,0):null;
-      box.innerHTML=`<span class="txt"><b>${P.length}</b> sost${P.length>1?'e':'a'} · `+
-        `<b>${fmtDur(tot*60)}</b> di ricarica${eur!=null?` · <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
-        `Arrivo previsto <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> soste incluse</span>`+
-        `<button id="usePlan">Usa</button>`;
+      box.innerHTML=`<span class="txt"><b>${P.length}</b> ${P.length>1?t('stopsN'):t('stopN')} · `+
+        `<b>${fmtDur(tot*60)}</b> ${t('charging')}${eur!=null?` · ${t('tripTot')} <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
+        `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}</span>`+
+        `<button id="usePlan">${t('use')}</button>`;
     }
     list.appendChild(box);
   }
   if(!all.length){
-    list.innerHTML='<p class="hint" style="padding:6px 4px 14px">Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.</p>';
+    list.innerHTML=`<p class="hint" style="padding:6px 4px 14px">${t('empty')}</p>`;
   }
   all.slice(0,90).forEach(s=>{
     const el=document.createElement('button');
@@ -964,7 +1233,7 @@ function render(){
         <span class="bar" style="background:var(--view)"></span>
         <span class="mid">
           <span class="op">${isStop(s)?'✦':'◆'} ${s.name.slice(0,30)}</span>
-          <span class="name">${s.cat||'Da vedere'} · ${s.off.toFixed(0)} km fuori · ${s.rev.toLocaleString('it-IT')} recensioni</span>
+          <span class="name">${s.cat||t('seeCat')} · ${s.off.toFixed(0)} ${t('kmOut')} · ${s.rev.toLocaleString(loc())} ${t('reviews')}</span>
         </span>
         <span class="right">
           <span class="km">${s.km.toFixed(0)}<small> km</small></span>
@@ -984,13 +1253,14 @@ function render(){
             ${s.onHwy?'<span class="hwy">A</span>':''}
           </span>
           <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW
-            ${route.length?`· <span class="arr ${low?'low':''}">arrivi ${c.arr>0?Math.round(c.arr)+'%':'a secco'}</span>`:''}</span>
+            ${route.length?`· <span class="arr ${low?'low':''}">${t('arriveAt')} ${c.arr>0?Math.round(c.arr)+'%':t('dry')}</span>`:''}</span>
         </span>
         <span class="right">
           <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
           ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
           ${st?`<span class="charge">→ ${Math.round(st.target)}% · ${Math.round(st.min)} min</span>`:''}
-          <span class="eur ${c.eur==null?'none':''}">${st&&st.eur!=null?'€ '+st.eur.toFixed(2):(c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?'tariffa ?':'—'))}</span>
+          <span class="eur ${c.eur==null?'none':''}">${st&&st.eur!=null?'€ '+st.eur.toFixed(2):(c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?t('tariffQ'):'—'))}</span>
+          ${st&&st.cum!=null&&PLAN.plan.length>1?`<span class="cum">Σ € ${st.cum.toFixed(2)}</span>`:''}
         </span>`;
     }
     el.onclick=()=>openDetail(s);
@@ -1001,7 +1271,7 @@ function render(){
     S.stops=PLAN.plan.slice(0,9).map(p=>({name:p.s.name,lat:p.s.lat,lng:p.s.lng,
                                           operator:p.s.operator||'',km:p.s.km}));
     await save(); renderStops(); render();
-    toast('Soste impostate — premi Naviga con le soste');
+    toast(t('tStopsSet'));
   };
   drawMarkers(rows,views);
   const ng=document.getElementById('navGo'); if(ng) ng.href=navUrl();
@@ -1016,57 +1286,61 @@ function openDetail(s){
     card.innerHTML=`
       <img id="poiShot" class="shot ${s.photo?'':'hide'}" ${s.photo?`src="${s.photo}"`:''} alt="" loading="lazy">
       <h3 style="color:var(--view)">${s.name}</h3>
-      <p class="sub">${s.cat||'Da vedere'} · ${s.off.toFixed(1)} km fuori dal percorso</p>
+      <p class="sub">${s.cat||t('seeCat')} · ${s.off.toFixed(1)} ${t('outOf')}</p>
       <div class="readout">
-        <div class="lbl">Voto delle recensioni</div>
+        <div class="lbl">${t('ratingL')}</div>
         <div class="big view">★ ${s.rating.toFixed(1)}</div>
-        <div class="calc">${s.rev.toLocaleString('it-IT')} recensioni su Google</div>
+        <div class="calc">${s.rev.toLocaleString(loc())} ${t('revG')}</div>
       </div>
-      <div class="desc load" id="poiDesc">Carico la descrizione…</div>
+      <div class="desc load" id="poiDesc">${t('loadDesc')}</div>
       <div class="specs">
-        <div class="spec"><div class="k">Distanza</div><div class="v">${s.km.toFixed(0)} km</div></div>
-        <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
-        <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
-        <div class="spec"><div class="k">Deviazione</div><div class="v">${s.off.toFixed(1)} km</div></div>
+        <div class="spec"><div class="k">${t('dDist')}</div><div class="v">${s.km.toFixed(0)} km</div></div>
+        <div class="spec"><div class="k">${t('dTime')}</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
+        <div class="spec"><div class="k">${t('dEta')}</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
+        <div class="spec"><div class="k">${t('dDev')}</div><div class="v">${s.off.toFixed(1)} km</div></div>
       </div>
       <div class="actions">
-        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?'Sosta ✓':'Sosta +'}</button>
-        <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}&query_place_id=${s.place_id}">Dettagli</a>
-        <button class="btn" id="closeD">Chiudi</button>
+        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?t('stopOn'):t('stopAdd')}</button>
+        <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}&query_place_id=${s.place_id}>${t('details')}</a>
+        <button class="btn" id="closeD">${t('close')}</button>
       </div>`;
   } else {
     const o=opFor(s.operator),c=costTo80(s),st=planFor(s);
     card.innerHTML=`
       <h3 style="color:${o?o.color:'var(--ice)'}">${s.operator||'Operatore ignoto'}</h3>
-      <p class="sub">${s.name}${s.town?' · '+s.town:''}${s.onHwy?' · sull\'autostrada':''}</p>
+      <p class="sub">${s.name}${s.town?' · '+s.town:''}${s.onHwy?' · '+t('onHwy'):''}</p>
       <div class="readout">
-        <div class="lbl">${st?'Sosta numero '+(PLAN.plan.indexOf(st)+1)+' del piano':"Costo per arrivare all'80%"}</div>
+        <div class="lbl">${st?t('stopNo')+' '+(PLAN.plan.indexOf(st)+1)+' '+t('ofPlan'):t('cost80')}</div>
         ${st
           ? `<div class="big">${st.eur!=null?'€ '+st.eur.toFixed(2):Math.round(st.target)+'%'}</div>
-             <div class="calc">Arrivi al ${Math.max(0,Math.round(st.arr))}%, carichi fino al ${Math.round(st.target)}%<br>
-             ${st.kwh.toFixed(1)} kWh · circa ${Math.round(st.min)} min a ${Math.round(Math.min(S.avgkw,st.s.kw||S.avgkw))} kW${o?` · € ${o.price.toFixed(2)}/kWh`:''}</div>`
+             <div class="calc">${t('youArrive')} ${Math.max(0,Math.round(st.arr))}%, ${t('youCharge')} ${Math.round(st.target)}%<br>
+             ${st.kwh.toFixed(1)} kWh · ${t('about')} ${Math.round(st.min)} ${t('min')} ${t('at')} ${Math.round(Math.min(S.avgkw,st.s.kw||S.avgkw))} kW${o?` · € ${o.price.toFixed(2)}/kWh`:''}</div>`
           : c.eur!=null
           ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
-             <div class="calc">${c.kwh.toFixed(1)} kWh da ${Math.max(0,Math.round(c.arr))}% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2)+' sessione':''}</div>`
-          : `<div class="big na">Servono ${c.kwh.toFixed(1)} kWh.<br>Aggiungi questo operatore per vedere il costo.</div>`}
-        ${s.declared?`<div class="declared">Prezzo dichiarato all'operatore: <b>${s.declared.slice(0,90)}</b><br>Dato pubblico non verificato.</div>`:''}
+             <div class="calc">${c.kwh.toFixed(1)} kWh · ${Math.max(0,Math.round(c.arr))}% → 80% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2):''}</div>`
+          : `<div class="big na">${t('needK')} ${c.kwh.toFixed(1)} kWh.<br>${t('addOpTx')}</div>`}
+        ${s.declared?`<div class="declared">${t('declared')} <b>${s.declared.slice(0,90)}</b><br>${t('unver')}</div>`:''}
       </div>
       <div class="specs">
-        <div class="spec"><div class="k">Distanza</div><div class="v">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'}</div></div>
-        <div class="spec"><div class="k">Ci arrivi in</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
-        <div class="spec"><div class="k">Ora di arrivo</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
-        <div class="spec"><div class="k">Deviazione</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
-        <div class="spec"><div class="k">Potenza</div><div class="v">${Math.round(s.kw)} kW</div></div>
-        <div class="spec"><div class="k">Punti</div><div class="v">${s.pts||'—'}</div></div>
-        <div class="spec"><div class="k">Stato</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?'Attiva':'Fuori servizio'}</div></div>
-        <div class="spec"><div class="k">Arrivi con</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':'a secco'}</div></div>
-        <div class="spec"><div class="k">Energia</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
+        <div class="spec"><div class="k">${t('dDist')}</div><div class="v">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'}</div></div>
+        <div class="spec"><div class="k">${t('dTime')}</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
+        <div class="spec"><div class="k">${t('dEta')}</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
+        <div class="spec"><div class="k">${t('dDev')}</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
+        <div class="spec"><div class="k">${t('dPow')}</div><div class="v">${Math.round(s.kw)} kW</div></div>
+        <div class="spec"><div class="k">${t('dPts')}</div><div class="v">${s.pts||'—'}</div></div>
+        <div class="spec"><div class="k">${t('dSt')}</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?t('dOn'):t('dOff')}</div></div>
+        <div class="spec"><div class="k">${t('dArr')}</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':t('dry')}</div></div>
+        <div class="spec"><div class="k">${t('dEn')}</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
+        ${st?`<div class="spec"><div class="k">${t('thisCh')}</div><div class="v" style="color:var(--signal)">${st.eur!=null?'€ '+st.eur.toFixed(2):'—'}</div></div>
+        <div class="spec"><div class="k">${t('runTot')}</div><div class="v">${st.cum!=null?'€ '+st.cum.toFixed(2):'—'}</div></div>`:''}
+        ${(()=>{const f=costFull(s); return f?`<div class="spec"><div class="k">${t('fullCh')}</div><div class="v">€ ${f.eur.toFixed(2)}</div></div>
+        <div class="spec"><div class="k">kWh 10→80%</div><div class="v">${f.kwh.toFixed(1)}</div></div>`:'';})()}
       </div>
       <div class="actions">
-        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?'Sosta ✓':'Sosta +'}</button>
-        ${!o?`<button class="btn" id="quickAdd">Operatore +</button>`:
-             `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">Naviga</a>`}
-        <button class="btn" id="closeD">Chiudi</button>
+        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?t('stopOn'):t('stopAdd')}</button>
+        ${!o?`<button class="btn" id="quickAdd">${t('opAdd')}</button>`:
+             `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">${t('navigate')}</a>`}
+        <button class="btn" id="closeD">${t('close')}</button>
       </div>`;
   }
   document.getElementById('detail').classList.add('show');
@@ -1078,7 +1352,7 @@ function openDetail(s){
   if(qa) qa.onclick=async()=>{
     addOperator(s.operator); await save();
     document.getElementById('detail').classList.remove('show');
-    render(); toast(s.operator+' aggiunto — imposta il prezzo in ⚙');
+    render(); toast(s.operator+' '+t('tOpAdded'));
   };
 }
 document.getElementById('detail').onclick=e=>{ if(e.target.id==='detail') e.target.classList.remove('show'); };
@@ -1125,8 +1399,8 @@ function bootMap(){
   if(!S.gkey){ document.getElementById('map').classList.add('hidden');
                document.getElementById('nomap').classList.add('show'); return; }
   const sc=document.createElement('script');
-  sc.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(S.gkey)}&libraries=places&language=it&callback=initMap`;
-  sc.onerror=()=>{ toast('Chiave Google rifiutata'); document.getElementById('nomap').classList.add('show'); };
+  sc.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(S.gkey)}&libraries=places&language=${S.lang||'it'}&callback=initMap`;
+  sc.onerror=()=>{ toast(t('tKeyBad')); document.getElementById('nomap').classList.add('show'); };
   document.head.appendChild(sc);
 }
 window.initMap=function(){
@@ -1150,6 +1424,13 @@ window.initMap=function(){
     polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9}});
   try{ placesSvc=new google.maps.places.PlacesService(map); }catch(e){ placesSvc=null; }
   try{ new google.maps.places.Autocomplete(document.getElementById('dest')); }catch(e){}
+  try{
+    const ac=new google.maps.places.Autocomplete(document.getElementById('via'));
+    ac.addListener('place_changed',()=>{
+      const p=ac.getPlace();
+      if(p&&p.geometry) addVia(p.name||p.formatted_address,p.geometry.location.lat(),p.geometry.location.lng());
+    });
+  }catch(e){}
   meMarker=new google.maps.Marker({map,position:me,zIndex:99,
     icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',
           fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
@@ -1195,25 +1476,27 @@ function profileOf(routeObj){
 
 async function trace(){
   const dest=document.getElementById('dest').value.trim();
-  if(!dest) return toast('Scrivi una destinazione');
-  if(!map) return toast('Serve la chiave Google per calcolare il percorso');
+  if(!dest) return toast(t('tNoDest'));
+  if(!map) return toast(t('tNoKey'));
   S.lastDest=dest; save();
+  const way=S.via.map(v=>({location:v.lat!=null?{lat:v.lat,lng:v.lng}:v.name, stopover:true}));
   const req={ origin:me,destination:dest,travelMode:'DRIVING',
+    waypoints:way,
     avoidHighways:!!S.noHwy, avoidFerries:!!S.noFerry,
     avoidTolls: S.profile==='cheap' ? true : !!S.noToll,
-    provideRouteAlternatives:true,
+    provideRouteAlternatives: way.length===0,   // Google non dà alternative con le tappe
     drivingOptions:{departureTime:new Date(),trafficModel:'bestguess'} };
 
-  toast('Calcolo i percorsi…');
+  toast(t('tCalc'));
   new google.maps.DirectionsService().route(req,async (res,st)=>{
-    if(st!=='OK') return toast('Percorso non trovato: '+st);
+    if(st!=='OK') return toast(t('tNotFound')+' '+st);
 
     altRes=res; altProfs=res.routes.map(profileOf); altCache={}; altIdx=0;
     dirRenderer.setDirections(res);
 
     // nel profilo panoramico scelgo io la rotta con più cose da vedere
     if(S.profile==='scenic'&&placesSvc){
-      toast('Confronto le alternative…');
+      toast(t('tCompare'));
       const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
       let top=-1;
       for(let i=0;i<altProfs.length;i++){
@@ -1228,15 +1511,16 @@ async function trace(){
     renderRoutes();
     await selectRoute(altIdx);
     const nuovi=unconfigured().length;
-    toast(`${altProfs.length>1?altProfs.length+' percorsi · ':''}`+
+    toast(`${altProfs.length>1?altProfs.length+' '+t('tRoutes')+' · ':''}`+
           `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`+
-          (nuovi?` · ${nuovi} operatori nuovi in ⚙`:''));
+          (nuovi?` · ${nuovi} ${t('tNewOps')}`:''));
   });
 }
 
 async function selectRoute(i){
   if(!altRes||!altProfs[i]) return;
   altIdx=i;
+  renderRoutes();                    // evidenzia subito, prima delle ricerche
   dirRenderer.setRouteIndex(i);
   const p=altProfs[i];
   route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
@@ -1244,19 +1528,23 @@ async function selectRoute(i){
 
   if(altCache[i]){ stations=altCache[i].st; pois=altCache[i].po; }
   else{
-    toast('Cerco le colonnine su questa rotta…');
+    toast(t('tSeek'));
     await fetchOCM();
     pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : [];
     altCache[i]={st:stations,po:pois};
   }
-  renderRoutes(); render();
+  render();
 }
 
 function renderRoutes(){
   const box=document.getElementById('routes'), row=document.getElementById('routesRow');
   const n=altProfs.length;
-  box.classList.toggle('on',n>1);
-  if(n<2) return;
+  box.classList.toggle('on', n>1 || S.via.length>0);
+  if(n<2){
+    document.getElementById('routesRow').innerHTML=
+      S.via.length?`<span class="hint" style="padding:2px 2px 6px">${t('viaNote')}</span>`:'';
+    return;
+  }
   const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
   row.innerHTML='';
   altProfs.forEach((p,i)=>{
@@ -1265,9 +1553,9 @@ function renderRoutes(){
     const via=(altRes.routes[i].summary||'').slice(0,22)||String.fromCharCode(65+i);
     const b=document.createElement('button');
     b.className='rt'+(i===altIdx?' on':''); b.dataset.rt=i;
-    b.innerHTML=`<span class="lb">via ${via}</span>`+
+    b.innerHTML=`<span class="lb">${via}</span>`+
       `<span class="big">${fmtDur(sec)}</span>`+
-      `<span class="sm">${Math.round(km)} km${diff>0?` · +${diff} min`:' · il più rapido'}</span>`;
+      `<span class="sm">${Math.round(km)} km${diff>0?` · +${diff} ${t('min')}`:' · '+t('pfFastS')}</span>`;
     row.appendChild(b);
   });
 }
@@ -1297,12 +1585,19 @@ document.getElementById('profiles').addEventListener('click',async e=>{
   await save();
   if(S.profile!=='scenic'){ pois=[]; }
   render();
-  if(route.length) toast('Premi Traccia per ricalcolare con questo profilo');
+  if(route.length) toast(t('tProfile'));
 });
 
 /* ============================================================
    Impostazioni
    ============================================================ */
+function fillLangs(){
+  const sel=document.getElementById('lang');
+  if(sel.options.length) return;
+  Object.entries(LANGS).forEach(([k,v])=>{
+    const o=document.createElement('option'); o.value=k; o.textContent=v; sel.appendChild(o);
+  });
+}
 function fillCars(){
   const sel=document.getElementById('car');
   if(sel.options.length) return;
@@ -1315,7 +1610,8 @@ function fillCars(){
   });
 }
 function paintSettings(){
-  fillCars();
+  fillLangs(); fillCars();
+  document.getElementById('lang').value=S.lang||'it';
   const v=(id,val)=>document.getElementById(id).value=val;
   const c=(id,val)=>document.getElementById(id).checked=!!val;
   v('gkey',S.gkey||''); v('ockey',S.ockey||'');
@@ -1342,7 +1638,7 @@ function paintSettings(){
     const b=document.createElement('button');
     b.className='chip'+(S.cats.includes(c.id)?' on':'');
     b.dataset.cat=c.id;
-    b.innerHTML=`<span class="plus">${S.cats.includes(c.id)?'✓':'+'}</span><b>${c.nm}</b>`;
+    b.innerHTML=`<span class="plus">${S.cats.includes(c.id)?'✓':'+'}</span><b>${t('cat_'+c.id)}</b>`;
     cbox.appendChild(b);
   });
   document.getElementById('exclude').value=S.exclude||'';
@@ -1350,7 +1646,7 @@ function paintSettings(){
   const found=document.getElementById('found'); found.innerHTML='';
   const list=unconfigured();
   if(!list.length){
-    found.innerHTML='<p class="hint" style="margin:0">Nessuno per ora. Traccia un percorso e torna qui.</p>';
+    found.innerHTML=`<p class="hint" style="margin:0">${t('foundNone')}</p>`;
   } else list.slice(0,24).forEach(([nm,n])=>{
     const b=document.createElement('button'); b.className='chip'; b.dataset.add=nm;
     b.innerHTML=`<span class="plus">+</span><b>${nm.slice(0,26)}</b><span class="n">${n}</span>`;
@@ -1383,7 +1679,7 @@ document.getElementById('found').addEventListener('click',e=>{
 document.getElementById('addOp').onclick=()=>{
   const inp=document.getElementById('newOp'),val=inp.value.trim();
   if(!val) return;
-  if(addOperator(val)){ inp.value=''; paintSettings(); } else toast('Operatore già presente');
+  if(addOperator(val)){ inp.value=''; paintSettings(); } else toast(t('tOpDup'));
 };
 document.getElementById('newOp').addEventListener('keydown',e=>{
   if(e.key==='Enter') document.getElementById('addOp').click();
@@ -1392,6 +1688,7 @@ document.getElementById('gear').onclick=()=>{ paintSettings(); document.getEleme
 document.getElementById('saveSet').onclick=async()=>{
   const g=id=>document.getElementById(id);
   const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
+  const prevLang=S.lang; S.lang=g('lang').value;
   S.gkey=g('gkey').value.trim(); S.ockey=g('ockey').value.trim();
   S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
   S.reserve=Math.min(40,Math.max(0,+g('reserve').value||0));
@@ -1404,10 +1701,11 @@ document.getElementById('saveSet').onclick=async()=>{
   S.awake=g('awake').checked; applyWake();
   S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
   await save();
+  if(S.lang!==prevLang){ location.reload(); return; }   // la mappa va ricaricata nella nuova lingua
   document.getElementById('settings').classList.remove('show');
   if(S.gkey&&S.gkey!==prev&&!map) bootMap(); else render();
   const cambiato=JSON.stringify([S.noHwy,S.noFerry,S.noToll])!==prevRoute;
-  toast(cambiato&&route.length?'Premi Traccia per ricalcolare il percorso':'Impostazioni salvate');
+  toast(cambiato&&route.length?t('tRecalc'):t('tSaved'));
 };
 
 const socEl=document.getElementById('soc');
@@ -1421,11 +1719,11 @@ document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Ente
 
 (async()=>{
   document.getElementById('ver').textContent='v'+APP_VERSION;
-  document.getElementById('verSet').textContent=`Versione ${APP_VERSION} del ${APP_DATE}.`;
-  await load(); paintSoc();
+  document.getElementById('verSet').textContent=`${t('version')} ${APP_VERSION} ${t('ofDate')} ${APP_DATE}.`;
+  await load(); applyI18n(); paintSoc();
   document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
-  stations=DEMO.slice(); bootMap(); renderStops(); renderRoutes(); applyWake(); render();
-  if(!S.gkey) toast('Apri ⚙ e inserisci la chiave Google Maps');
+  stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
+  if(!S.gkey) toast(t('tKeyAsk'));
 })();
 </script>
 </body>
