@@ -106,7 +106,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.4.2</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.4.4</span></h1>
             <div class="sub">Planner HPC · Google Maps · Supercharger / Ionity / Electra / EVDC / EnBW / GreenWay</div>
           </div>
         </div>
@@ -203,7 +203,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.4.0 · Prezzi Supercharger live da suc-tracker.eu (fasce orarie, tariffa Tesla o ospite). Cache 6 ore.</div>
+      <div class="hint">v1.4.4 · Soste solo sul tracciato. 3 alternative. Tariffe Supercharger da suc-tracker.eu.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -245,7 +245,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.4.2";
+  const APP_VERSION = "1.4.4";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -706,16 +706,52 @@
     return { lat: lat+dLat, lng: lng+dLng };
   }
 
+  function uniqRoutes(list, minDiffKm){
+    const uniq=[];
+    for (const r of list){
+      if (!r || !r.coords || r.coords.length<2) continue;
+      if (uniq.every(u => Math.abs(u.meters-r.meters) > (minDiffKm||12)*1000)) uniq.push(r);
+      if (uniq.length===3) break;
+    }
+    return uniq;
+  }
+  async function fillToThree(points, a, b, seed, noMotorway){
+    let out = uniqRoutes(seed||[], 10);
+    const tries = [
+      midpointOffset(a,b,18,1),
+      midpointOffset(a,b,18,-1),
+      midpointOffset(a,b,38,1),
+      midpointOffset(a,b,38,-1),
+      midpointOffset(a,b,12,1)
+    ];
+    for (const via of tries){
+      if (out.length>=3) break;
+      try {
+        const extra = await routeOsrm(points, via, !!noMotorway);
+        out = uniqRoutes(out.concat(extra), 8);
+      } catch(e){}
+    }
+    if (out.length<3){
+      try { out = uniqRoutes(out.concat(await routeOsrm(points, null, false)), 6); } catch(e){}
+    }
+    return out.slice(0,3);
+  }
   async function getRoutes(a,b, mode, vias){
     const points = [a, ...(vias||[]), b];
     const keys = loadKeys();
     const useG = !!(keys.g && window.google && google.maps && google.maps.DirectionsService);
     if (mode==="fast"){
+      let seed=[];
       if (useG) {
-        try { return (await routeGoogle(points,{})).slice(0,3); }
-        catch(e){ setStatus(e.message+" Uso il calcolatore di riserva.","err"); }
+        try { seed = await routeGoogle(points,{}); }
+        catch(e){ setStatus(e.message+" Integro con alternative di riserva.","err"); }
       }
-      return (await routeOsrm(points)).slice(0,3);
+      if (!seed.length){
+        try { seed = await routeOsrm(points); } catch(e){}
+      }
+      const three = await fillToThree(points, a, b, seed, false);
+      if (!three.length) throw new Error("Nessun percorso trovato");
+      return three;
     }
     if (useG){
       try {
@@ -1036,7 +1072,7 @@
         const pr = progressOnPath(c, route.coords);
         return { ...c, atKm: pr.km, off: distToPath(c, route.coords) };
       })
-      .filter(c => c.off <= 30 && c.atKm > 4 && c.atKm < km - 2)
+      .filter(c => c.off <= 12 && c.atKm > 12 && c.atKm < km - 8)
       .sort((a,b)=> a.atKm-b.atKm);
 
     /* dedup vicini stesso network */
@@ -1068,22 +1104,23 @@
         return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
       }
       const reach = rangeKm(soc, speedGuess);
-      const windowFrom = fromKm + Math.max(8, reach*0.30);
-      const windowTo = fromKm + Math.max(reach, 40);
-      const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && !stops.some(s=>s.id===c.id));
+      const windowFrom = fromKm + Math.max(25, reach*0.52);
+      const windowTo = fromKm + Math.max(reach - 8, windowFrom + 15);
+      const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && c.off<=12 && !stops.some(s=>s.id===c.id));
       let chosen = cand.sort((a,b)=>{
         const pref = {SUPERCHARGER:0, IONITY:1, ELECTRA:2, ENBW:3, GREENWAY:4, EVDC:5};
-        const ideal = fromKm + reach*0.72;
-        return Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (pref[a.net]-pref[b.net]) || (a.off-b.off);
+        const ideal = fromKm + reach*0.78;
+        return (a.off-b.off) || Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (pref[a.net]-pref[b.net]);
       })[0];
       if (!chosen){
-        chosen = uniq.filter(c => c.atKm>fromKm+12 && !stops.some(s=>s.id===c.id))
-          .sort((a,b)=>a.atKm-b.atKm)[0];
+        chosen = uniq.filter(c => c.atKm>fromKm+20 && c.atKm<=windowTo+25 && c.off<=14 && !stops.some(s=>s.id===c.id))
+          .sort((a,b)=>a.off-b.off || a.atKm-b.atKm)[0];
       }
       if (!chosen) break;
       const dkm = chosen.atKm - fromKm;
       const nextCh = uniq.filter(c => c.atKm > chosen.atKm + 15).sort((a,b)=>a.atKm-b.atKm)[0];
-      const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : (km - chosen.atKm);
+      const toDest = km - chosen.atKm;
+      const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : toDest;
       let arrive, target, mins, kwhAdd, st;
       if (smart){
         const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter).leg;
@@ -1121,7 +1158,20 @@
       from = chosen;
     }
     const remain = km - fromKm;
-    const st = smart && remain>1 ? smartSpeed(remain, soc, Math.max(minSoc, destArrive||minSoc)) : {
+    const needDest = Math.max(minSoc, destArrive || minSoc);
+    if (stops.length){
+      const last = stops[stops.length-1];
+      const speedL = last.speed || 120;
+      const needLeave = Math.min(chargeMax, needDest + (consAt(speedL)*Math.max(remain,0)/100)/CAR.kwh*100 + 3);
+      if (needLeave > last.targetSoc + 0.5){
+        last.targetSoc = Math.max(last.targetSoc, Math.min(chargeMax, needLeave));
+        last.chargeMin = chargeMinutes(last.arriveSoc, last.targetSoc, last.kw);
+        last.kwh = CAR.kwh * Math.max(0, last.targetSoc-last.arriveSoc)/100 / 0.95;
+        last.cost = last.kwh * (last.livePrice || state.prices[last.net]);
+        soc = last.targetSoc;
+      }
+    }
+    const st = smart && remain>1 ? smartSpeed(remain, soc, needDest) : {
       v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
       driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
     };
@@ -1421,7 +1471,7 @@
         if (chargers.some(u => u.net===c.net && haversine(u,c)<0.7)) continue;
         chargers.push(c);
       }
-      state.routeChargers = chargers.filter(c => distToPath(c, routes[0].coords) <= 30);
+      state.routeChargers = chargers.filter(c => distToPath(c, routes[0].coords) <= 14);
       setStatus("Cerco attrazioni lungo il percorso…");
       const pois = await loadPoisForRoute(routes[0].coords);
       state.pois = pois;
