@@ -1,2040 +1,522 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0E1A22">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1A22'/%3E%3Cpath d='M35 8 L18 36 h11 l-4 20 17-28 h-11 z' fill='%23F2A93B'/%3E%3Ccircle cx='32' cy='32' r='27' fill='none' stroke='%231E3543' stroke-width='2'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E1A22'/%3E%3Cpath d='M35 8 L18 36 h11 l-4 20 17-28 h-11 z' fill='%23F2A93B'/%3E%3Ccircle cx='32' cy='32' r='27' fill='none' stroke='%231E3543' stroke-width='2'/%3E%3C/svg%3E">
-<title>Tratto residuo — colonnine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --deep:#0E1A22; --deep-2:#152632; --deep-3:#1E3543;
-  --ice:#DCE8EE; --ice-dim:#7D97A5;
-  --signal:#F2A93B; --live:#3ED598; --dead:#5A6B75; --alert:#E4572E;
-  --view:#C9A227;
-  --radius:14px;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden}
-body{background:var(--deep);color:var(--ice);
-  font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.45;
-  padding-top:env(safe-area-inset-top)}
-button,input,select{font-family:inherit;font-size:inherit;color:inherit}
-button{cursor:pointer;border:none;background:none}
-
-#app{display:flex;flex-direction:column;height:100%}
-#map{flex:1;min-height:0;background:var(--deep-2)}
-#map.hidden{display:none}
-#nomap{flex:1;display:none;align-items:center;justify-content:center;text-align:center;padding:32px;color:var(--ice-dim)}
-#nomap.show{display:flex}
-
-header{background:var(--deep);border-bottom:1px solid var(--deep-3);flex:none;
-  padding:10px max(12px, calc((100% - 900px) / 2)) 11px}
-.route-row{display:flex;gap:8px;align-items:center}
-.route-row input{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
-  border-radius:10px;padding:11px 13px;outline:none}
-.route-row input:focus{border-color:var(--signal)}
-.ac-new{flex:1;min-width:0;--gmp-mat-color-surface:var(--deep-2);
-  --gmp-mat-color-on-surface:var(--ice);--gmp-mat-color-outline:var(--deep-3);
-  --gmp-mat-color-primary:var(--signal);--gmp-mat-color-on-surface-variant:var(--ice-dim)}
-.via-row .ac-new{flex:1}
-.btn{background:var(--deep-3);border-radius:10px;padding:11px 15px;
-  font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:16px;
-  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;display:inline-block}
-.btn.primary{background:var(--signal);color:#20160A}
-.btn.ghost{background:transparent;border:1px solid var(--deep-3)}
-.btn:focus-visible,input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
-.gear{flex:none;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:10px;
-  width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--ice-dim)}
-.gear:active{border-color:var(--signal)}
-
-/* profili di percorso */
-.vias{display:block;margin-top:8px}
-.via-row{display:flex;gap:8px;align-items:center;margin-top:6px}
-.via-row .n{flex:none;width:20px;text-align:center;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;color:var(--signal)}
-.via-row input{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--deep-3);
-  border-radius:10px;padding:10px 12px;outline:none;font-size:14px}
-.via-row input:focus{border-color:var(--signal)}
-.via-row input.empty{border-style:dashed;color:var(--ice-dim)}
-.via-row button{flex:none;width:38px;height:38px;border-radius:9px;background:var(--deep-2);
-  border:1px solid var(--deep-3);color:var(--ice-dim);font-size:16px;display:grid;place-items:center}
-.profiles{display:flex;gap:6px;margin-top:9px}
-.pf{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);border-radius:9px;
-  padding:8px 4px;font-family:'Barlow Condensed',sans-serif;font-size:13.5px;
-  letter-spacing:.07em;text-transform:uppercase;color:var(--ice-dim);text-align:center;line-height:1.15}
-.pf.on{background:var(--deep-3);border-color:var(--signal);color:var(--ice)}
-.pf small{display:block;font-family:Inter,sans-serif;font-size:9.5px;letter-spacing:.02em;
-  text-transform:none;opacity:.65;margin-top:1px}
-
-.soc{display:flex;align-items:center;gap:12px;margin-top:10px}
-.soc label{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ice-dim);flex:none}
-.soc input[type=range]{flex:1;-webkit-appearance:none;background:transparent;height:26px}
-.soc input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;
-  background:linear-gradient(90deg,var(--signal) var(--pct,50%),var(--deep-3) var(--pct,50%))}
-.soc input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;
-  border-radius:50%;background:var(--ice);margin-top:-10px;border:3px solid var(--deep)}
-.soc .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;
-  min-width:56px;text-align:right;flex:none}
-.soc.duo input[type=number]{flex:1;min-width:0;background:var(--deep-2);
-  border:1px solid var(--deep-3);border-radius:9px;padding:7px 10px;outline:none;
-  font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;text-align:center}
-.soc.duo input[type=number]:focus{border-color:var(--signal)}
-.soc.duo .sep{flex:none;color:var(--ice-dim);font-family:'IBM Plex Mono',monospace}
-
-#sheet{flex:none;background:var(--deep-2);border-top:1px solid var(--deep-3);
-  max-height:44vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
-.sheet-head{display:flex;align-items:baseline;justify-content:space-between;
-  padding:11px max(14px, calc((100% - 900px) / 2)) 8px;flex:none;gap:12px}
-.ver{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.02em;
-  color:var(--ice-dim);opacity:.65;text-transform:none;margin-left:7px;font-weight:400}
-.sheet-head h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;
-  font-size:17px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim)}
-.sheet-head .sum{font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-  color:var(--ice-dim);text-align:right;line-height:1.35}
-.sheet-head .sum b{color:var(--ice);font-weight:500}
-/* selettore delle rotte alternative */
-#routes{display:none;padding:9px max(12px, calc((100% - 900px) / 2)) 2px;flex:none}
-#routes.on{display:block}
-.routes-row{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:7px}
-.rt{flex:none;min-width:132px;background:var(--deep);border:1px solid var(--deep-3);
-  border-radius:11px;padding:8px 11px;text-align:left;line-height:1.3}
-.rt.on{border-color:var(--signal);background:rgba(242,169,59,.1)}
-.rt .lb{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ice-dim);display:block}
-.rt.on .lb{color:var(--signal)}
-.rt .big{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;display:block;margin-top:1px}
-.rt .sm{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ice-dim);display:block}
-
-/* barra delle soste */
-#stops{display:none;padding:9px max(12px, calc((100% - 900px) / 2)) 10px;
-  border-bottom:1px solid var(--deep-3);flex:none}
-#stops.on{display:block}
-.stops-row{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-.sc{flex:none;background:var(--deep);border:1px solid var(--deep-3);border-radius:20px;
-  padding:6px 8px 6px 11px;font-size:12.5px;display:flex;align-items:center;gap:7px;white-space:nowrap}
-.sc .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ice-dim)}
-.sc .x{color:var(--ice-dim);font-size:15px;line-height:1}
-.stops-act{display:flex;gap:7px;margin-top:9px}
-.stops-act .btn{flex:1;text-align:center;text-decoration:none;padding:10px 8px;font-size:14px}
-#list{overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:0 max(10px, calc((100% - 900px) / 2)) 12px}
-
-.stn{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;
-  background:var(--deep);border:1px solid var(--deep-3);border-radius:var(--radius);
-  padding:11px 13px 11px 0;margin-bottom:8px;overflow:hidden;text-align:left;width:100%}
-.stn:active{border-color:var(--signal)}
-.bar{grid-row:1;align-self:stretch;background:var(--dead);margin:-11px 0}
-.stn .mid{min-width:0}
-.stn .op{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;
-  letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--live);flex:none}
-.dot.off{background:var(--alert)}
-.hwy{font-size:9px;letter-spacing:.08em;border:1px solid currentColor;border-radius:4px;
-  padding:0 3px;opacity:.75;font-family:'IBM Plex Mono',monospace}
-.stn .name{color:var(--ice-dim);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stn .right{text-align:right;font-family:'IBM Plex Mono',monospace;flex:none}
-.stn .km{font-size:19px;font-weight:600;letter-spacing:-.02em}
-.stn .km small{font-size:11px;color:var(--ice-dim);font-weight:400}
-.stn .tm{font-size:12.5px;color:var(--ice-dim);margin-top:1px}
-.stn .eur{font-size:14px;color:var(--signal);margin-top:1px}
-.stn .eur.none{color:var(--ice-dim)}
-.stn .cum{font-size:11.5px;color:var(--ice-dim);display:block;margin-top:1px}
-.stn .spd{font-size:12px;color:var(--live);display:block;margin-top:1px}
-.stn .spd.slow{color:var(--signal)}
-.stn.far{opacity:.42}
-.stn .arr{color:var(--live)}
-.stn .arr.low{color:var(--alert)}
-.reach{display:flex;align-items:center;gap:8px;padding:7px 14px 2px;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ice-dim)}
-.reach b{color:var(--live);font-weight:500}
-.reach b.low{color:var(--alert)}
-.plan{display:flex;align-items:center;gap:10px;margin:6px 4px 10px;padding:10px 13px;
-  background:var(--deep);border:1px solid var(--deep-3);border-radius:var(--radius)}
-.plan .txt{flex:1;font-size:13px;line-height:1.4}
-.plan .txt b{font-family:'IBM Plex Mono',monospace;font-weight:500}
-.plan .txt.bad{color:var(--alert)}
-.plan button{flex:none;background:var(--signal);color:#20160A;border-radius:9px;padding:9px 13px;
-  font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase}
-.stn.step{border-color:var(--signal)}
-.stn .charge{font-size:12.5px;color:var(--signal);margin-top:1px}
-.stepno{background:var(--signal);color:#20160A;border-radius:5px;padding:0 5px;
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600}
-/* riga punto di interesse */
-.stn.poi .op{color:var(--view)}
-.stn.poi .rate{font-size:14px;color:var(--view);margin-top:1px}
-
-#detail{position:fixed;inset:0;background:rgba(5,12,17,.72);backdrop-filter:blur(6px);
-  display:none;align-items:flex-end;z-index:40}
-#detail.show{display:flex}
-.card{background:var(--deep-2);width:100%;border-radius:20px 20px 0 0;border-top:1px solid var(--deep-3);
-  padding:20px max(18px, calc((100% - 620px) / 2)) calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh;overflow-y:auto}
-.card h3{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.02em}
-.card .sub{color:var(--ice-dim);font-size:13.5px;margin:2px 0 18px}
-.readout{border:1px solid var(--deep-3);border-radius:var(--radius);padding:16px 18px;
-  background:linear-gradient(180deg,var(--deep) 0%,#0B151C 100%)}
-.readout .lbl{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ice-dim)}
-.readout .big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:46px;
-  color:var(--signal);line-height:1.05;letter-spacing:-.03em;margin-top:2px}
-.readout .big.na{font-size:22px;color:var(--ice-dim);line-height:1.3;margin-top:6px}
-.readout .big.view{color:var(--view)}
-.readout .calc{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ice-dim);margin-top:8px}
-.declared{margin-top:10px;padding-top:10px;border-top:1px dashed var(--deep-3);
-  font-size:12.5px;color:var(--ice-dim)}
-.declared b{color:var(--ice);font-family:'IBM Plex Mono',monospace;font-weight:500}
-.specs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--deep-3);
-  border:1px solid var(--deep-3);border-radius:var(--radius);overflow:hidden;margin-top:12px}
-.spec{background:var(--deep-2);padding:11px 13px}
-.spec .k{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.11em;
-  text-transform:uppercase;color:var(--ice-dim)}
-.spec .v{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-top:1px}
-.shot{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:var(--radius);
-  margin-bottom:14px;background:var(--deep-3);display:block}
-.shot.hide{display:none}
-.desc{margin-top:12px;padding:13px 15px;border:1px solid var(--deep-3);border-radius:var(--radius);
-  background:var(--deep);font-size:14px;line-height:1.55}
-.desc.load{color:var(--ice-dim);font-style:italic}
-.desc .src{display:block;margin-top:7px;font-size:11.5px;color:var(--ice-dim);font-style:normal}
-.card .actions{display:flex;gap:8px;margin-top:14px}
-.card .actions .btn{flex:1;text-align:center;text-decoration:none}
-
-#settings{position:fixed;inset:0;background:var(--deep);z-index:50;display:none;overflow-y:auto;
-  padding-top:calc(18px + env(safe-area-inset-top));
-  padding-bottom:calc(24px + env(safe-area-inset-bottom));
-  padding-inline:max(16px, calc((100% - 560px) / 2))}
-#settings.show{display:block}
-#settings h2{font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.04em;margin:0 0 4px}
-#settings h4{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.13em;
-  text-transform:uppercase;color:var(--ice-dim);margin:22px 0 8px;
-  border-bottom:1px solid var(--deep-3);padding-bottom:6px}
-.field{margin-bottom:9px}
-.field label{display:block;font-size:12.5px;color:var(--ice-dim);margin-bottom:4px}
-.field input,.field select{width:100%;background:var(--deep-2);border:1px solid var(--deep-3);
-  border-radius:10px;padding:10px 12px;outline:none}
-.field input:focus,.field select:focus{border-color:var(--signal)}
-.hint{font-size:12.5px;color:var(--ice-dim);line-height:1.55}
-/* interruttori */
-.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:9px 0;border-bottom:1px solid var(--deep-3)}
-.sw:last-of-type{border-bottom:none}
-.sw .t{font-size:14.5px}
-.sw .t small{display:block;font-size:12px;color:var(--ice-dim);margin-top:1px}
-.sw input{appearance:none;width:46px;height:27px;border-radius:14px;background:var(--deep-3);
-  position:relative;flex:none;cursor:pointer;transition:background .18s;border:none;padding:0}
-.sw input:checked{background:var(--signal)}
-.sw input::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;
-  border-radius:50%;background:var(--ice);transition:transform .18s}
-.sw input:checked::after{transform:translateX(19px);background:#20160A}
-
-.op-row{display:grid;grid-template-columns:28px 24px 1fr 66px 54px 26px;gap:6px;align-items:center;margin-bottom:7px}
-.op-row input[type=color]{width:28px;height:28px;padding:0;border:1px solid rgba(255,255,255,.18);
-  border-radius:7px;background:transparent;cursor:pointer}
-.op-row input[type=checkbox]{appearance:none;width:22px;height:22px;border-radius:6px;
-  border:1px solid var(--deep-3);background:var(--deep-2);cursor:pointer;position:relative;margin:0}
-.op-row input[type=checkbox]:checked{background:var(--signal);border-color:var(--signal)}
-.op-row input[type=checkbox]:checked::after{content:'✓';position:absolute;inset:0;
-  display:grid;place-items:center;color:#20160A;font-size:14px;font-weight:700}
-.op-row .nm{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.05em;
-  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.op-row .nm.off{opacity:.4;text-decoration:line-through}
-.op-row input[type=number]{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:8px;
-  padding:7px 6px;width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;outline:none}
-.op-row input[type=number]:focus{border-color:var(--signal)}
-.op-row .del{color:var(--ice-dim);font-size:19px;line-height:1;text-align:center}
-.op-head{display:grid;grid-template-columns:28px 24px 1fr 66px 54px 26px;gap:6px;
-  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice-dim);margin-bottom:5px}
-.op-head span:nth-child(4),.op-head span:nth-child(5){text-align:center}
-
-.found{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
-.chip{background:var(--deep-2);border:1px solid var(--deep-3);border-radius:20px;
-  padding:7px 13px;font-size:13px;display:flex;align-items:center;gap:7px}
-.chip b{font-weight:500}
-.chip .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ice-dim)}
-.chip .plus{color:var(--signal);font-size:17px;line-height:1}
-.chip.on{border-color:var(--view);background:rgba(201,162,39,.14);color:var(--ice)}
-.chip.on .plus{color:var(--view)}
-.add-row{display:flex;gap:8px;margin-top:9px}
-.add-row input{flex:1;background:var(--deep-2);border:1px solid var(--deep-3);
-  border-radius:10px;padding:10px 12px;outline:none;min-width:0}
-.add-row input:focus{border-color:var(--signal)}
-
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--deep-3);
-  border:1px solid var(--ice-dim);border-radius:10px;padding:9px 15px;font-size:13.5px;
-  z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
-#toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VoltVia — Percorsi e colonnine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #08111d;
+      --panel: rgba(14, 24, 40, .92);
+      --card: #132033;
+      --line: #24344d;
+      --text: #edf3ff;
+      --muted: #8fa3c0;
+      --mint: #3ee0a2;
+      --blue: #5aa7ff;
+      --gold: #f0b429;
+      --rose: #ff7a7a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font-family: "DM Sans", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    #app { display: grid; grid-template-columns: minmax(320px, 400px) 1fr; height: 100%; }
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; min-height: 0; z-index: 2;
+    }
+    header { padding: 18px 18px 8px; }
+    .brand { display: flex; gap: 12px; align-items: center; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, #7dffc8, #1aa36d);
+      color: #052016; font-weight: 800; display: grid; place-items: center;
+    }
+    h1 { margin: 0; font-size: 20px; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .pad { padding: 8px 16px 14px; display: grid; gap: 9px; }
+    label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+    input, select, button {
+      width: 100%; border-radius: 12px; border: 1px solid var(--line);
+      background: #101b2c; color: var(--text); padding: 11px 12px; font: inherit;
+    }
+    input:focus, select:focus { outline: 2px solid #2c6d57; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .mode {
+      border: 1px solid var(--line); background: #101b2c; border-radius: 12px;
+      padding: 8px 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .mode.on { background: #143528; border-color: #2f8a64; color: var(--mint); }
+    button { cursor: pointer; font-weight: 700; }
+    .primary { background: var(--mint); color: #052016; border: none; }
+    .ghost { background: transparent; }
+    .range-wrap { display: grid; gap: 4px; }
+    .range-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+    input[type=range] { padding: 0; accent-color: var(--mint); }
+    .status { font-size: 12px; color: var(--muted); padding: 0 16px 8px; }
+    .list { overflow: auto; padding: 0 12px 16px; flex: 1; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 12px; margin-bottom: 8px; cursor: pointer;
+    }
+    .card:hover, .card.active { border-color: #3ee0a288; }
+    .card h3 { margin: 0 0 4px; font-size: 14px; }
+    .meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .poi { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { font-size: 11px; background: #1b2b44; border-radius: 999px; padding: 3px 8px; color: #cfe0ff; }
+    #map { height: 100%; }
+    .missing {
+      position: absolute; inset: 0; display: grid; place-items: center; z-index: 5;
+      background: #08111de6; padding: 24px; text-align: center;
+    }
+    .missing box, .missing .box { max-width: 460px; background: #132033; border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .hidden { display: none !important; }
+    @media (max-width: 840px) {
+      #app { grid-template-columns: 1fr; grid-template-rows: 48% 52%; }
+    }
+  </style>
 </head>
 <body>
-
-<div id="app">
-  <header>
-    <div class="route-row">
-      <input id="dest" type="text" data-tp="destPh" autocomplete="off">
-      <button class="btn primary" id="go" data-t="trace">Traccia</button>
-      <button class="gear" id="gear" aria-label="Impostazioni">⚙</button>
-    </div>
-    <div class="vias" id="vias"></div>
-    <div class="profiles" id="profiles">
-      <button class="pf on" data-pf="fast"><span data-t="pfFast">Veloce</span><small data-t="pfFastS">il più rapido</small></button>
-      <button class="pf" data-pf="scenic"><span data-t="pfSce">Panoramico</span><small data-t="pfSceS">cosa vedere</small></button>
-      <button class="pf" data-pf="cheap"><span data-t="pfChe">Economico</span><small data-t="pfCheS">evita pedaggi</small></button>
-    </div>
-    <div class="soc">
-      <label for="soc" data-t="socLab">Carica ora</label>
-      <input id="soc" type="range" min="1" max="79" value="42">
-      <span class="val" id="socVal">42%</span>
-    </div>
-    <div class="soc">
-      <label for="vpl" data-t="vLab">Velocità</label>
-      <input id="vpl" type="range" min="80" max="160" step="5" value="130">
-      <span class="val" id="vplVal">130</span>
-    </div>
-    <div class="soc">
-      <label for="arr" data-t="arrLab">Arrivo</label>
-      <input id="arr" type="range" min="5" max="40" step="1" value="15">
-      <span class="val" id="arrVal">15%</span>
-    </div>
-    <div class="soc duo">
-      <label for="dstArr" data-t="destLab">Destinazione</label>
-      <input id="dstArr" type="number" min="1" max="90" step="1" value="15">
-      <span class="sep"></span>
-      <span class="val">%</span>
-    </div>
-    <div class="soc duo">
-      <label for="tminH" data-t="stopLab">Sosta</label>
-      <input id="tminH" type="number" min="20" max="95" step="5" value="60">
-      <span class="sep">→</span>
-      <input id="tmaxH" type="number" min="30" max="100" step="5" value="80">
-      <span class="val">%</span>
-    </div>
-  </header>
-
-  <div id="map"></div>
-  <div id="nomap"><div>
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px" data-t="mapOff">Mappa non attiva</p>
-    <p class="hint" style="max-width:280px" data-t="mapOffTx"></p>
-  </div></div>
-
-  <div id="sheet">
-    <div class="sheet-head">
-      <h2><span data-t="sheet">Sul tratto residuo</span><span class="ver" id="ver"></span></h2>
-      <span class="sum" id="count">—</span>
-    </div>
-    <div id="routes"><div class="routes-row" id="routesRow"></div></div>
-    <div id="stops">
-      <div class="stops-row" id="stopsRow"></div>
-      <div class="stops-act">
-        <a class="btn primary" id="navGo" href="#" data-t="navStops">Naviga con le soste</a>
-        <button class="btn ghost" id="stopsClear" data-t="clear">Svuota</button>
+  <div id="app">
+    <aside>
+      <header>
+        <div class="brand">
+          <div class="logo">V</div>
+          <div>
+            <h1>VoltVia</h1>
+            <div class="sub">Percorso · colonnine · dintorni</div>
+          </div>
+        </div>
+      </header>
+      <div class="pad">
+        <div>
+          <label>Partenza</label>
+          <input id="from" placeholder="Città, indirizzo o click sulla mappa" />
+        </div>
+        <div>
+          <label>Arrivo</label>
+          <input id="to" placeholder="Destinazione" />
+        </div>
+        <div>
+          <label>Profilo percorso</label>
+          <div class="modes">
+            <button class="mode on" data-mode="fast" type="button">Veloce</button>
+            <button class="mode" data-mode="scenic" type="button">Panoramico</button>
+            <button class="mode" data-mode="flat" type="button">Poche salite</button>
+          </div>
+        </div>
+        <div class="range-wrap">
+          <div class="range-top">
+            <label style="margin:0">Distanza max dalla rotta</label>
+            <span id="offLabel">5 km</span>
+          </div>
+          <input id="offroad" type="range" min="1" max="25" value="5" />
+        </div>
+        <div class="row2">
+          <button class="ghost" id="btnSwap" type="button">Inverti</button>
+          <button class="ghost" id="btnMe" type="button">La mia posizione</button>
+        </div>
+        <button class="primary" id="btnGo" type="button">Calcola percorso e colonnine</button>
+        <button class="ghost" id="btnForgetKey" type="button">Rimuovi la mia chiave da questo browser</button>
       </div>
+      <div class="status" id="status">Inserisci partenza e arrivo. La chiave resta solo sul tuo browser.</div>
+      <div class="list" id="list"></div>
+    </aside>
+    <div id="map"></div>
+  </div>
+
+  <div class="missing hidden" id="missing">
+    <div class="box">
+      <h2 style="margin-top:0">Chiave solo tua</h2>
+      <p class="meta">La API key non è nel sito né su GitHub. Incollala qui: resta in <b>localStorage di questo browser</b>. Altri visitatori non la vedono e devono usare la loro.</p>
+      <input id="keyInput" type="password" autocomplete="off" placeholder="AIza..." style="margin:12px 0" />
+      <button class="primary" id="btnSaveKey" type="button">Salva solo su questo dispositivo</button>
+      <p class="meta" style="margin-top:12px">Su Google Cloud limita la chiave al tuo utente (quota bassa + alert di fatturazione). Se pubblichi su GitHub Pages, chiunque può aprire l’app ma senza la tua chiave non chiama Google a tue spese.</p>
     </div>
-    <div id="list"></div>
-  </div>
-</div>
-
-<div id="detail" role="dialog" aria-modal="true"><div class="card" id="detailCard"></div></div>
-
-<div id="settings">
-  <h2 data-t="setT">Impostazioni</h2>
-  <p class="hint"><span data-t="setSub"></span> <span id="verSet"></span></p>
-
-  <h4 data-t="hLang">Lingua</h4>
-  <div class="field"><select id="lang"></select></div>
-
-  <h4 data-t="hRoute">Percorso</h4>
-  <div class="sw"><span class="t"><span data-t="swHwy"></span><small data-t="swHwyS"></small></span>
-    <input type="checkbox" id="noHwy"></div>
-  <div class="sw"><span class="t"><span data-t="swFer"></span><small data-t="swFerS"></small></span>
-    <input type="checkbox" id="noFerry"></div>
-  <div class="sw"><span class="t"><span data-t="swToll"></span><small data-t="swTollS"></small></span>
-    <input type="checkbox" id="noToll"></div>
-
-  <div class="sw"><span class="t"><span data-t="swTraf"></span><small data-t="swTrafS"></small></span>
-    <input type="checkbox" id="traffic"></div>
-
-  <h4 data-t="hChar">Colonnine</h4>
-  <div class="field" style="margin-top:9px">
-    <label for="cmode" data-t="lWhere">Dove cercarle</label>
-    <select id="cmode">
-      <option value="corridor" data-t="oCorr">Ovunque nel corridoio</option>
-      <option value="highway" data-t="oHwy">Solo lungo l'autostrada</option>
-    </select>
-  </div>
-  <div class="field">
-    <label for="corr" data-t="lDev"></label>
-    <input id="corr" type="number" step="0.5" min="0.5" value="6">
-  </div>
-  <div class="field">
-    <label for="minkw" data-t="lMinkw"></label>
-    <input id="minkw" type="number" step="10" min="11" value="50">
-  </div>
-  <div class="sw"><span class="t"><span data-t="swMine"></span><small data-t="swMineS"></small></span>
-    <input type="checkbox" id="onlyMine"></div>
-
-  <div class="sw"><span class="t"><span data-t="swWake"></span><small data-t="swWakeS"></small></span>
-    <input type="checkbox" id="awake"></div>
-
-  <h4 data-t="hSee">Cose da vedere</h4>
-  <p class="hint" data-t="seeTx"></p>
-  <div class="found" id="cats"></div>
-  <div class="field" style="margin-top:12px">
-    <label for="exclude" data-t="lExcl"></label>
-    <input id="exclude" type="text" placeholder="autodromo, outlet, stadio">
-  </div>
-  <div class="field">
-    <label for="minrate" data-t="lRate"></label>
-    <input id="minrate" type="number" step="0.1" min="1" max="5" value="4.3">
-  </div>
-  <div class="field">
-    <label for="minrev" data-t="lRev"></label>
-    <input id="minrev" type="number" step="50" min="0" value="300">
   </div>
 
-  <h4 data-t="hKeys">Chiavi</h4>
-  <div class="field">
-    <label for="gkey" data-t="lGkey"></label>
-    <input id="gkey" type="text" placeholder="AIza…" autocomplete="off" spellcheck="false">
-  </div>
+  <script src="config.js"></script>
+  <script>
+    let map, directionsService, directionsRenderer, elevationService, places;
+    let mode = "fast";
+    let clickStep = "from";
+    let fromPlace = null;
+    let toPlace = null;
+    let routePath = [];
+    let chargerMarkers = [];
+    let selectedId = null;
+    const info = new WeakMap();
 
-  <h4 data-t="hCar">Auto</h4>
-  <div class="field">
-    <label for="car" data-t="lModel"></label>
-    <select id="car"></select>
-  </div>
-  <div class="field">
-    <label for="kwh" data-t="lKwh"></label>
-    <input id="kwh" type="number" step="0.5" value="78">
-  </div>
-  <div class="field">
-    <label for="wh" data-t="lWh"></label>
-    <input id="wh" type="number" step="5" value="185">
-  </div>
-  <p class="hint" data-t="hintT"></p>
-  <div class="field" style="margin-top:9px">
-    <label for="refv" data-t="lRefv"></label>
-    <input id="refv" type="number" step="5" min="60" max="150" value="110">
-  </div>
-  <div class="field">
-    <label for="avgkw" data-t="lAvg"></label>
-    <input id="avgkw" type="number" step="5" min="10" value="110">
-  </div>
-  <div class="field">
-    <label for="eff" data-t="lEff"></label>
-    <input id="eff" type="number" step="0.01" value="0.92">
-  </div>
-  <p class="hint" data-t="hintAvg"></p>
-  <p class="hint" data-t="hintSp"></p>
-  <p class="hint" data-t="hintCar"></p>
+    const KEY_STORE = "voltvia_maps_key";
 
-  <h4 data-t="hOps">I tuoi operatori</h4>
-  <div class="op-head"><span></span><span data-t="cUse">Usa</span><span data-t="cOp">Operatore</span><span>€/kWh</span><span>Fee</span><span></span></div>
-  <div id="ops"></div>
-  <div class="add-row">
-    <input id="newOp" type="text" data-tp="newOpPh" autocomplete="off">
-    <button class="btn ghost" id="addOp" data-t="add">Aggiungi</button>
-  </div>
-
-  <button class="btn primary" id="saveSet" style="width:100%;margin-top:22px;padding:14px" data-t="saveClose">Salva e chiudi</button>
-  <p class="hint" style="margin-top:18px" data-t="keysTx"></p>
-</div>
-
-<div id="toast"></div>
-
-<script>
-/* ============================================================
-   Catalogo operatori
-   ============================================================ */
-const CATALOG=[
-  {nm:'Tesla Supercharger',color:'#E82127',match:['tesla','supercharger']},
-  {nm:'Ionity',            color:'#00E1E1',match:['ionity']},
-  {nm:'Free To X',         color:'#00B5AD',match:['free to x','freetox']},
-  {nm:'Enel X Way',        color:'#8DC63F',match:['enel']},
-  {nm:'Be Charge',         color:'#00A0DF',match:['be charge','becharge','be power']},
-  {nm:'Ewiva',             color:'#FF6B35',match:['ewiva']},
-  {nm:'Atlante',           color:'#7B61FF',match:['atlante']},
-  {nm:'A2A E-Moving',      color:'#3ED598',match:['a2a','e-moving']},
-  {nm:'Duferco',           color:'#F25C54',match:['duferco']},
-  {nm:'Neogy',             color:'#00C2A8',match:['neogy']},
-  {nm:'EnBW',              color:'#00A9E0',match:['enbw']},
-  {nm:'Smatrics',          color:'#B0D236',match:['smatrics']},
-  {nm:'Fastned',           color:'#FFD400',match:['fastned']},
-  {nm:'Aral pulse',        color:'#0090D4',match:['aral','pulse']},
-  {nm:'Shell Recharge',    color:'#FBCE07',match:['shell','recharge','newmotion']},
-  {nm:'Allego',            color:'#00B2A9',match:['allego']},
-  {nm:'EWE Go',            color:'#E30613',match:['ewe']},
-  {nm:'Elli / VW',         color:'#00B0F0',match:['elli','volkswagen']},
-  {nm:'Mer',               color:'#00D084',match:['mer ']},
-  {nm:'ČEZ',               color:'#F58220',match:['cez','čez']},
-  {nm:'E.ON',              color:'#E2001A',match:['e.on','eon']},
-  {nm:'ORLEN Charge',      color:'#E30613',match:['orlen','benzina']},
-  {nm:'GreenWay',          color:'#8DC63F',match:['greenway','green way']},
-  {nm:'Powerdot',          color:'#FF4E50',match:['powerdot','power dot']},
-  {nm:'Elocity',           color:'#6C5CE7',match:['elocity']},
-  {nm:'Noxo',              color:'#00CEC9',match:['noxo']},
-  {nm:'Ekoen',             color:'#A3CB38',match:['ekoen']},
-  {nm:'Electra',           color:'#B388FF',match:['electra']},
-  {nm:'Plugsurfing',       color:'#FF9F1C',match:['plugsurfing']}
-];
-const CARS=[
-  {nm:'Tesla Model Y AWD (2025+)',    kwh:78,   wh:185},
-  {nm:'Tesla Model Y RWD (2025+)',    kwh:62,   wh:165},
-  {nm:'Tesla Model Y LR AWD (2020-24)',kwh:75,  wh:190},
-  {nm:'Tesla Model 3 LR AWD',         kwh:75,   wh:175},
-  {nm:'Tesla Model 3 RWD',            kwh:57,   wh:155},
-  {nm:'Tesla Model S Long Range',     kwh:95,   wh:200},
-  {nm:'Tesla Model X Long Range',     kwh:95,   wh:225},
-  {nm:'VW ID.4 Pro',                  kwh:77,   wh:205},
-  {nm:'VW ID.3 Pro S',                kwh:77,   wh:180},
-  {nm:'Škoda Enyaq 85',               kwh:77,   wh:200},
-  {nm:'Cupra Born 77',                kwh:77,   wh:180},
-  {nm:'Audi Q4 e-tron 45',            kwh:77,   wh:200},
-  {nm:'Audi Q6 e-tron',               kwh:94.9, wh:205},
-  {nm:'BMW i4 eDrive40',              kwh:81.3, wh:180},
-  {nm:'BMW iX3',                      kwh:74,   wh:195},
-  {nm:'BMW iX xDrive50',              kwh:105,  wh:215},
-  {nm:'Mercedes EQE 350',             kwh:89,   wh:190},
-  {nm:'Hyundai Ioniq 5 (84 kWh)',     kwh:84,   wh:190},
-  {nm:'Kia EV6 AWD',                  kwh:84,   wh:195},
-  {nm:'Kia EV9',                      kwh:96,   wh:230},
-  {nm:'Volvo EX30',                   kwh:65,   wh:175},
-  {nm:'Volvo EX40',                   kwh:78,   wh:200},
-  {nm:'Polestar 2 Long Range',        kwh:79,   wh:185},
-  {nm:'Renault Scenic E-Tech',        kwh:87,   wh:180},
-  {nm:'Peugeot e-3008',               kwh:73,   wh:185},
-  {nm:'Fiat 600e',                    kwh:51,   wh:170},
-  {nm:'Ford Explorer EV',             kwh:77,   wh:200},
-  {nm:'Porsche Taycan',               kwh:89,   wh:210},
-  {nm:'Nissan Ariya 87',              kwh:87,   wh:195},
-  {nm:'MG4 77',                       kwh:74.4, wh:180},
-  {nm:'BYD Seal',                     kwh:82.5, wh:185}
-];
-const APP_VERSION='2.2';
-const APP_DATE='30.08.2026';
-
-
-/* ============================================================
-   Lingue
-   ============================================================ */
-const LANGS={it:'Italiano',en:'English',pl:'Polski'};
-const TXT={
-it:{ trace:"Traccia",
- pfFast:"Veloce", pfFastS:"il più rapido", pfSce:"Panoramico", pfSceS:"cosa vedere",
- pfChe:"Economico", pfCheS:"evita pedaggi", socLab:"Carica ora",
- mapOff:"Mappa non attiva", mapOffTx:"Inserisci la chiave Google Maps nelle impostazioni per vedere mappa e traffico. L'elenco qui sotto funziona comunque.",
- sheet:"Sul tratto residuo", chargers:"Supercharger", toSee:"da vedere", arrival:"arrivo",
- straight:"Distanze in linea d'aria. Premi <b>Traccia</b> per avere chilometri reali, tempi, carica all'arrivo e piano delle soste.",
- autonomy:"Autonomia utile", withCharge:"con la carica di adesso",
- stopsN:"soste", stopN:"sosta", charging:"di ricarica", arrIncl:"Arrivo previsto", inclStops:"soste incluse",
- use:"Usa", noStop:"Arrivi a destinazione senza ricaricare, con circa",
- lowA:"Con il", lowB:"di carica e la riserva al", lowC:"fai", lowD:"ma la prima colonnina è a",
- lowE:"Alza il cursore della carica se sei più carico di così", lowF:"oppure abbassa la riserva",
- lowG:"e non trovo colonnine davanti a te.",
- planCut:"Piano interrotto dopo", planCut2:"da lì non trovo colonnine raggiungibili.", planCut3:"La prima", planCut3b:"Le prime",
- planCut4:"sosta", planCut4b:"soste", hold:"regge.", holdP:"reggono.",
- demoNote:"<b>Set dimostrativo di 8 Supercharger</b>: il registro non è raggiungibile, premi Riprova.",
- elseNote:"In alternativa allarga la deviazione massima o abbassa la potenza minima.",
- empty:"Nessuna colonnina sul tratto davanti a te. Traccia un percorso, o allarga la deviazione massima nelle impostazioni.",
- arriveAt:"arrivi", dry:"a secco", tariffQ:"tariffa ?", kmOut:"km fuori", reviews:"recensioni", seeCat:"Da vedere",
- navStops:"Naviga con le soste", clear:"Svuota",
- stopAdd:"Sosta +", stopOn:"Sosta ✓", navigate:"Naviga", close:"Chiudi", details:"Dettagli", opAdd:"Operatore +",
- cost80:"Costo per arrivare all'80%", stopNo:"Sosta numero", ofPlan:"del piano",
- youArrive:"Arrivi al", youCharge:"carichi fino al", about:"circa", at:"a",
- needK:"Servono", addOpTx:"Aggiungi questo operatore per vedere il costo.",
- declared:"Prezzo dichiarato all'operatore:", unver:"Dato pubblico non verificato.",
- dDist:"Distanza", dTime:"Ci arrivi in", dEta:"Ora di arrivo", dDev:"Deviazione", dPow:"Potenza",
- dPts:"Punti", dSt:"Stato", dOn:"Attiva", dOff:"Fuori servizio", dArr:"Arrivi con", dEn:"Energia",
- onHwy:"sull'autostrada", ratingL:"Voto delle recensioni", revG:"recensioni su Google",
- loadDesc:"Carico la descrizione…", noDesc:"Google non ha una descrizione per questo luogo.", srcG:"Descrizione di Google",
- outOf:"km fuori dal percorso",
- setT:"Impostazioni", setSub:"Restano su questo dispositivo.", version:"Versione", ofDate:"del",
- hLang:"Lingua", hRoute:"Percorso", hChar:"Colonnine", hSee:"Cose da vedere", hKeys:"Chiavi",
- hCar:"Auto", hOps:"I tuoi operatori",
- swHwy:"Evita le autostrade", swHwyS:"Strade normali, tempi molto più lunghi",
- swFer:"Evita i traghetti", swFerS:"Utile verso la Scandinavia o le isole",
- swToll:"Evita i pedaggi", swTollS:"Sempre attivo nel profilo Economico",
- swMine:"Solo i miei operatori", swMineS:"Nasconde tutte le altre colonnine invece di mostrarle in grigio",
- swWake:"Tieni lo schermo acceso", swWakeS:"Mentre guardi l'elenco in viaggio",
- lWhere:"Dove cercarle", oCorr:"Ovunque nel corridoio", oHwy:"Solo lungo l'autostrada",
- lDev:"Deviazione massima dal percorso (km)", lMinkw:"Potenza minima (kW)",
- seeTx:"Cosa cercare lungo il percorso panoramico. Ogni categoria in più è una ricerca in più, quindi tienine attive quattro o cinque.",
- lExcl:"Escludi se il nome contiene (separati da virgola)", lRate:"Voto minimo delle recensioni",
- lRev:"Numero minimo di recensioni",
- lGkey:"Google Maps API key",
- lModel:"Modello", lKwh:"Capacità utile della batteria (kWh)", lWh:"Consumo reale (Wh/km)", lAvg:"Potenza media di ricarica (kW)", lEff:"Rendimento di ricarica (0–1)",
- hintAvg:"La potenza media è quella reale su tutta la sosta, non il picco: una Model Y su un Supercharger da 250 kW fa in media 100–130 kW da 10 a 80%.",
- hintCar:"I valori del modello sono medie indicative su percorso misto. Dopo un viaggio vero, correggi il consumo con quello letto a bordo: è il parametro che cambia di più fra inverno ed estate, e in autostrada sale del 20–30%.",
- cUse:"Usa", cOp:"Operatore", newOpPh:"Aggiungi a mano — es. Atlante", add:"Aggiungi",
- saveClose:"Salva e chiudi", keysTx:"Serve la sola chiave Google: Maps JavaScript API, Places API, Directions API.",
- tSaved:"Impostazioni salvate", tRecalc:"Premi Traccia per ricalcolare il percorso",
- tNoDest:"Scrivi una destinazione", tNoKey:"Serve la chiave Google per calcolare il percorso",
- tCalc:"Calcolo i percorsi…", tNotFound:"Percorso non trovato:", tCompare:"Confronto le alternative…",
- tSeek:"Cerco le colonnine su questa rotta…",
- tRoutes:"percorsi",
- tOpAdded:"aggiunto — imposta il prezzo in ⚙", tOpDup:"Operatore già presente",
- tStopsSet:"Soste impostate — premi Naviga con le soste", tMaxStops:"Massimo 9 soste in un URL di Google Maps",
- tKeyBad:"Chiave Google rifiutata", tKeyAsk:"Apri ⚙ e inserisci la chiave Google Maps",
- tProfile:"Premi Traccia per ricalcolare con questo profilo",
- viaPh:"Aggiungi tappa intermedia", viaNote:"Con le tappe Google non offre percorsi alternativi.",
- thisCh:"Questa ricarica", fullCh:"Ricarica tipica", runTot:"Speso fino a qui", tripTot:"Totale del viaggio",
- swTraf:"Mostra il traffico", swTrafS:"Le strade verdi possono coprire i pallini delle colonnine", lRefv:"Velocità a cui vale quel consumo (km/h)", hintSp:"La velocità indicata è quella massima da tenere per arrivare con la carica che hai scelto. Il calcolo usa la resistenza aerodinamica reale, calibrata sul tuo consumo alla velocità di riferimento.", dSpeed:"Velocità da tenere", toDest:"fino a destinazione", spOk:"ok a", spSlow:"rallenta a",
- vLab:"Velocità", needSlowA:"Per arrivare al", needSlowB:"alla sosta", needSlowC:"devi ridurre a", allOk:"Alla tua andatura arrivi ovunque con la carica che hai scelto.", tOsmFail:"supercharge.info non risponde", hintT:"Se ti fermi, vale la pena caricare almeno fino alla minima. Oltre la massima la curva rallenta e il tempo non ripaga: meglio una sosta in più.",
- arrLab:"Arrivo",
- stopLab:"Sosta",
- retry:"Riprova",
- searching:"ricerca in corso…", tTesla:"Supercharger Tesla", scCredit:"Dati Supercharger da supercharge.info",
- destPh:"Destinazione — es. Bydgoszcz",
- acOld:"Suggerimenti non disponibili: abilita “Places API (New)” nella console Google e aggiungila alle restrizioni della chiave. Intanto puoi scrivere il nome per esteso.",
- destLab:"Destinazione",
- min:"min", hr:"h",
- cat_panorami:"Panorami e belvedere", cat_natura:"Laghi, cascate, gole", cat_passi:"Passi e strade panoramiche",
- cat_borghi:"Borghi e centri storici", cat_castelli:"Castelli e abbazie", cat_parchi:"Parchi e giardini",
- cat_musei:"Musei e arte", cat_terme:"Terme", cat_cantine:"Cantine e vino"
-},
-en:{ trace:"Route",
- pfFast:"Fast", pfFastS:"quickest", pfSce:"Scenic", pfSceS:"what to see",
- pfChe:"Cheap", pfCheS:"avoids tolls", socLab:"Charge now",
- mapOff:"Map not active", mapOffTx:"Add your Google Maps key in settings to see the map and traffic. The list below works anyway.",
- sheet:"On the road ahead", chargers:"Superchargers", toSee:"to see", arrival:"arrival",
- straight:"Straight-line distances. Press <b>Route</b> for real distances, times, arrival charge and a stop plan.",
- autonomy:"Usable range", withCharge:"at the current charge",
- stopsN:"stops", stopN:"stop", charging:"charging", arrIncl:"Arrival", inclStops:"stops included",
- use:"Use", noStop:"You reach the destination without charging, at about",
- lowA:"At", lowB:"charge with a", lowC:"reserve you can do", lowD:"but the first charger is",
- lowE:"Raise the charge slider if you are fuller than that", lowF:"or lower the reserve",
- lowG:"and I find no chargers ahead of you.",
- planCut:"Plan stops after", planCut2:"beyond that I find no reachable chargers.", planCut3:"The first", planCut3b:"The first",
- planCut4:"stop", planCut4b:"stops", hold:"holds up.", holdP:"hold up.",
- demoNote:"<b>Demo set of 8 Superchargers</b>: the registry is unreachable, press Retry.",
- elseNote:"Otherwise widen the maximum detour or lower the minimum power.",
- empty:"No chargers on the road ahead. Set a route, or widen the maximum detour in settings.",
- arriveAt:"arrive", dry:"empty", tariffQ:"tariff ?", kmOut:"km off route", reviews:"reviews", seeCat:"Worth seeing",
- navStops:"Navigate with stops", clear:"Clear",
- stopAdd:"Stop +", stopOn:"Stop ✓", navigate:"Navigate", close:"Close", details:"Details", opAdd:"Operator +",
- cost80:"Cost to reach 80%", stopNo:"Stop number", ofPlan:"of the plan",
- youArrive:"You arrive at", youCharge:"charge up to", about:"about", at:"at",
- needK:"You need", addOpTx:"Add this operator to see the cost.",
- declared:"Price stated by the operator:", unver:"Public data, unverified.",
- dDist:"Distance", dTime:"You get there in", dEta:"Arrival time", dDev:"Detour", dPow:"Power",
- dPts:"Points", dSt:"Status", dOn:"Working", dOff:"Out of service", dArr:"You arrive with", dEn:"Energy",
- onHwy:"on the motorway", ratingL:"Review score", revG:"reviews on Google",
- loadDesc:"Loading the description…", noDesc:"Google has no description for this place.", srcG:"Description by Google",
- outOf:"km off the route",
- setT:"Settings", setSub:"Kept on this device.", version:"Version", ofDate:"of",
- hLang:"Language", hRoute:"Route", hChar:"Chargers", hSee:"Worth seeing", hKeys:"Keys",
- hCar:"Car", hOps:"Your operators",
- swHwy:"Avoid motorways", swHwyS:"Ordinary roads, much longer times",
- swFer:"Avoid ferries", swFerS:"Useful towards Scandinavia or the islands",
- swToll:"Avoid tolls", swTollS:"Always on in the Cheap profile",
- swMine:"Only my operators", swMineS:"Hides every other charger instead of greying it out",
- swWake:"Keep the screen on", swWakeS:"While you watch the list on the road",
- lWhere:"Where to look", oCorr:"Anywhere in the corridor", oHwy:"Only along the motorway",
- lDev:"Maximum detour from the route (km)", lMinkw:"Minimum power (kW)",
- seeTx:"What to look for along the scenic route. Every extra category is an extra search, so keep four or five active.",
- lExcl:"Exclude if the name contains (comma separated)", lRate:"Minimum review score",
- lRev:"Minimum number of reviews",
- lGkey:"Google Maps API key",
- lModel:"Model", lKwh:"Usable battery capacity (kWh)", lWh:"Real consumption (Wh/km)", lAvg:"Average charging power (kW)", lEff:"Charging efficiency (0–1)",
- hintAvg:"Average power means the real average over the whole stop, not the peak: a Model Y on a 250 kW Supercharger averages 100–130 kW from 10 to 80%.",
- hintCar:"Model figures are indicative averages on mixed roads. After a real trip, correct the consumption with the value from the car: it is the figure that swings most between winter and summer, and it rises 20–30% on the motorway.",
- cUse:"Use", cOp:"Operator", newOpPh:"Add by hand — e.g. Atlante", add:"Add",
- saveClose:"Save and close", keysTx:"Only the Google key is needed: Maps JavaScript API, Places API, Directions API.",
- tSaved:"Settings saved", tRecalc:"Press Route to recalculate",
- tNoDest:"Type a destination", tNoKey:"A Google key is needed to compute the route",
- tCalc:"Computing routes…", tNotFound:"Route not found:", tCompare:"Comparing the alternatives…",
- tSeek:"Looking for chargers on this route…",
- tRoutes:"routes",
- tOpAdded:"added — set the price in ⚙", tOpDup:"Operator already there",
- tStopsSet:"Stops set — press Navigate with stops", tMaxStops:"Nine stops maximum in a Google Maps URL",
- tKeyBad:"Google key rejected", tKeyAsk:"Open ⚙ and add your Google Maps key",
- tProfile:"Press Route to recalculate with this profile",
- viaPh:"Add a waypoint", viaNote:"With waypoints Google offers no alternative routes.",
- thisCh:"This charge", fullCh:"Typical charge", runTot:"Spent so far", tripTot:"Trip total",
- swTraf:"Show traffic", swTrafS:"Green roads can hide the charger dots", lRefv:"Speed that consumption refers to (km/h)", hintSp:"The speed shown is the maximum to hold in order to arrive with the charge you chose. The maths uses real aerodynamic drag, calibrated on your consumption at the reference speed.", dSpeed:"Speed to hold", toDest:"to the destination", spOk:"fine at", spSlow:"slow to",
- vLab:"Speed", needSlowA:"To arrive at", needSlowB:"at stop", needSlowC:"you must slow to", allOk:"At your usual speed you reach every stop with the charge you chose.", tOsmFail:"supercharge.info is not answering", hintT:"If you stop at all, it is worth charging to at least the minimum. Beyond the maximum the curve slows down and the time does not pay off: better one extra stop.",
- arrLab:"On arrival",
- stopLab:"Charge to",
- retry:"Retry",
- searching:"searching…", tTesla:"Tesla Superchargers", scCredit:"Supercharger data from supercharge.info",
- destPh:"Destination — e.g. Bydgoszcz",
- acOld:"Suggestions unavailable: enable “Places API (New)” in the Google console and add it to the key restrictions. Meanwhile you can type the full name.",
- destLab:"Destination",
- min:"min", hr:"h",
- cat_panorami:"Viewpoints", cat_natura:"Lakes, waterfalls, gorges", cat_passi:"Mountain passes and scenic roads",
- cat_borghi:"Old towns and villages", cat_castelli:"Castles and abbeys", cat_parchi:"Parks and gardens",
- cat_musei:"Museums and art", cat_terme:"Thermal baths", cat_cantine:"Wineries"
-},
-pl:{ trace:"Wyznacz",
- pfFast:"Szybko", pfFastS:"najszybciej", pfSce:"Widokowo", pfSceS:"co zobaczyć",
- pfChe:"Tanio", pfCheS:"omija opłaty", socLab:"Ładunek teraz",
- mapOff:"Mapa nieaktywna", mapOffTx:"Wpisz klucz Google Maps w ustawieniach, aby zobaczyć mapę i ruch. Lista poniżej działa mimo to.",
- sheet:"Na trasie przed tobą", chargers:"Superchargerów", toSee:"do zobaczenia", arrival:"przyjazd",
- straight:"Odległości w linii prostej. Naciśnij <b>Wyznacz</b>, aby mieć realne kilometry, czasy, ładunek na miejscu i plan postojów.",
- autonomy:"Zasięg użyteczny", withCharge:"przy obecnym ładunku",
- stopsN:"postoje", stopN:"postój", charging:"ładowania", arrIncl:"Przyjazd", inclStops:"z postojami",
- use:"Użyj", noStop:"Dojedziesz bez ładowania, z około",
- lowA:"Przy", lowB:"ładunku i rezerwie", lowC:"przejedziesz", lowD:"ale pierwsza ładowarka jest za",
- lowE:"Podnieś suwak ładunku, jeśli masz więcej", lowF:"albo zmniejsz rezerwę",
- lowG:"i nie widzę ładowarek przed tobą.",
- planCut:"Plan urywa się po", planCut2:"dalej nie znajduję osiągalnych ładowarek.", planCut3:"Pierwszy", planCut3b:"Pierwsze",
- planCut4:"postój", planCut4b:"postoje", hold:"się trzyma.", holdP:"się trzymają.",
- demoNote:"<b>Zestaw demonstracyjny 8 Superchargerów</b>: rejestr niedostępny, naciśnij Ponów.",
- elseNote:"Możesz też zwiększyć maksymalne zboczenie albo obniżyć minimalną moc.",
- empty:"Brak ładowarek na trasie przed tobą. Wyznacz trasę albo zwiększ maksymalne zboczenie w ustawieniach.",
- arriveAt:"dojedziesz z", dry:"na zero", tariffQ:"taryfa ?", kmOut:"km od trasy", reviews:"opinii", seeCat:"Warte zobaczenia",
- navStops:"Nawiguj z postojami", clear:"Wyczyść",
- stopAdd:"Postój +", stopOn:"Postój ✓", navigate:"Nawiguj", close:"Zamknij", details:"Szczegóły", opAdd:"Operator +",
- cost80:"Koszt doładowania do 80%", stopNo:"Postój numer", ofPlan:"planu",
- youArrive:"Dojeżdżasz z", youCharge:"ładujesz do", about:"około", at:"przy",
- needK:"Potrzeba", addOpTx:"Dodaj tego operatora, aby zobaczyć koszt.",
- declared:"Cena podana przez operatora:", unver:"Dane publiczne, niezweryfikowane.",
- dDist:"Odległość", dTime:"Dojedziesz w", dEta:"Godzina przyjazdu", dDev:"Zboczenie", dPow:"Moc",
- dPts:"Punkty", dSt:"Stan", dOn:"Czynna", dOff:"Nieczynna", dArr:"Dojeżdżasz z", dEn:"Energia",
- onHwy:"przy autostradzie", ratingL:"Ocena opinii", revG:"opinii w Google",
- loadDesc:"Wczytuję opis…", noDesc:"Google nie ma opisu tego miejsca.", srcG:"Opis Google",
- outOf:"km od trasy",
- setT:"Ustawienia", setSub:"Zostają na tym urządzeniu.", version:"Wersja", ofDate:"z",
- hLang:"Język", hRoute:"Trasa", hChar:"Ładowarki", hSee:"Co zobaczyć", hKeys:"Klucze",
- hCar:"Samochód", hOps:"Twoi operatorzy",
- swHwy:"Omijaj autostrady", swHwyS:"Zwykłe drogi, dużo dłuższy czas",
- swFer:"Omijaj promy", swFerS:"Przydatne w stronę Skandynawii lub wysp",
- swToll:"Omijaj opłaty", swTollS:"Zawsze włączone w profilu Tanio",
- swMine:"Tylko moi operatorzy", swMineS:"Ukrywa pozostałe ładowarki zamiast wyszarzać",
- swWake:"Nie wygaszaj ekranu", swWakeS:"Gdy patrzysz na listę w trasie",
- lWhere:"Gdzie szukać", oCorr:"Wszędzie w korytarzu", oHwy:"Tylko przy autostradzie",
- lDev:"Maksymalne zboczenie z trasy (km)", lMinkw:"Minimalna moc (kW)",
- seeTx:"Czego szukać na trasie widokowej. Każda dodatkowa kategoria to dodatkowe zapytanie, więc trzymaj cztery lub pięć.",
- lExcl:"Pomiń, jeśli nazwa zawiera (po przecinku)", lRate:"Minimalna ocena",
- lRev:"Minimalna liczba opinii",
- lGkey:"Klucz Google Maps API",
- lModel:"Model", lKwh:"Użyteczna pojemność baterii (kWh)", lWh:"Realne zużycie (Wh/km)", lAvg:"Średnia moc ładowania (kW)", lEff:"Sprawność ładowania (0–1)",
- hintAvg:"Średnia moc to realna średnia z całego postoju, nie szczyt: Model Y na Superchargerze 250 kW osiąga średnio 100–130 kW od 10 do 80%.",
- hintCar:"Wartości modelu to orientacyjne średnie na trasie mieszanej. Po prawdziwej podróży popraw zużycie tym z komputera auta: to parametr, który najbardziej zmienia się zimą i latem, a na autostradzie rośnie o 20–30%.",
- cUse:"Użyj", cOp:"Operator", newOpPh:"Dodaj ręcznie — np. Atlante", add:"Dodaj",
- saveClose:"Zapisz i zamknij", keysTx:"Potrzebny jest tylko klucz Google: Maps JavaScript API, Places API, Directions API.",
- tSaved:"Ustawienia zapisane", tRecalc:"Naciśnij Wyznacz, aby przeliczyć trasę",
- tNoDest:"Wpisz cel podróży", tNoKey:"Do wyznaczenia trasy potrzebny jest klucz Google",
- tCalc:"Liczę trasy…", tNotFound:"Nie znaleziono trasy:", tCompare:"Porównuję warianty…",
- tSeek:"Szukam ładowarek na tej trasie…",
- tRoutes:"trasy",
- tOpAdded:"dodany — ustaw cenę w ⚙", tOpDup:"Operator już jest",
- tStopsSet:"Postoje ustawione — naciśnij Nawiguj z postojami", tMaxStops:"Maksymalnie dziewięć postojów w adresie Google Maps",
- tKeyBad:"Klucz Google odrzucony", tKeyAsk:"Otwórz ⚙ i wpisz klucz Google Maps",
- tProfile:"Naciśnij Wyznacz, aby przeliczyć z tym profilem",
- viaPh:"Dodaj punkt pośredni", viaNote:"Z punktami pośrednimi Google nie proponuje wariantów trasy.",
- thisCh:"To ładowanie", fullCh:"Typowe ładowanie", runTot:"Wydane do tej pory", tripTot:"Razem za podróż",
- swTraf:"Pokaż ruch", swTrafS:"Zielone drogi mogą zasłaniać kropki ładowarek", lRefv:"Prędkość, której dotyczy to zużycie (km/h)", hintSp:"Podana prędkość to maksimum, przy którym dojedziesz z wybranym ładunkiem. Obliczenie uwzględnia realny opór powietrza, skalibrowany na twoim zużyciu przy prędkości odniesienia.", dSpeed:"Prędkość do utrzymania", toDest:"do celu", spOk:"ok przy", spSlow:"zwolnij do",
- vLab:"Prędkość", needSlowA:"Aby dojechać z", needSlowB:"na postoju", needSlowC:"musisz zwolnić do", allOk:"Przy swojej prędkości dojedziesz wszędzie z wybranym ładunkiem.", tOsmFail:"supercharge.info nie odpowiada", hintT:"Jeśli już się zatrzymujesz, warto naładować co najmniej do minimum. Powyżej maksimum krzywa zwalnia i czas się nie opłaca: lepiej jeden postój więcej.",
- arrLab:"Po dojeździe",
- stopLab:"Ładuj do",
- retry:"Ponów",
- searching:"szukam…", tTesla:"Supercharger Tesla", scCredit:"Dane Supercharger z supercharge.info",
- destPh:"Cel — np. Bydgoszcz",
- acOld:"Podpowiedzi niedostępne: włącz „Places API (New)” w konsoli Google i dodaj do ograniczeń klucza. Na razie wpisz pełną nazwę.",
- destLab:"Cel",
- min:"min", hr:"godz",
- cat_panorami:"Punkty widokowe", cat_natura:"Jeziora, wodospady, wąwozy", cat_passi:"Przełęcze i drogi widokowe",
- cat_borghi:"Stare miasta i miasteczka", cat_castelli:"Zamki i opactwa", cat_parchi:"Parki i ogrody",
- cat_musei:"Muzea i sztuka", cat_terme:"Termy", cat_cantine:"Winnice"
-}};
-function t(k){ const L=TXT[S&&S.lang?S.lang:'it']||TXT.it; return L[k]!==undefined?L[k]:(TXT.it[k]||k); }
-function loc(){ return {it:'it-IT',en:'en-GB',pl:'pl-PL'}[S&&S.lang?S.lang:'it']; }
-function applyI18n(){
-  document.querySelectorAll('[data-t]').forEach(e=>{ e.innerHTML=t(e.dataset.t); });
-  document.querySelectorAll('[data-tp]').forEach(e=>{ e.placeholder=t(e.dataset.tp); });
-}
-
-const CATS=[
-  {id:'panorami',nm:'Panorami e belvedere', kw:'belvedere punto panoramico Aussichtspunkt punkt widokowy viewpoint'},
-  {id:'natura',  nm:'Laghi, cascate, gole', type:'natural_feature', kw:'lago cascata gola See Wasserfall jezioro'},
-  {id:'passi',   nm:'Passi e strade panoramiche', kw:'passo di montagna Bergpass strada panoramica Panoramastraße'},
-  {id:'borghi',  nm:'Borghi e centri storici', kw:'borgo centro storico Altstadt stare miasto'},
-  {id:'castelli',nm:'Castelli e abbazie', kw:'castello abbazia Burg Schloss Kloster zamek'},
-  {id:'parchi',  nm:'Parchi e giardini', type:'park'},
-  {id:'musei',   nm:'Musei e arte', type:'museum'},
-  {id:'terme',   nm:'Terme', kw:'terme Therme cieplice'},
-  {id:'cantine', nm:'Cantine e vino', kw:'cantina vinicola Weingut winnica'}
-];
-const PALETTE=['#F2A93B','#00E1E1','#B388FF','#3ED598','#FF6B35','#8DC63F',
-               '#00A9E0','#FFD400','#FF4E50','#00C2A8','#7B61FF','#E82127'];
-const DEFAULT_OPS=['Tesla Supercharger']
-  .map(n=>{const c=CATALOG.find(x=>x.nm===n);
-           return {nm:c.nm,color:c.color,match:c.match.slice(),price:0.45,fee:0,use:true};});
-
-let S={ gkey:'', ockey:'', kwh:78, wh:185, reserve:15, avgkw:110, car:'Tesla Model Y AWD (2025+)',
-        refv:110, vplan:130, tmin:60, tmax:80, destsoc:15, eff:0.92, corridor:6, minkw:50,
-        profile:'fast', noHwy:false, noFerry:false, noToll:false,
-        source:'auto', cmode:'corridor', onlyMine:false, minrate:4.3, minrev:300,
-        lang:'it', traffic:true, cats:['panorami','natura','passi','borghi'],
-        exclude:'autodromo, circuito, outlet, stadio, luna park, centro commerciale',
-        stops:[], via:[], lastDest:'', awake:false,
-        ops:JSON.parse(JSON.stringify(DEFAULT_OPS)) };
-
-const KEY='colonnine.settings.v2';
-async function load(){
-  let raw=null;
-  try{ raw=localStorage.getItem(KEY); }catch(e){}
-  if(!raw){ try{ const r=await window.storage.get('settings'); if(r&&r.value) raw=r.value; }catch(e){} }
-  if(raw){ try{ S=Object.assign(S,JSON.parse(raw)); }catch(e){} }
-  S.ops.forEach(o=>{ if(!o.match||!o.match.length) o.match=[o.nm.toLowerCase()];
-                     if(o.use===undefined) o.use=true; });
-  if(!Array.isArray(S.via)) S.via=[];
-  if(!Array.isArray(S.stops)) S.stops=[];
-}
-async function save(){
-  const v=JSON.stringify(S);
-  let ok=false;
-  try{ localStorage.setItem(KEY,v); ok=true; }catch(e){}
-  if(!ok){ try{ await window.storage.set('settings',v); }catch(e){} }
-}
-
-/* ============================================================
-   Geometria e formati
-   ============================================================ */
-const R=6371;
-function hav(a,b){
-  const dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;
-  const la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180;
-  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(h));
-}
-function segDist(p,a,b){
-  const k=Math.cos(a.lat*Math.PI/180);
-  const px=(p.lng-a.lng)*k,py=p.lat-a.lat;
-  const bx=(b.lng-a.lng)*k,by=b.lat-a.lat;
-  const L=bx*bx+by*by;
-  let t=L>0?(px*bx+py*by)/L:0; t=Math.max(0,Math.min(1,t));
-  const dx=px-t*bx,dy=py-t*by;
-  return {d:Math.sqrt(dx*dx+dy*dy)*111.32,t};
-}
-function fmtDur(sec){
-  if(!isFinite(sec)||sec<0) return '—';
-  const m=Math.round(sec/60);
-  return m<60 ? m+' '+t('min') : Math.floor(m/60)+t('hr')+' '+String(m%60).padStart(2,'0');
-}
-function fmtClock(d){ return d.toLocaleTimeString(loc(),{hour:'2-digit',minute:'2-digit'}); }
-
-/* ============================================================
-   Stato
-   ============================================================ */
-let map=null,traffic=null,dirRenderer=null,meMarker=null,placesSvc=null;
-let route=[],cum=[],cumT=[],hwy=[];
-let markers=[],stations=[],pois=[],selected=null,summary=null;
-let altRes=null,altProfs=[],altIdx=0,altCache={},usingDemo=true,ocmErr='';
-let me={lat:43.912,lng:10.223};
-
-function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ ]/g,' '); }
-function opFor(name){
-  const n=norm(name); if(!n.trim()) return null;
-  return S.ops.find(o=>o.match.some(m=>n.includes(m.trim())))||null;
-}
-function catalogFor(name){
-  const n=norm(name);
-  return CATALOG.find(c=>c.match.some(m=>n.includes(m.trim())))||null;
-}
-function nextColor(){
-  const used=S.ops.map(o=>o.color.toUpperCase());
-  return PALETTE.find(c=>!used.includes(c))||PALETTE[S.ops.length%PALETTE.length];
-}
-function myIndex(){ let b=0,bd=Infinity;
-  for(let i=0;i<route.length;i++){const d=hav(me,route[i]); if(d<bd){bd=d;b=i;}} return b; }
-function timeAt(km){
-  if(!cumT.length) return NaN;
-  if(km<=0) return 0;
-  const tot=cum[cum.length-1];
-  if(km>=tot) return cumT[cumT.length-1];
-  let lo=0,hi=cum.length-1;
-  while(hi-lo>1){ const mid=(lo+hi)>>1; if(cum[mid]<=km) lo=mid; else hi=mid; }
-  const span=cum[hi]-cum[lo], f=span>0?(km-cum[lo])/span:0;
-  return cumT[lo]+f*(cumT[hi]-cumT[lo]);
-}
-
-/* riconosce se un passo del percorso è autostradale, dal testo dell'indicazione */
-const HWY_RE=/autostrad|autobahn|motorway|d[áa]lnic|autoput|\bBAB\b|\bA\s?\d{1,3}\b|\bE\s?\d{1,3}\b|\bD\s?\d{1,2}\b|\bS\s?\d{1,2}\b/i;
-
-/* ============================================================
-   Filtri
-   ============================================================ */
-function nearestOnRoute(s,i0){
-  let bd=Infinity,at=0,idx=i0;
-  // scarto rapido: se è lontana in latitudine da tutto il tratto, non serve misurare
-
-  for(let i=Math.max(0,i0-1);i<route.length-1;i++){
-    const r=segDist(s,route[i],route[i+1]);
-    if(r.d<bd){ bd=r.d; at=cum[i]+r.t*(cum[i+1]-cum[i]); idx=i; }
-  }
-  return {off:bd,at,idx};
-}
-function aheadOf(arr,extra){
-  if(!route.length) return arr.map(s=>({...s,km:hav(me,s)})).sort((a,b)=>a.km-b.km);
-  const i0=myIndex(),base=cum[i0],baseT=timeAt(base),out=[];
-  const lim = extra&&extra.radius ? extra.radius : S.corridor;
-  for(const s of arr){
-    if(!extra?.poi){
-      const o=opFor(s.operator);
-      if(o && o.use===false) continue;              // operatore disattivato
-      if(!o && S.onlyMine) continue;                // tengo solo i miei
+    function key() {
+      const stored = (localStorage.getItem(KEY_STORE) || "").trim();
+      if (stored) return stored;
+      const k = (window.VOLTVIA_GOOGLE_MAPS_KEY || "").trim();
+      return k && !k.includes("INCOLLA_QUI") ? k : "";
     }
-    const r=nearestOnRoute(s,i0);
-    if(r.off>lim || r.at<base-1) continue;
-    const onHwy=!!hwy[r.idx];
-    if(!extra?.poi && S.cmode==='highway' && !(onHwy && r.off<=2)) continue;
-    out.push({...s,km:r.at-base,off:r.off,sec:timeAt(r.at)-baseT,onHwy});
-  }
-  return out.sort((a,b)=>a.km-b.km);
-}
-const filterAhead=()=>aheadOf(stations);
-const poisAhead =()=>aheadOf(pois,{poi:true,radius:15});
 
-// carica residua stimata all'arrivo alla colonnina
-function socAt(km){
-  const soc=+document.getElementById('soc').value;
-  if(!isFinite(km)) return soc;
-  return soc - socForKm(km);
-}
-// autonomia residua fino alla riserva
-function rangeNow(){
-  const soc=+document.getElementById('soc').value;
-  return kmFromSoc(soc-S.reserve);
-}
-/* ============================================================
-   Piano delle soste — catena greedy "la più lontana raggiungibile"
-   ============================================================ */
-// Wh/km alla velocità v, da aerodinamica e rotolamento, calibrato sul consumo dichiarato
-function whAt(v){
-  const CdA=0.62, massa=2100, Crr=0.010, aux=450, eta=0.88, rho=1.225;
-  const f=vk=>{ const ms=vk/3.6;
-    const F=0.5*rho*CdA*ms*ms + Crr*massa*9.81;
-    return (F/3.6)/eta + aux/vk; };
-  const rif=S.refv||110;
-  return f(v)*(S.wh/f(rif));
-}
-// consumo con cui si fanno tutti i conti: quello alla velocità che intendi tenere
-function whEff(){ return whAt(S.vplan||130); }
-// velocità da tenere per coprire km arrivando con socEnd; null se basta la tua andatura
-function speedFor(km,socStart,socEnd){
-  if(!(km>1)) return null;
-  const disponibili=Math.max(0,(socStart-socEnd)/100*S.kwh*1000)/km;   // Wh/km spendibili
-  if(disponibili<=0) return 0;
-  const v0=S.vplan||130;
-  if(whAt(v0)<=disponibili) return null;         // alla tua andatura ci arrivi già
-  let lo=40,hi=v0;
-  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(whAt(mid)<=disponibili) lo=mid; else hi=mid; }
-  return lo;
-}
-// carica all'arrivo se percorri km alla velocità v partendo da socStart
-function socAtSpeed(km,socStart,v){ return socStart - whAt(v)*km/1000/S.kwh*100; }
-function kmFromSoc(pct){ return Math.max(0,pct/100*S.kwh*1000/whEff()); }
-function socForKm(km){ return km*whEff()/1000/S.kwh*100; }
+    function status(t) { document.getElementById("status").textContent = t; }
 
-function buildPlan(rows){
-  const soc0=+document.getElementById('soc').value;
-  const dest=summary?summary.km:(rows.length?rows[rows.length-1].km:0);
-  const TMIN=S.tmin||60, TMAX=S.tmax||80, ARR=S.reserve, DST=S.destsoc!=null?S.destsoc:S.reserve;
-
-  // quanto carichi a una sosta: il minimo per la tratta seguente, ma mai
-  // meno della carica minima e mai oltre la massima. L'ultima tratta punta
-  // alla carica che vuoi avere a destinazione, non a quella delle colonnine.
-  function bersaglio(arr,kmProssimo,ultima){
-    const serve=(ultima?DST:ARR)+socForKm(kmProssimo);
-    return Math.min(TMAX, Math.max(serve, TMIN, arr));
-  }
-
-  // catena: dalla posizione attuale, sempre la più lontana raggiungibile
-  function catena(){
-    const plan=[]; let pos=0, soc=soc0, fail=false;
-    for(let guard=0; guard<25; guard++){
-      if(kmFromSoc(soc-DST)>=dest-pos) break;      // a destinazione conta DST
-      const cand=rows.filter(s=>s.km>pos+1 && s.km-pos<=kmFromSoc(soc-ARR));
-      if(!cand.length){ fail=true; break; }
-      const maxKm=Math.max(...cand.map(c=>c.km));
-      const near=cand.filter(c=>c.km>=maxKm-40).sort((a,b)=>{
-        const oa=opFor(a.operator)?1:0, ob=opFor(b.operator)?1:0;
-        if(oa!==ob) return ob-oa;
-        if(Math.abs((a.kw||0)-(b.kw||0))>40) return (b.kw||0)-(a.kw||0);
-        return b.km-a.km;
-      });
-      plan.push({s:near[0]});
-      pos=near[0].km; soc=TMAX;
-    }
-    return {plan,fail};
-  }
-
-  // ricalcola arrivi, bersagli, costi, tempi e velocità di ogni tratta
-  function conti(plan){
-    let pos=0, soc=soc0;
-    for(let i=0;i<plan.length;i++){
-      plan[i].arr=soc-socForKm(plan[i].s.km-pos);
-      plan[i].vmax=speedFor(plan[i].s.km-pos, soc, ARR);
-      const nextKm=(i+1<plan.length)?plan[i+1].s.km:dest;
-      plan[i].target=bersaglio(plan[i].arr, nextKm-plan[i].s.km, i+1>=plan.length);
-      plan[i].kwh=Math.max(0,(plan[i].target-plan[i].arr)/100*S.kwh)/S.eff;
-      const o=opFor(plan[i].s.operator);
-      plan[i].eur=o?plan[i].kwh*o.price+(o.fee||0):null;
-      plan[i].min=plan[i].kwh/Math.min(S.avgkw,plan[i].s.kw||S.avgkw)*60;
-      plan[i].cum=(i>0?(plan[i-1].cum||0):0)+(plan[i].eur||0);
-      pos=plan[i].s.km; soc=plan[i].target;
-    }
-    if(plan.length){
-      const u=plan[plan.length-1];
-      plan.vFinal=speedFor(dest-u.s.km, u.target, DST);
-    }
-    return plan;
-  }
-
-  // il piano regge? nessun tratto sotto la carica d'arrivo voluta
-  function regge(plan){
-    let pos=0, soc=soc0;
-    for(const p of plan){
-      const arr=soc-socForKm(p.s.km-pos);
-      if(arr<ARR-0.01) return false;
-      const idx=plan.indexOf(p);
-      const nextKm=(idx+1<plan.length)?plan[idx+1].s.km:dest;
-      soc=bersaglio(arr,nextKm-p.s.km, idx+1>=plan.length);
-      pos=p.s.km;
-    }
-    return soc-socForKm(dest-pos) >= DST-0.01;
-  }
-
-  let {plan,fail}=catena();
-  conti(plan);
-
-  // caricando fino alla minima si arriva più lontano: alcune soste diventano
-  // superflue, tolgo prima quelle dove caricheresti meno
-  if(!fail){
-    let tolto=true;
-    while(tolto && plan.length){
-      tolto=false;
-      const ordine=plan.map((p,i)=>i).sort((a,b)=>plan[a].kwh-plan[b].kwh);
-      for(const i of ordine){
-        const prova=plan.filter((_,k)=>k!==i);
-        if(regge(prova)){ plan=conti(prova); tolto=true; break; }
+    function loadMaps() {
+      if (!key()) {
+        document.getElementById("missing").classList.remove("hidden");
+        return;
       }
+      document.getElementById("missing").classList.add("hidden");
+      const s = document.createElement("script");
+      s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key()) +
+        "&libraries=places,geometry,elevation&v=weekly&callback=initApp&loading=async";
+      s.async = true;
+      s.onerror = () => status("Impossibile caricare Google Maps. Controlla la chiave e le API attivate.");
+      document.body.appendChild(s);
     }
-  }
-  return {plan,fail,dest};
-}
-let PLAN={plan:[],fail:false,dest:0};
-function planFor(s){ return PLAN.plan.find(p=>p.s.lat===s.lat&&p.s.lng===s.lng)||null; }
-// carica all'arrivo tenendo conto delle soste già pianificate prima
-function socChain(km){
-  const soc0=+document.getElementById('soc').value;
-  let pos=0, soc=soc0;
-  for(const p of PLAN.plan){
-    if(p.s.km>=km) break;
-    soc=p.target; pos=p.s.km;
-  }
-  return soc-socForKm(km-pos);
-}
 
-// costo di una sessione standard 10→80%, per confrontare gli operatori fra loro
-function costFull(s){
-  const o=opFor(s.operator); if(!o) return null;
-  const kwh=Math.max(0,(S.tmax-S.reserve))/100*S.kwh/S.eff;
-  return {kwh, eur:kwh*o.price+(o.fee||0)};
-}
-function costTo80(s){
-  const arr=socChain(s.km);                   // tiene conto delle soste precedenti
-  const kwh=Math.max(0,(80-arr)/100*S.kwh)/S.eff;
-  const o=opFor(s.operator);
-  return o?{kwh,eur:kwh*o.price+(o.fee||0),op:o,arr}:{kwh,eur:null,op:null,arr};
-}
-
-/* ============================================================
-   Dati colonnine
-   ============================================================ */
-const DEMO=[
-  {name:'Firenze Nord', operator:'Tesla Supercharger',lat:43.8109,lng:11.1002,kw:250,pts:16,live:true},
-  {name:'Modena Nord',  operator:'Tesla Supercharger',lat:44.7047,lng:10.9491,kw:250,pts:12,live:true},
-  {name:'Trento',       operator:'Tesla Supercharger',lat:46.0287,lng:11.1218,kw:250,pts:12,live:true},
-  {name:'Innsbruck',    operator:'Tesla Supercharger',lat:47.2700,lng:11.4400,kw:250,pts:10,live:true},
-  {name:'München Süd',  operator:'Tesla Supercharger',lat:48.0602,lng:11.5503,kw:250,pts:16,live:true},
-  {name:'Nürnberg',     operator:'Tesla Supercharger',lat:49.4200,lng:11.1200,kw:250,pts:12,live:true},
-  {name:'Dresden',      operator:'Tesla Supercharger',lat:51.1000,lng:13.7300,kw:250,pts:12,live:true},
-  {name:'Poznań',       operator:'Tesla Supercharger',lat:52.4000,lng:16.9800,kw:250,pts:8, live:true}
-];
-
-
-let fonte='', diario='mai eseguita';
-async function fetchStations(){
-  ocmErr=''; fonte='';
-  const t0=new Date();
-  const passo=x=>{ diario=`${fmtClock(t0)} · ${x}`; try{ render(); }catch(e){} };
-  passo(t('tTesla')+' · '+t('searching'));
-
-  let got=[];
-  try{
-    const tutte=await fetchTesla();
-    got=vicineAlPercorso(tutte, Math.max(15,(S.corridor||6)+10));
-    if(got.length) fonte='tesla';
-  }catch(e){ ocmErr='supercharge.info: '+descriviErrore(e); }
-
-  usingDemo=!got.length;
-  stations=got.length?got:DEMO.slice();
-  diario=`${fmtClock(t0)} · ${got.length} Supercharger sul percorso · suggerimenti ${acModo}`+
-         (scCache?` (registro: ${scCache.length})`:'')+(ocmErr?` · ${ocmErr}`:'');
-  console.log('[colonnine]',diario);
-  if(usingDemo) toast(ocmErr||t('tOsmFail'));
-  else toast(`${got.length} · ${t('scCredit')}`);
-}
-
-// fetch che si arrende dopo n secondi invece di restare appesa
-async function fetchTimeout(url,opt,ms){
-  const c=new AbortController();
-  const tid=setTimeout(()=>c.abort(),ms||20000);
-  try{ return await fetch(url,Object.assign({},opt,{signal:c.signal})); }
-  finally{ clearTimeout(tid); }
-}
-function descriviErrore(e){
-  if(e&&e.status===401) return 'HTTP 401 — chiave rifiutata';
-  if(e&&e.status===403) return 'HTTP 403 — chiave non valida o non abilitata';
-  if(e&&e.status===429) return 'HTTP 429 — troppe richieste, riprova fra qualche minuto';
-  if(e&&e.status) return 'HTTP '+e.status;
-  if(e&&e.name==='AbortError') return 'nessuna risposta nel tempo massimo';
-  if(e&&e.name==='TypeError') return 'richiesta bloccata dal browser (CORS, blocco pubblicità o rete)';
-  return (e&&(e.name||e.message))?String(e.name||e.message).slice(0,60):'errore sconosciuto';
-}
-
-// riduce una lista mondiale alle sole stazioni vicine al percorso.
-// prima un test sul rettangolo, poi la distanza da punti campionati: due passate
-// grossolane ma rapidissime, che evitano milioni di calcoli a ogni ridisegno.
-function vicineAlPercorso(lista,maxKm){
-  if(!route.length) return lista;
-  let s=90,w=180,n=-90,e=-180;
-  for(const p of route){
-    if(p.lat<s)s=p.lat; if(p.lat>n)n=p.lat;
-    if(p.lng<w)w=p.lng; if(p.lng>e)e=p.lng;
-  }
-  const dlat=maxKm/111, dlng=maxKm/(111*Math.max(0.2,Math.cos((s+n)/2*Math.PI/180)));
-  const campioni=[]; let last=-999;
-  for(let i=0;i<route.length;i++) if(cum[i]-last>10){ campioni.push(route[i]); last=cum[i]; }
-  const soglia=maxKm+12;                     // margine per il passo di campionamento
-  const out=[];
-  for(const x of lista){
-    if(x.lat<s-dlat||x.lat>n+dlat||x.lng<w-dlng||x.lng>e+dlng) continue;
-    for(const c of campioni){
-      if(Math.abs(c.lat-x.lat)>0.25) continue;
-      if(hav(c,x)<=soglia){ out.push(x); break; }
-    }
-  }
-  return out;
-}
-
-let scCache=null;                       // il registro mondiale si scarica una volta sola
-async function fetchTesla(){
-  if(!scCache){
-    const r=await fetchTimeout('https://supercharge.info/service/supercharge/allSites',{},25000);
-    if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; throw e; }
-    scCache=await r.json();
-  }
-  const out=[];
-  for(const s of scCache){
-    if(!s.gps || s.status!=='OPEN') continue;
-    out.push({
-      name: s.name || 'Supercharger',
-      town: (s.address&&s.address.city)||'',
-      operator: 'Tesla Supercharger',
-      lat: s.gps.latitude, lng: s.gps.longitude,
-      kw: s.powerKilowatt || 250,
-      pts: s.stallCount || 0,
-      live: true, declared: ''
-    });
-  }
-  return out;
-}
-/* ============================================================
-   Cose da vedere (solo profilo panoramico)
-   ============================================================ */
-function nearbyPromise(loc,cat){
-  return new Promise(res=>{
-    if(!placesSvc) return res([]);
-    const req={location:loc,radius:15000};
-    if(cat.type) req.type=cat.type;
-    if(cat.kw) req.keyword=cat.kw;
-    placesSvc.nearbySearch(req,(r,st)=>
-      res(st===google.maps.places.PlacesServiceStatus.OK&&r?r.map(x=>({x,cat})):[])
-    );
-  });
-}
-function excluded(name){
-  const words=(S.exclude||'').split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);
-  const n=(name||'').toLowerCase();
-  return words.some(w=>n.includes(w));
-}
-async function fetchPOIs(pathArr,cumArr,light){
-  const cats=CATS.filter(c=>S.cats.includes(c.id));
-  if(!cats.length) return [];
-  const used=light?cats.slice(0,2):cats;
-  const spacing=light?110:70, cap=light?7:16;
-  const probes=[]; let last=-999;
-  for(let i=0;i<pathArr.length;i++) if(cumArr[i]-last>spacing){ probes.push(pathArr[i]); last=cumArr[i]; }
-  const jobs=[];
-  for(const p of probes.slice(0,cap))
-    for(const c of used) jobs.push(nearbyPromise(new google.maps.LatLng(p.lat,p.lng),c));
-  const res=await Promise.all(jobs.map(p=>p.catch(()=>[])));
-  const seen=new Set(),out=[];
-  for(const list of res) for(const {x:p,cat} of list){
-    if(!p.place_id||seen.has(p.place_id)) continue;
-    const rating=p.rating||0, rev=p.user_ratings_total||0;
-    if(rating<S.minrate||rev<S.minrev) continue;
-    if(excluded(p.name)) continue;
-    seen.add(p.place_id);
-    let photo='';
-    try{ photo=p.photos&&p.photos[0]?p.photos[0].getUrl({maxWidth:900,maxHeight:560}):''; }catch(e){}
-    out.push({ poi:true, name:p.name, place_id:p.place_id,
-               lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
-               rating, rev, cat:t('cat_'+cat.id), catId:cat.id, photo,
-               vicinity:p.vicinity||'' });
-  }
-  return out;
-}
-
-/* ============================================================
-   Tappe intermedie scelte da te
-   ============================================================ */
-function renderVias(){
-  const box=document.getElementById('vias');
-  box.innerHTML='';
-  const righe=[...S.via, null];        // una riga vuota sempre in fondo
-  righe.forEach((v,i)=>{
-    const r=document.createElement('div'); r.className='via-row';
-    const num=document.createElement('span'); num.className='n'; num.textContent=v?(i+1):'+';
-    const inp=document.createElement('input');
-    inp.type='text'; inp.autocomplete='off'; inp.dataset.vi=i;
-    if(v){ inp.value=v.name; } else { inp.className='empty'; inp.placeholder=t('viaPh'); }
-    const btn=document.createElement('button');
-    btn.textContent=v?'×':'+'; btn.dataset.vact=i; btn.setAttribute('aria-label',v?'×':'+');
-    r.append(num,inp,btn); box.appendChild(r);
-    if(map&&google.maps.places)
-      attaccaSuggerimenti(inp,(nome,la,lo)=>setVia(i,nome,la,lo));
-  });
-}
-async function setVia(i,name,lat,lng){
-  name=(name||'').trim();
-  if(!name){ if(i<S.via.length){ S.via.splice(i,1); } }
-  else if(i<S.via.length){ S.via[i]={name,lat,lng}; }
-  else { if(S.via.length>=8) return; S.via.push({name,lat,lng}); }
-  await save(); renderVias();
-  const box=document.getElementById('vias');
-  const next=box.querySelector('input.empty'); if(next&&name) next.focus();
-  if(route.length) toast(t('tRecalc'));
-}
-document.getElementById('vias').addEventListener('click',async e=>{
-  const b=e.target.closest('[data-vact]'); if(!b) return;
-  const i=+b.dataset.vact;
-  if(i<S.via.length){ S.via.splice(i,1); await save(); renderVias();
-                      if(route.length) toast(t('tRecalc')); }
-  else { const inp=b.parentElement.querySelector('input');
-         if(inp.value.trim()) setVia(i,inp.value); else inp.focus(); }
-});
-document.getElementById('vias').addEventListener('keydown',e=>{
-  if(e.key!=='Enter'||!e.target.dataset.vi) return;
-  e.preventDefault(); setVia(+e.target.dataset.vi,e.target.value);
-});
-
-/* ============================================================
-   Soste e passaggio alla navigazione
-   ============================================================ */
-const MAX_STOPS=9;   // limite degli URL di Google Maps
-function isStop(s){ return S.stops.some(x=>Math.abs(x.lat-s.lat)<1e-6&&Math.abs(x.lng-s.lng)<1e-6); }
-async function toggleStop(s){
-  const i=S.stops.findIndex(x=>Math.abs(x.lat-s.lat)<1e-6&&Math.abs(x.lng-s.lng)<1e-6);
-  if(i>=0) S.stops.splice(i,1);
-  else{
-    if(S.stops.length>=MAX_STOPS) return toast(t('tMaxStops'));
-    S.stops.push({name:s.name,lat:s.lat,lng:s.lng,
-                  operator:s.poi?'★ '+s.rating.toFixed(1):(s.operator||''),km:s.km});
-  }
-  S.stops.sort((a,b)=>(a.km??0)-(b.km??0));
-  await save(); renderStops(); render();
-}
-function navUrl(){
-  if(!S.stops.length) return '#';
-  const dest=S.lastDest ? encodeURIComponent(S.lastDest)
-                        : `${S.stops[S.stops.length-1].lat},${S.stops[S.stops.length-1].lng}`;
-  const pts=[...S.via.filter(v=>v.lat!=null).map(v=>({lat:v.lat,lng:v.lng,km:-1})),
-             ...(S.lastDest?S.stops:S.stops.slice(0,-1))];
-  const way=pts.map(s=>`${s.lat.toFixed(6)},${s.lng.toFixed(6)}`).join('|');
-  return 'https://www.google.com/maps/dir/?api=1'+
-         `&origin=${me.lat.toFixed(6)},${me.lng.toFixed(6)}`+
-         `&destination=${dest}`+(way?`&waypoints=${encodeURIComponent(way)}`:'')+
-         '&travelmode=driving';
-}
-function renderStops(){
-  const box=document.getElementById('stops'), row=document.getElementById('stopsRow');
-  box.classList.toggle('on',S.stops.length>0);
-  row.innerHTML='';
-  S.stops.forEach((s,i)=>{
-    const b=document.createElement('span'); b.className='sc';
-    b.innerHTML=`<span class="n">${i+1}</span>${s.name.slice(0,22)}<button class="x" data-rm="${i}" aria-label="Togli">×</button>`;
-    row.appendChild(b);
-  });
-  document.getElementById('navGo').href=navUrl();
-}
-document.getElementById('stopsRow').addEventListener('click',async e=>{
-  const b=e.target.closest('[data-rm]'); if(!b) return;
-  S.stops.splice(+b.dataset.rm,1); await save(); renderStops(); render();
-});
-document.getElementById('stopsClear').onclick=async()=>{
-  S.stops=[]; await save(); renderStops(); render();
-};
-
-/* schermo acceso */
-let wakeLock=null;
-async function applyWake(){
-  try{
-    if(S.awake && 'wakeLock' in navigator){
-      if(!wakeLock) wakeLock=await navigator.wakeLock.request('screen');
-    } else if(wakeLock){ await wakeLock.release(); wakeLock=null; }
-  }catch(e){}
-}
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ wakeLock=null; applyWake(); } });
-
-/* ============================================================
-   Descrizione del luogo — chiesta solo quando apri la scheda
-   ============================================================ */
-const detCache=new Map();
-function placeDetails(id){
-  if(detCache.has(id)) return Promise.resolve(detCache.get(id));
-  return new Promise(res=>{
-    if(!placesSvc||!id){ res(null); return; }
-    placesSvc.getDetails(
-      {placeId:id,fields:['editorial_summary','website','formatted_address','opening_hours','photos']},
-      (d,st)=>{
-        const ok=st===google.maps.places.PlacesServiceStatus.OK?d:null;
-        detCache.set(id,ok); res(ok);
+    window.initApp = function initApp() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 42.5, lng: 12.5 },
+        zoom: 6,
+        mapId: undefined,
+        streetViewControl: false,
+        fullscreenControl: false,
+        mapTypeControl: false,
+        styles: [
+          { elementType: "geometry", stylers: [{ color: "#1b2738" }] },
+          { elementType: "labels.text.fill", stylers: [{ color: "#c5d4ea" }] },
+          { elementType: "labels.text.stroke", stylers: [{ color: "#1b2738" }] },
+          { featureType: "water", stylers: [{ color: "#0d1a2b" }] },
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "road", stylers: [{ color: "#2a3b55" }] }
+        ]
       });
-  });
-}
-async function fillDescription(s){
-  const box=document.getElementById('poiDesc');
-  const img=document.getElementById('poiShot');
-  if(!box) return;
-  const d=await placeDetails(s.place_id);
-  if(!document.getElementById('poiDesc')) return;      // scheda già chiusa
-  const txt=d&&d.editorial_summary&&d.editorial_summary.overview;
-  box.classList.remove('load');
-  if(txt){
-    box.innerHTML=`${txt}<span class="src">${t('srcG')}${d.formatted_address?' · '+d.formatted_address:''}</span>`;
-  } else {
-    box.innerHTML=t('noDesc')+
-      `<span class="src">${s.cat}${d&&d.formatted_address?' · '+d.formatted_address:(s.vicinity?' · '+s.vicinity:'')}</span>`;
-  }
-  // se la ricerca non aveva foto, provo con quelle del dettaglio
-  if(img&&!s.photo&&d&&d.photos&&d.photos[0]){
-    try{ img.src=d.photos[0].getUrl({maxWidth:900,maxHeight:560}); img.classList.remove('hide'); }catch(e){}
-  }
-}
-
-/* ============================================================
-   Interfaccia
-   ============================================================ */
-function toast(m){
-  const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3600);
-}
-
-function render(){
-  const rows=filterAhead();
-  const views=S.profile==='scenic'?poisAhead():[];
-  const all=[...rows,...views].sort((a,b)=>a.km-b.km);
-  const head=document.getElementById('count');
-  if(summary){
-    const eta=new Date(Date.now()+summary.sec*1000);
-    const g=Math.floor((eta-new Date(new Date().toDateString()))/86400000);
-    head.innerHTML=`<b>${rows.length}</b> ${t('chargers')}${usingDemo?' (demo)':(fonte==='osm'?' (OSM)':(fonte==='tesla'?' (Tesla)':''))}${views.length?` · <b>${views.length}</b> ${t('toSee')}`:''} · ${Math.round(summary.km)} km<br>`+
-      `${fmtDur(summary.sec)} · ${t('arrival')} <b>${fmtClock(eta)}</b>${g>0?' +'+g:''}`;
-  } else head.innerHTML=rows.length?`<b>${rows.length}</b> ${t('chargers')}`:'—';
-
-  PLAN = route.length ? buildPlan(rows) : {plan:[],fail:false,dest:0};
-  const list=document.getElementById('list'); list.innerHTML='';
-  if(!route.length && rows.length){
-    const d=document.createElement('div'); d.className='reach';
-    d.innerHTML=t('straight');
-    list.appendChild(d);
-  }
-  if(route.length){
-    const r=rangeNow();
-    const d=document.createElement('div'); d.className='reach';
-    d.innerHTML=`${t('autonomy')} <b class="${r<80?'low':''}">${Math.round(r)} km</b> `+
-      `${t('withCharge')} · ${S.vplan} km/h · ${Math.round(whEff())} Wh/km`;
-    list.appendChild(d);
-
-    const P=PLAN.plan;
-    const box=document.createElement('div'); box.className='plan';
-    if(PLAN.fail){
-      const soc=+document.getElementById('soc').value;
-      const tot=P.reduce((a,p)=>a+p.min,0);
-      const prossima=rows.find(x=>x.km>1);
-      let msg;
-      if(!P.length){
-        msg=`${t('lowA')} ${soc}% ${t('lowB')} ${S.reserve}% ${t('lowC')} <b>${Math.round(r)} km</b>, `+
-            (prossima?`${t('lowD')} <b>${Math.round(prossima.km)} km</b>.`:t('lowG'))+
-            ` ${t('lowE')}`+(S.reserve>5?`, ${t('lowF')}`:'')+`.`;
-      } else {
-        msg=`${t('planCut')} <b>${Math.round(P[P.length-1].s.km)} km</b>: ${t('planCut2')} `+
-            (P.length>1
-              ? `${t('planCut3b')} ${P.length} ${t('planCut4b')} (${fmtDur(tot*60)}) ${t('holdP')}`
-              : `${t('planCut3')} ${t('planCut4')} (${fmtDur(tot*60)}) ${t('hold')}`);
-      }
-      box.innerHTML=`<span class="txt bad">${msg}`+
-        (usingDemo
-          ? ' '+t('demoNote')+
-            `<br><b style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">${diario}</b>`
-          : ' '+t('elseNote'))+
-        `</span>`+(usingDemo?`<button id="retryData">${t('retry')}</button>`
-                            :(P.length?`<button id="usePlan">${t('use')}</button>`:''));
-    } else if(!P.length){
-      box.innerHTML=`<span class="txt">${t('noStop')} <b>${Math.round(socChain(PLAN.dest))}%</b>.</span>`;
-    } else {
-      const tot=P.reduce((a,p)=>a+p.min,0);
-      const eur=P.every(p=>p.eur!=null)?P.reduce((a,p)=>a+p.eur,0):null;
-      // il tratto più esigente: quello che impone la velocità più bassa
-      let peggio=null;
-      P.forEach((p,i)=>{ if(p.vmax&&(!peggio||p.vmax<peggio.p.vmax)) peggio={p,i}; });
-      if(!peggio&&P.vFinal) peggio={p:{vmax:P.vFinal,s:{name:t('toDest')}},i:-1};
-      box.innerHTML=`<span class="txt"><b>${P.length}</b> ${P.length>1?t('stopsN'):t('stopN')} · `+
-        `<b>${fmtDur(tot*60)}</b> ${t('charging')}${eur!=null?` · ${t('tripTot')} <b>€ ${eur.toFixed(2)}</b>`:''}<br>`+
-        `${t('arrIncl')} <b>${fmtClock(new Date(Date.now()+(summary.sec+tot*60)*1000))}</b> ${t('inclStops')}`+
-        (peggio
-          ? `<br><span style="color:var(--signal)">${t('needSlowA')} ${S.reserve}% `+
-            `${peggio.i>=0?`${t('needSlowB')} ${peggio.i+1} (${peggio.p.s.name.slice(0,22)})`:peggio.p.s.name} `+
-            `${t('needSlowC')} <b>${Math.round(peggio.p.vmax)} km/h</b></span>`
-          : `<br><span style="color:var(--live)">${t('allOk')}</span>`)+`</span>`+
-        `<button id="usePlan">${t('use')}</button>`;
-    }
-    list.appendChild(box);
-  }
-  if(!all.length){
-    list.innerHTML=`<p class="hint" style="padding:6px 4px 14px">${t('empty')}</p>`;
-  }
-  all.slice(0,90).forEach(s=>{
-    const el=document.createElement('button');
-    if(s.poi){
-      el.className='stn poi';
-      el.innerHTML=`
-        <span class="bar" style="background:var(--view)"></span>
-        <span class="mid">
-          <span class="op">${isStop(s)?'✦':'◆'} ${s.name.slice(0,30)}</span>
-          <span class="name">${s.cat||t('seeCat')} · ${s.off.toFixed(0)} ${t('kmOut')} · ${s.rev.toLocaleString(loc())} ${t('reviews')}</span>
-        </span>
-        <span class="right">
-          <span class="km">${s.km.toFixed(0)}<small> km</small></span>
-          ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
-          <span class="rate">★ ${s.rating.toFixed(1)}</span>
-        </span>`;
-    } else {
-      const o=opFor(s.operator),c=costTo80(s);
-      const st=planFor(s);
-      const low=c.arr<S.reserve && !st;
-      el.className='stn'+(low?' far':'')+(st?' step':'');
-      el.innerHTML=`
-        <span class="bar" style="background:${o?o.color:'var(--dead)'}"></span>
-        <span class="mid">
-          <span class="op" style="color:${o?o.color:'var(--ice-dim)'}">
-            <span class="dot ${s.live?'':'off'}"></span>${st?`<span class="stepno">${PLAN.plan.indexOf(st)+1}</span> `:''}${isStop(s)?'✦ ':''}${(s.operator||'—').slice(0,24)}
-            ${s.onHwy?'<span class="hwy">A</span>':''}
-          </span>
-          <span class="name">${s.name}${s.town?' · '+s.town:''} · ${Math.round(s.kw)} kW
-            ${route.length?`· <span class="arr ${low?'low':''}">${t('arriveAt')} ${c.arr>0?Math.round(c.arr)+'%':t('dry')}</span>`:''}</span>
-        </span>
-        <span class="right">
-          <span class="km">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(0)+'<small> km</small>'}</span>
-          ${isFinite(s.sec)?`<span class="tm">${fmtDur(s.sec)}</span>`:''}
-          ${st?`<span class="charge">→ ${Math.round(st.target)}% · ${Math.round(st.min)} ${t('min')}</span>`:''}
-          ${st?`<span class="spd ${st.vmax?'slow':''}">${st.vmax
-              ? `${t('spSlow')} ${Math.round(st.vmax)} km/h`
-              : `${t('spOk')} ${S.vplan} km/h`}</span>`:''}
-          <span class="eur ${c.eur==null?'none':''}">${st&&st.eur!=null?'€ '+st.eur.toFixed(2):(c.eur!=null?'€ '+c.eur.toFixed(2):(s.declared?t('tariffQ'):'—'))}</span>
-          ${st&&st.cum!=null&&PLAN.plan.length>1?`<span class="cum">Σ € ${st.cum.toFixed(2)}</span>`:''}
-        </span>`;
-    }
-    el.onclick=()=>openDetail(s);
-    list.appendChild(el);
-  });
-  const rt=document.getElementById('retryData');
-  if(rt) rt.onclick=async()=>{
-    altCache={}; ocmErr=''; toast(t('tSeek'));
-    await fetchStations(); render();
-    toast(usingDemo ? (ocmErr||t('tOsmFail'))
-                    : `${filterAhead().length} ${t('chargers')}`);
-  };
-  const up=document.getElementById('usePlan');
-  if(up) up.onclick=async()=>{
-    S.stops=PLAN.plan.slice(0,9).map(p=>({name:p.s.name,lat:p.s.lat,lng:p.s.lng,
-                                          operator:p.s.operator||'',km:p.s.km}));
-    await save(); renderStops(); render();
-    toast(t('tStopsSet'));
-  };
-  if(fonte==='tesla'){
-    const c=document.createElement('p'); c.className='hint';
-    c.style.cssText='padding:4px 4px 10px;margin:0';
-    c.textContent=t('scCredit'); list.appendChild(c);
-  }
-  drawMarkers(rows,views);
-  const ng=document.getElementById('navGo'); if(ng) ng.href=navUrl();
-}
-
-function openDetail(s){
-  selected=s;
-  const soc=+document.getElementById('soc').value;
-  const card=document.getElementById('detailCard');
-
-  if(s.poi){
-    card.innerHTML=`
-      <img id="poiShot" class="shot ${s.photo?'':'hide'}" ${s.photo?`src="${s.photo}"`:''} alt="" loading="lazy">
-      <h3 style="color:var(--view)">${s.name}</h3>
-      <p class="sub">${s.cat||t('seeCat')} · ${s.off.toFixed(1)} ${t('outOf')}</p>
-      <div class="readout">
-        <div class="lbl">${t('ratingL')}</div>
-        <div class="big view">★ ${s.rating.toFixed(1)}</div>
-        <div class="calc">${s.rev.toLocaleString(loc())} ${t('revG')}</div>
-      </div>
-      <div class="desc load" id="poiDesc">${t('loadDesc')}</div>
-      <div class="specs">
-        <div class="spec"><div class="k">${t('dDist')}</div><div class="v">${s.km.toFixed(0)} km</div></div>
-        <div class="spec"><div class="k">${t('dTime')}</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
-        <div class="spec"><div class="k">${t('dEta')}</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
-        <div class="spec"><div class="k">${t('dDev')}</div><div class="v">${s.off.toFixed(1)} km</div></div>
-      </div>
-      <div class="actions">
-        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?t('stopOn'):t('stopAdd')}</button>
-        <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}&query_place_id=${s.place_id}>${t('details')}</a>
-        <button class="btn" id="closeD">${t('close')}</button>
-      </div>`;
-  } else {
-    const o=opFor(s.operator),c=costTo80(s),st=planFor(s);
-    card.innerHTML=`
-      <h3 style="color:${o?o.color:'var(--ice)'}">${s.operator||'Operatore ignoto'}</h3>
-      <p class="sub">${s.name}${s.town?' · '+s.town:''}${s.onHwy?' · '+t('onHwy'):''}</p>
-      <div class="readout">
-        <div class="lbl">${st?t('stopNo')+' '+(PLAN.plan.indexOf(st)+1)+' '+t('ofPlan'):t('cost80')}</div>
-        ${st
-          ? `<div class="big">${st.eur!=null?'€ '+st.eur.toFixed(2):Math.round(st.target)+'%'}</div>
-             <div class="calc">${t('youArrive')} ${Math.max(0,Math.round(st.arr))}%, ${t('youCharge')} ${Math.round(st.target)}%<br>
-             ${st.kwh.toFixed(1)} kWh · ${t('about')} ${Math.round(st.min)} ${t('min')} ${t('at')} ${Math.round(Math.min(S.avgkw,st.s.kw||S.avgkw))} kW${o?` · € ${o.price.toFixed(2)}/kWh`:''}</div>`
-          : c.eur!=null
-          ? `<div class="big">€ ${c.eur.toFixed(2)}</div>
-             <div class="calc">${c.kwh.toFixed(1)} kWh · ${Math.max(0,Math.round(c.arr))}% → 80% · € ${o.price.toFixed(2)}/kWh${o.fee?' + € '+o.fee.toFixed(2):''}</div>`
-          : `<div class="big na">${t('needK')} ${c.kwh.toFixed(1)} kWh.<br>${t('addOpTx')}</div>`}
-        ${s.declared?`<div class="declared">${t('declared')} <b>${s.declared.slice(0,90)}</b><br>${t('unver')}</div>`:''}
-      </div>
-      <div class="specs">
-        <div class="spec"><div class="k">${t('dDist')}</div><div class="v">${s.km<1?Math.round(s.km*1000)+' m':s.km.toFixed(1)+' km'}</div></div>
-        <div class="spec"><div class="k">${t('dTime')}</div><div class="v">${isFinite(s.sec)?fmtDur(s.sec):'—'}</div></div>
-        <div class="spec"><div class="k">${t('dEta')}</div><div class="v">${isFinite(s.sec)?fmtClock(new Date(Date.now()+s.sec*1000)):'—'}</div></div>
-        <div class="spec"><div class="k">${t('dDev')}</div><div class="v">${s.off!=null?s.off.toFixed(1)+' km':'—'}</div></div>
-        <div class="spec"><div class="k">${t('dPow')}</div><div class="v">${Math.round(s.kw)} kW</div></div>
-        <div class="spec"><div class="k">${t('dPts')}</div><div class="v">${s.pts||'—'}</div></div>
-        <div class="spec"><div class="k">${t('dSt')}</div><div class="v" style="color:${s.live?'var(--live)':'var(--alert)'}">${s.live?t('dOn'):t('dOff')}</div></div>
-        <div class="spec"><div class="k">${t('dArr')}</div><div class="v" style="color:${c.arr<S.reserve?'var(--alert)':'var(--live)'}">${c.arr>0?Math.round(c.arr)+'%':t('dry')}</div></div>
-        <div class="spec"><div class="k">${t('dEn')}</div><div class="v">${c.kwh.toFixed(1)} kWh</div></div>
-        ${st?`<div class="spec"><div class="k">${t('dSpeed')}</div><div class="v" style="color:${st.vmax?'var(--signal)':'var(--live)'}">${st.vmax?Math.round(st.vmax):S.vplan} km/h</div></div>`:''}
-        ${st?`<div class="spec"><div class="k">${t('thisCh')}</div><div class="v" style="color:var(--signal)">${st.eur!=null?'€ '+st.eur.toFixed(2):'—'}</div></div>
-        <div class="spec"><div class="k">${t('runTot')}</div><div class="v">${st.cum!=null?'€ '+st.cum.toFixed(2):'—'}</div></div>`:''}
-        ${(()=>{const f=costFull(s); return f?`<div class="spec"><div class="k">${t('fullCh')} ${S.reserve}→${S.tmax}%</div><div class="v">€ ${f.eur.toFixed(2)}</div></div>
-        <div class="spec"><div class="k">kWh</div><div class="v">${f.kwh.toFixed(1)}</div></div>`:'';})()}
-      </div>
-      <div class="actions">
-        <button class="btn ${isStop(s)?'primary':''}" id="stopBtn">${isStop(s)?t('stopOn'):t('stopAdd')}</button>
-        ${!o?`<button class="btn" id="quickAdd">${t('opAdd')}</button>`:
-             `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving">${t('navigate')}</a>`}
-        <button class="btn" id="closeD">${t('close')}</button>
-      </div>`;
-  }
-  document.getElementById('detail').classList.add('show');
-  if(s.poi) fillDescription(s);
-  document.getElementById('closeD').onclick=()=>document.getElementById('detail').classList.remove('show');
-  const sb=document.getElementById('stopBtn');
-  if(sb) sb.onclick=async()=>{ await toggleStop(s); openDetail(s); };
-  const qa=document.getElementById('quickAdd');
-  if(qa) qa.onclick=async()=>{
-    addOperator(s.operator); await save();
-    document.getElementById('detail').classList.remove('show');
-    render(); toast(s.operator+' '+t('tOpAdded'));
-  };
-}
-document.getElementById('detail').onclick=e=>{ if(e.target.id==='detail') e.target.classList.remove('show'); };
-
-function addOperator(raw){
-  const cat=catalogFor(raw), nm=cat?cat.nm:(raw||'').trim();
-  if(!nm) return false;
-  if(S.ops.some(o=>o.nm.toLowerCase()===nm.toLowerCase())) return false;
-  S.ops.push({nm,color:cat?cat.color:nextColor(),
-              match:cat?cat.match.slice():[nm.toLowerCase()],price:0.50,fee:0,use:true});
-  return true;
-}
-
-function drawMarkers(rows,views){
-  if(!map) return;
-  markers.forEach(m=>m.setMap(null)); markers=[];
-  rows.forEach(s=>{
-    const o=opFor(s.operator);
-    const st=planFor(s);
-    markers.push(new google.maps.Marker({
-      position:{lat:s.lat,lng:s.lng},map,clickable:false,zIndex:o?18:4,
-      icon:{path:google.maps.SymbolPath.CIRCLE,scale:o?13:8.5,
-            fillColor:'#08121A',fillOpacity:.92,strokeWeight:0}
-    }));
-    const mk=new google.maps.Marker({
-      position:{lat:s.lat,lng:s.lng},map,title:`${s.operator} — ${s.name}`,zIndex:o?20:5,
-      icon:{path:google.maps.SymbolPath.CIRCLE,scale:o?8:4.5,
-            fillColor:o?o.color:'#8FA3AE',fillOpacity:1,
-            strokeColor:!s.live?'#E4572E':(st?'#FFFFFF':'#08121A'),
-            strokeWeight:!s.live?2.5:(st?2.5:1.5)}
-    });
-    mk.addListener('click',()=>openDetail(s));
-    markers.push(mk);
-  });
-  (views||[]).forEach(p=>{
-    markers.push(new google.maps.Marker({
-      position:{lat:p.lat,lng:p.lng},map,clickable:false,zIndex:28,
-      icon:{path:google.maps.SymbolPath.CIRCLE,scale:15,fillColor:'#08121A',fillOpacity:.92,strokeWeight:0}
-    }));
-    const mk=new google.maps.Marker({
-      position:{lat:p.lat,lng:p.lng},map,title:`${p.name} — ★ ${p.rating}`,zIndex:30,
-      label:{text:p.rating.toFixed(1),color:'#20160A',fontSize:'10px',fontWeight:'700'},
-      icon:{path:'M 0,-12 L 12,0 L 0,12 L -12,0 Z',fillColor:'#C9A227',fillOpacity:1,
-            strokeColor:'#20160A',strokeWeight:1.5,scale:1,labelOrigin:new google.maps.Point(0,0)}
-    });
-    mk.addListener('click',()=>openDetail(p));
-    markers.push(mk);
-  });
-}
-
-/* ============================================================
-   Google Maps
-   ============================================================ */
-function bootMap(){
-  if(!S.gkey){ document.getElementById('map').classList.add('hidden');
-               document.getElementById('nomap').classList.add('show'); return; }
-  const sc=document.createElement('script');
-  sc.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(S.gkey)}&libraries=places&language=${S.lang||'it'}&callback=initMap`;
-  sc.onerror=()=>{ toast(t('tKeyBad')); document.getElementById('nomap').classList.add('show'); };
-  document.head.appendChild(sc);
-}
-window.initMap=async function(){
-  document.getElementById('map').classList.remove('hidden');
-  document.getElementById('nomap').classList.remove('show');
-  map=new google.maps.Map(document.getElementById('map'),{
-    center:me,zoom:8,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',
-    styles:[
-      {elementType:'geometry',stylers:[{color:'#16262F'}]},
-      {elementType:'labels.text.fill',stylers:[{color:'#7D97A5'}]},
-      {elementType:'labels.text.stroke',stylers:[{color:'#0E1A22'}]},
-      {featureType:'water',elementType:'geometry',stylers:[{color:'#0B1A22'}]},
-      {featureType:'road',elementType:'geometry',stylers:[{color:'#23404F'}]},
-      {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#2E5266'}]},
-      {featureType:'poi',stylers:[{visibility:'off'}]},
-      {featureType:'transit',stylers:[{visibility:'off'}]}
-    ]
-  });
-  traffic=new google.maps.TrafficLayer(); traffic.setMap(S.traffic!==false?map:null);
-  dirRenderer=new google.maps.DirectionsRenderer({map,suppressMarkers:true,
-    polylineOptions:{strokeColor:'#F2A93B',strokeWeight:5,strokeOpacity:.9}});
-  try{ placesSvc=new google.maps.places.PlacesService(map); }catch(e){ placesSvc=null; }
-  attaccaSuggerimenti(document.getElementById('dest'),nome=>{ S.lastDest=nome; save(); });
-  renderVias();          // ricreo le righe ora che il completamento è disponibile
-  meMarker=new google.maps.Marker({map,position:me,zIndex:99,
-    icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#DCE8EE',
-          fillOpacity:1,strokeColor:'#0E1A22',strokeWeight:3}});
-  watchMe(); render();
-};
-// Google ha due generazioni di completamento: provo la nuova, poi la vecchia.
-// Se qualcosa va storto il campo di testo normale resta sempre utilizzabile.
-let acModo='—';
-async function attaccaSuggerimenti(inp,quandoScelto){
-  if(!inp||!window.google||!google.maps) return;
-
-  // 1) nuova: elemento web PlaceAutocompleteElement
-  let el=null;
-  try{
-    const lib=await google.maps.importLibrary('places');
-    const El=lib&&(lib.PlaceAutocompleteElement||google.maps.places.PlaceAutocompleteElement);
-    if(El){
-      el=new El({});
-      el.className='ac-new';
-      el.setAttribute('placeholder',inp.placeholder||'');
-      inp.parentElement.insertBefore(el,inp);
-      if(!el.isConnected) throw new Error('elemento non inserito');
-      el.addEventListener('gmp-select',async ev=>{
-        try{
-          const p=ev.placePrediction.toPlace();
-          await p.fetchFields({fields:['displayName','formattedAddress','location']});
-          const nome=p.displayName||p.formattedAddress||'';
-          inp.value=nome;
-          if(quandoScelto) quandoScelto(nome,p.location.lat(),p.location.lng());
-        }catch(e){ console.warn('[colonnine] scelta luogo',e); }
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({
+        map,
+        polylineOptions: { strokeColor: "#5aa7ff", strokeWeight: 5, strokeOpacity: .9 },
+        suppressMarkers: false
       });
-      // ciò che digiti finisce anche nel campo nascosto, così Traccia funziona
-      el.addEventListener('input',ev=>{
-        const v=ev.target&&ev.target.value;
-        if(typeof v==='string') inp.value=v;
+      elevationService = new google.maps.ElevationService();
+      places = new google.maps.places.PlacesService(map);
+
+      const fromInput = document.getElementById("from");
+      const toInput = document.getElementById("to");
+      const acFrom = new google.maps.places.Autocomplete(fromInput, { fields: ["geometry", "formatted_address", "name"] });
+      const acTo = new google.maps.places.Autocomplete(toInput, { fields: ["geometry", "formatted_address", "name"] });
+      acFrom.addListener("place_changed", () => {
+        const p = acFrom.getPlace();
+        if (p.geometry) fromPlace = p.geometry.location;
       });
-      inp.style.display='none';          // nascondo solo ora che tutto è a posto
-      acModo='nuova'; return;
-    }
-  }catch(e){
-    console.warn('[colonnine] Places nuova non disponibile',e);
-    if(el&&el.parentElement) el.parentElement.removeChild(el);
-    inp.style.display='';                // il campo normale torna sempre visibile
-  }
+      acTo.addListener("place_changed", () => {
+        const p = acTo.getPlace();
+        if (p.geometry) toPlace = p.geometry.location;
+      });
 
-  // 2) vecchia
-  try{
-    const ac=new google.maps.places.Autocomplete(inp);
-    ac.addListener('place_changed',()=>{
-      const p=ac.getPlace();
-      if(p&&p.geometry&&quandoScelto)
-        quandoScelto(p.name||p.formatted_address,p.geometry.location.lat(),p.geometry.location.lng());
-    });
-    acModo='vecchia'; return;
-  }catch(e){ console.warn('[colonnine] Places vecchia non disponibile',e); }
-
-  acModo='assenti';
-  toast(t('acOld'));
-}
-
-function watchMe(){
-  if(!navigator.geolocation) return;
-  navigator.geolocation.watchPosition(p=>{
-    me={lat:p.coords.latitude,lng:p.coords.longitude};
-    if(meMarker) meMarker.setPosition(me);
-    render();
-  },()=>{},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
-}
-
-/* costruisce distanza, tempo e flag autostradale dai singoli passi */
-function profileOf(routeObj){
-  const pts=[],km=[0],sec=[0],isH=[];
-  for(const leg of routeObj.legs){
-    const base=leg.duration?.value||0;
-    const real=leg.duration_in_traffic?.value||base;
-    const k=base>0?real/base:1;
-    for(const step of leg.steps){
-      const path=step.path||step.lat_lngs||[];
-      if(path.length<2) continue;
-      const txt=(step.instructions||'')+' '+(step.summary||'');
-      const h=HWY_RE.test(txt.replace(/<[^>]+>/g,' '));
-      const sSec=(step.duration?.value||0)*k;
-      let sKm=0; const seg=[];
-      for(let i=1;i<path.length;i++){
-        const a={lat:path[i-1].lat(),lng:path[i-1].lng()};
-        const b={lat:path[i].lat(),lng:path[i].lng()};
-        const d=hav(a,b); sKm+=d; seg.push({p:b,d});
-      }
-      if(!pts.length){ pts.push({lat:path[0].lat(),lng:path[0].lng()}); isH.push(h); }
-      for(const {p,d} of seg){
-        pts.push(p); km.push(km[km.length-1]+d);
-        sec.push(sec[sec.length-1]+(sKm>0?sSec*(d/sKm):0)); isH.push(h);
-      }
-    }
-  }
-  return {pts,km,sec,isH};
-}
-
-async function trace(){
-  const dest=document.getElementById('dest').value.trim();
-  if(!dest) return toast(t('tNoDest'));
-  if(!map) return toast(t('tNoKey'));
-  S.lastDest=dest; save();
-  const way=S.via.map(v=>({location:v.lat!=null?{lat:v.lat,lng:v.lng}:v.name, stopover:true}));
-  const req={ origin:me,destination:dest,travelMode:'DRIVING',
-    waypoints:way,
-    avoidHighways:!!S.noHwy, avoidFerries:!!S.noFerry,
-    avoidTolls: S.profile==='cheap' ? true : !!S.noToll,
-    provideRouteAlternatives: way.length===0,   // Google non dà alternative con le tappe
-    drivingOptions:{departureTime:new Date(),trafficModel:'bestguess'} };
-
-  toast(t('tCalc'));
-  new google.maps.DirectionsService().route(req,async (res,st)=>{
-    if(st!=='OK') return toast(t('tNotFound')+' '+st);
-
-    altRes=res; altProfs=res.routes.map(profileOf); altCache={}; altIdx=0;
-    dirRenderer.setDirections(res);
-
-    // nel profilo panoramico scelgo io la rotta con più cose da vedere
-    if(S.profile==='scenic'&&placesSvc){
-      try{
-        toast(t('tCompare'));
-        const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
-        let top=-1;
-        for(let i=0;i<altProfs.length;i++){
-          const p=altProfs[i];
-          if(p.sec[p.sec.length-1]>best*1.3) continue;
-          const found=await fetchPOIs(p.pts,p.km,true);
-          const sc=found.reduce((a,x)=>a+x.rating*Math.log10(1+x.rev),0);
-          if(sc>top){ top=sc; altIdx=i; }
+      map.addListener("click", (e) => {
+        if (clickStep === "from") {
+          fromPlace = e.latLng;
+          fromInput.value = e.latLng.lat().toFixed(5) + ", " + e.latLng.lng().toFixed(5);
+          clickStep = "to";
+          status("Click sulla mappa per l’arrivo");
+        } else {
+          toPlace = e.latLng;
+          toInput.value = e.latLng.lat().toFixed(5) + ", " + e.latLng.lng().toFixed(5);
+          clickStep = "from";
+          status("Partenza e arrivo impostati. Calcola il percorso.");
         }
-      }catch(e){ console.warn('[colonnine] attrazioni non disponibili',e); altIdx=0; }
+      });
+    };
+
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".mode").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        mode = btn.dataset.mode;
+      };
+    });
+
+    document.getElementById("offroad").oninput = (e) => {
+      document.getElementById("offLabel").textContent = e.target.value + " km";
+    };
+
+    document.getElementById("btnSwap").onclick = () => {
+      const a = document.getElementById("from");
+      const b = document.getElementById("to");
+      const tmp = a.value; a.value = b.value; b.value = tmp;
+      const t = fromPlace; fromPlace = toPlace; toPlace = t;
+    };
+
+    document.getElementById("btnMe").onclick = () => {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        fromPlace = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+        document.getElementById("from").value = "La mia posizione";
+        map.panTo(fromPlace);
+        map.setZoom(11);
+      }, () => status("Posizione non disponibile"));
+    };
+
+    document.getElementById("btnSaveKey").onclick = () => {
+      const v = (document.getElementById("keyInput").value || "").trim();
+      if (v.length < 20) {
+        alert("Incolla una API key Google valida.");
+        return;
+      }
+      localStorage.setItem(KEY_STORE, v);
+      location.reload();
+    };
+
+    document.getElementById("btnForgetKey").onclick = () => {
+      localStorage.removeItem(KEY_STORE);
+      location.reload();
+    };
+
+    document.getElementById("btnGo").onclick = () => run().catch((err) => {
+      console.error(err);
+      status(err.message || "Errore nel calcolo");
+    });
+
+    async function geocodeText(q) {
+      const geo = new google.maps.Geocoder();
+      const res = await geo.geocode({ address: q, region: "it" });
+      if (!res.results[0]) throw new Error("Non trovo: " + q);
+      return res.results[0].geometry.location;
     }
 
-    renderRoutes();
-    try{ await selectRoute(altIdx); }
-    catch(e){
-      console.error('[colonnine] errore nella selezione rotta',e);
-      diario='errore: '+(e&&e.message?e.message:e);
-      render(); toast('Errore: '+(e&&e.message?e.message:e));
+    async function resolveEnds() {
+      const fromQ = document.getElementById("from").value.trim();
+      const toQ = document.getElementById("to").value.trim();
+      if (!fromPlace && fromQ) fromPlace = await geocodeText(fromQ);
+      if (!toPlace && toQ) toPlace = await geocodeText(toQ);
+      if (!fromPlace || !toPlace) throw new Error("Servono partenza e arrivo");
     }
-    toast(`${altProfs.length>1?altProfs.length+' '+t('tRoutes')+' · ':''}`+
-          `${Math.round(summary.km)} km · ${fmtDur(summary.sec)}`);
-  });
-}
 
-async function selectRoute(i){
-  if(!altRes||!altProfs[i]) return;
-  altIdx=i;
-  renderRoutes();                    // evidenzia subito, prima delle ricerche
-  dirRenderer.setRouteIndex(i);
-  const p=altProfs[i];
-  route=p.pts; cum=p.km; cumT=p.sec; hwy=p.isH;
-  summary={km:cum[cum.length-1],sec:cumT[cumT.length-1]};
+    function requestDirections(opts) {
+      return new Promise((resolve, reject) => {
+        directionsService.route({
+          origin: fromPlace,
+          destination: toPlace,
+          travelMode: google.maps.TravelMode.DRIVING,
+          provideRouteAlternatives: true,
+          ...opts
+        }, (res, st) => {
+          if (st === "OK") resolve(res);
+          else reject(new Error("Directions: " + st));
+        });
+      });
+    }
 
-  if(altCache[i]){ stations=altCache[i].st; pois=altCache[i].po;
-                   usingDemo=altCache[i].demo; ocmErr=altCache[i].err||''; render(); }
-  else{
-    render();                       // mostro subito la nuova rotta con i dati vecchi
-    toast(t('tSeek'));
-    await fetchStations();
-    try{ pois = (S.profile==='scenic'&&placesSvc) ? await fetchPOIs(p.pts,p.km,false) : []; }
-    catch(e){ pois=[]; console.warn('[colonnine] attrazioni non disponibili',e); }
-    altCache[i]={st:stations,po:pois,demo:usingDemo,err:ocmErr};
-    render();
-    toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
-  }
-}
+    function pathOf(route) {
+      return route.overview_path || [];
+    }
 
-function renderRoutes(){
-  const box=document.getElementById('routes'), row=document.getElementById('routesRow');
-  const n=altProfs.length;
-  box.classList.toggle('on', n>1 || S.via.length>0);
-  if(n<2){
-    document.getElementById('routesRow').innerHTML=
-      S.via.length?`<span class="hint" style="padding:2px 2px 6px">${t('viaNote')}</span>`:'';
-    return;
-  }
-  const best=Math.min(...altProfs.map(p=>p.sec[p.sec.length-1]));
-  row.innerHTML='';
-  altProfs.forEach((p,i)=>{
-    const sec=p.sec[p.sec.length-1], km=p.km[p.km.length-1];
-    const diff=Math.round((sec-best)/60);
-    const via=(altRes.routes[i].summary||'').slice(0,22)||String.fromCharCode(65+i);
-    const b=document.createElement('button');
-    b.className='rt'+(i===altIdx?' on':''); b.dataset.rt=i;
-    b.innerHTML=`<span class="lb">${via}</span>`+
-      `<span class="big">${fmtDur(sec)}</span>`+
-      `<span class="sm">${Math.round(km)} km${diff>0?` · +${diff} ${t('min')}`:' · '+t('pfFastS')}</span>`;
-    row.appendChild(b);
-  });
-}
-document.getElementById('routesRow').addEventListener('click',e=>{
-  const b=e.target.closest('[data-rt]'); if(!b) return;
-  selectRoute(+b.dataset.rt);
-});
+    function cumulativeAscent(elevations) {
+      let gain = 0;
+      for (let i = 1; i < elevations.length; i++) {
+        const d = elevations[i].elevation - elevations[i - 1].elevation;
+        if (d > 2) gain += d;
+      }
+      return gain;
+    }
 
+    function getElevation(path) {
+      return new Promise((resolve, reject) => {
+        const sample = path.length > 80
+          ? path.filter((_, i) => i % Math.ceil(path.length / 80) === 0)
+          : path;
+        elevationService.getElevationForLocations({ locations: sample }, (results, st) => {
+          if (st === "OK") resolve(results || []);
+          else resolve([]);
+        });
+      });
+    }
 
-/* ============================================================
-   Profili
-   ============================================================ */
-document.getElementById('profiles').addEventListener('click',async e=>{
-  const b=e.target.closest('[data-pf]'); if(!b) return;
-  S.profile=b.dataset.pf;
-  document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
-  await save();
-  if(S.profile!=='scenic'){ pois=[]; }
-  render();
-  if(route.length) toast(t('tProfile'));
-});
+    async function pickRoute(responses) {
+      const candidates = [];
+      for (const res of responses) {
+        for (const route of res.routes || []) {
+          const path = pathOf(route);
+          const elev = await getElevation(path);
+          const gain = cumulativeAscent(elev);
+          const leg = route.legs.reduce((a, l) => ({
+            dist: a.dist + l.distance.value,
+            time: a.time + l.duration.value
+          }), { dist: 0, time: 0 });
+          candidates.push({ route, path, gain, dist: leg.dist, time: leg.time, raw: res });
+        }
+      }
+      if (!candidates.length) throw new Error("Nessun percorso trovato");
+      const fastest = Math.min(...candidates.map((c) => c.time));
+      if (mode === "fast") {
+        return candidates.sort((a, b) => a.time - b.time)[0];
+      }
+      if (mode === "flat") {
+        return candidates
+          .filter((c) => c.time <= fastest * 1.28)
+          .sort((a, b) => a.gain - b.gain || a.time - b.time)[0];
+      }
+      // scenic: prefer avoid-highway variants and a bit more road time
+      return candidates
+        .filter((c) => c.time <= fastest * 1.4)
+        .sort((a, b) => (b.dist / b.time) - (a.dist / a.time) || b.gain - a.gain)[0];
+    }
 
-/* ============================================================
-   Impostazioni
-   ============================================================ */
-function fillLangs(){
-  const sel=document.getElementById('lang');
-  if(sel.options.length) return;
-  Object.entries(LANGS).forEach(([k,v])=>{
-    const o=document.createElement('option'); o.value=k; o.textContent=v; sel.appendChild(o);
-  });
-}
-function fillCars(){
-  const sel=document.getElementById('car');
-  if(sel.options.length) return;
-  CARS.forEach(c=>{ const o=document.createElement('option');
-    o.value=c.nm; o.textContent=`${c.nm} — ${c.kwh} kWh · ${c.wh} Wh/km`; sel.appendChild(o); });
-  const o=document.createElement('option'); o.value='__custom'; o.textContent='Personalizzata'; sel.appendChild(o);
-  sel.addEventListener('change',()=>{
-    const c=CARS.find(x=>x.nm===sel.value);
-    if(c){ document.getElementById('kwh').value=c.kwh; document.getElementById('wh').value=c.wh; }
-  });
-}
-function paintSettings(){
-  fillLangs(); fillCars();
-  document.getElementById('lang').value=S.lang||'it';
-  const v=(id,val)=>document.getElementById(id).value=val;
-  const c=(id,val)=>document.getElementById(id).checked=!!val;
-  v('gkey',S.gkey||'');
-  v('kwh',S.kwh); v('wh',S.wh);  v('refv',S.refv); v('avgkw',S.avgkw);
-  v('car',CARS.some(c=>c.nm===S.car)?S.car:'__custom');
-  v('eff',S.eff); v('corr',S.corridor); v('minkw',S.minkw);
-  v('minrate',S.minrate); v('minrev',S.minrev); v('cmode',S.cmode);
-  c('noHwy',S.noHwy); c('noFerry',S.noFerry); c('noToll',S.noToll); c('onlyMine',S.onlyMine); c('awake',S.awake); c('traffic',S.traffic!==false);
+    function minDistToPath(latLng, path) {
+      let min = Infinity;
+      for (let i = 1; i < path.length; i++) {
+        const d = google.maps.geometry.spherical.computeDistanceBetween(
+          latLng,
+          closestOnSegment(latLng, path[i - 1], path[i])
+        );
+        if (d < min) min = d;
+      }
+      return min;
+    }
 
-  const ops=document.getElementById('ops'); ops.innerHTML='';
-  S.ops.forEach((o,i)=>{
-    const d=document.createElement('div'); d.className='op-row';
-    d.innerHTML=`<input type="color" value="${o.color}" data-i="${i}" data-f="color" aria-label="Colore ${o.nm}">
-      <input type="checkbox" ${o.use!==false?'checked':''} data-i="${i}" data-f="use" aria-label="Usa ${o.nm}">
-      <span class="nm ${o.use===false?'off':''}">${o.nm}</span>
-      <input type="number" step="0.01" value="${o.price}" data-i="${i}" data-f="price" aria-label="Euro al kWh ${o.nm}">
-      <input type="number" step="0.10" value="${o.fee||0}" data-i="${i}" data-f="fee" aria-label="Fee ${o.nm}">
-      <button class="del" data-del="${i}" aria-label="Rimuovi ${o.nm}">×</button>`;
-    ops.appendChild(d);
-  });
+    function closestOnSegment(p, a, b) {
+      const toRad = Math.PI / 180;
+      const ax = a.lng(), ay = a.lat(), bx = b.lng(), by = b.lat(), px = p.lng(), py = p.lat();
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy || 1e-12;
+      let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      return new google.maps.LatLng(ay + t * dy, ax + t * dx);
+    }
 
-  const cbox=document.getElementById('cats'); cbox.innerHTML='';
-  CATS.forEach(c=>{
-    const b=document.createElement('button');
-    b.className='chip'+(S.cats.includes(c.id)?' on':'');
-    b.dataset.cat=c.id;
-    b.innerHTML=`<span class="plus">${S.cats.includes(c.id)?'✓':'+'}</span><b>${t('cat_'+c.id)}</b>`;
-    cbox.appendChild(b);
-  });
-  document.getElementById('exclude').value=S.exclude||'';
-}
+    function samplePath(path, everyM) {
+      const out = [path[0]];
+      let acc = 0;
+      for (let i = 1; i < path.length; i++) {
+        acc += google.maps.geometry.spherical.computeDistanceBetween(path[i - 1], path[i]);
+        if (acc >= everyM) { out.push(path[i]); acc = 0; }
+      }
+      out.push(path[path.length - 1]);
+      return out;
+    }
 
-document.getElementById('ops').addEventListener('input',e=>{
-  const t=e.target; if(!t.dataset.f) return;
-  const o=S.ops[+t.dataset.i];
-  if(t.dataset.f==='use'){
-    o.use=t.checked;
-    t.parentElement.querySelector('.nm').classList.toggle('off',!t.checked);
-  } else if(t.dataset.f==='color'){ o.color=t.value; }
-  else { o[t.dataset.f]=+t.value||0; }
-});
-document.getElementById('ops').addEventListener('click',e=>{
-  const b=e.target.closest('[data-del]'); if(!b) return;
-  S.ops.splice(+b.dataset.del,1); paintSettings();
-});
-document.getElementById('cats').addEventListener('click',e=>{
-  const b=e.target.closest('[data-cat]'); if(!b) return;
-  const id=b.dataset.cat, i=S.cats.indexOf(id);
-  if(i>=0) S.cats.splice(i,1); else S.cats.push(id);
-  paintSettings();
-});
-document.getElementById('addOp').onclick=()=>{
-  const inp=document.getElementById('newOp'),val=inp.value.trim();
-  if(!val) return;
-  if(addOperator(val)){ inp.value=''; paintSettings(); } else toast(t('tOpDup'));
-};
-document.getElementById('newOp').addEventListener('keydown',e=>{
-  if(e.key==='Enter') document.getElementById('addOp').click();
-});
-document.getElementById('gear').onclick=()=>{ paintSettings(); document.getElementById('settings').classList.add('show'); };
-document.getElementById('saveSet').onclick=async()=>{
-  const g=id=>document.getElementById(id);
-  const prev=S.gkey, prevRoute=JSON.stringify([S.noHwy,S.noFerry,S.noToll]);
-  // tutto ciò che cambia i dati delle colonnine: se cambia, si ricerca di nuovo
-  const primaDati=JSON.stringify([S.minkw,S.corridor]);
-  const prevLang=S.lang; S.lang=g('lang').value;
-  S.gkey=g('gkey').value.trim();
-  S.kwh=+g('kwh').value||78; S.wh=+g('wh').value||185;
-  S.avgkw=+g('avgkw').value||110; S.refv=+g('refv').value||110;
-  S.car=g('car').value; S.eff=+g('eff').value||0.92;
-  S.corridor=+g('corr').value||6; S.minkw=+g('minkw').value||50;
-  S.minrate=+g('minrate').value||4.3; S.minrev=+g('minrev').value||0;
-  S.exclude=g('exclude').value;
-  S.cmode=g('cmode').value; S.onlyMine=g('onlyMine').checked;
-  S.awake=g('awake').checked; applyWake();
-  S.traffic=g('traffic').checked; if(traffic) traffic.setMap(S.traffic?map:null);
-  S.noHwy=g('noHwy').checked; S.noFerry=g('noFerry').checked; S.noToll=g('noToll').checked;
-  await save();
-  if(S.lang!==prevLang){ location.reload(); return; }   // la mappa va ricaricata nella nuova lingua
-  document.getElementById('settings').classList.remove('show');
-  if(S.gkey&&S.gkey!==prev&&!map){ bootMap(); return; }
-  // chiave OCM cambiata: rifaccio subito la ricerca, senza aspettare un nuovo Traccia
-  if(JSON.stringify([S.minkw,S.corridor])!==primaDati && route.length){
-    altCache={}; toast(t('tSeek'));
-    await fetchStations(); render();
-    toast(`${filterAhead().length} ${t('chargers')}${usingDemo?' (demo)':''}`);
-    return;
-  }
-  render();
-  const cambiato=JSON.stringify([S.noHwy,S.noFerry,S.noToll])!==prevRoute;
-  toast(cambiato&&route.length?t('tRecalc'):t('tSaved'));
-};
+    function nearbySearch(request) {
+      return new Promise((resolve) => {
+        places.nearbySearch(request, (results, st) => {
+          if (st === "OK" || st === "ZERO_RESULTS") resolve(results || []);
+          else resolve([]);
+        });
+      });
+    }
 
-const socEl=document.getElementById('soc');
-function paintSoc(){
-  document.getElementById('socVal').textContent=socEl.value+'%';
-  socEl.style.setProperty('--pct',((socEl.value-1)/78*100)+'%');
-}
-socEl.oninput=()=>{ paintSoc(); render(); if(selected&&!selected.poi) openDetail(selected); };
+    async function searchChargers(path, maxM) {
+      const samples = samplePath(path, Math.max(6000, maxM));
+      const found = new Map();
+      for (const pt of samples) {
+        const list = await nearbySearch({
+          location: pt,
+          radius: Math.min(maxM, 25000),
+          keyword: "colonnina ricarica ev charging ionity enel x tesla supercharger",
+        });
+        for (const p of list) {
+          if (!p.geometry || !p.place_id) continue;
+          const loc = p.geometry.location;
+          const d = minDistToPath(loc, path);
+          if (d > maxM) continue;
+          if (!found.has(p.place_id) || found.get(p.place_id).detour > d) {
+            found.set(p.place_id, { place: p, detour: d });
+          }
+        }
+      }
+      return [...found.values()].sort((a, b) => a.detour - b.detour);
+    }
 
-const dstEl=document.getElementById('dstArr');
-let dstTimer=null;
-dstEl.onchange=()=>{
-  S.destsoc=Math.max(1,Math.min(90,+dstEl.value||15));
-  dstEl.value=S.destsoc; render();
-  clearTimeout(dstTimer); dstTimer=setTimeout(save,400);
-};
+    async function poisNear(location) {
+      const types = ["tourist_attraction", "park", "museum"];
+      const all = [];
+      for (const type of types) {
+        const list = await nearbySearch({ location, radius: 2500, type });
+        all.push(...list.slice(0, 3));
+      }
+      const uniq = new Map();
+      for (const p of all) if (p.place_id && !uniq.has(p.place_id)) uniq.set(p.place_id, p);
+      return [...uniq.values()]
+        .filter((p) => !/charg|ricaric|fuel|gas/i.test(p.name || ""))
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 5);
+    }
 
-const tminEl=document.getElementById('tminH'), tmaxEl=document.getElementById('tmaxH');
-let duoTimer=null;
-function applicaDuo(){
-  S.tmax=Math.min(100,Math.max(30,+tmaxEl.value||80));
-  S.tmin=Math.min(S.tmax-5,Math.max(20,+tminEl.value||60));
-  tminEl.value=S.tmin; tmaxEl.value=S.tmax; dstEl.value=S.destsoc;
-  render(); if(selected&&!selected.poi) openDetail(selected);
-  clearTimeout(duoTimer); duoTimer=setTimeout(save,400);
-}
-tminEl.onchange=applicaDuo; tmaxEl.onchange=applicaDuo;
+    function clearChargers() {
+      chargerMarkers.forEach((m) => m.setMap(null));
+      chargerMarkers = [];
+    }
 
-const arrEl=document.getElementById('arr');
-let arrTimer=null;
-function paintArr(){
-  document.getElementById('arrVal').textContent=arrEl.value+'%';
-  arrEl.style.setProperty('--pct',((arrEl.value-5)/35*100)+'%');
-}
-arrEl.oninput=()=>{
-  S.reserve=+arrEl.value; paintArr(); render();
-  if(selected&&!selected.poi) openDetail(selected);
-  clearTimeout(arrTimer); arrTimer=setTimeout(save,400);
-};
+    function pinColor(hex) {
+      return {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: hex,
+        fillOpacity: 1,
+        strokeColor: "#fff",
+        strokeWeight: 2
+      };
+    }
 
-const vplEl=document.getElementById('vpl');
-let vplTimer=null;
-function paintVpl(){
-  document.getElementById('vplVal').textContent=vplEl.value;
-  vplEl.style.setProperty('--pct',((vplEl.value-80)/80*100)+'%');
-}
-vplEl.oninput=()=>{
-  S.vplan=+vplEl.value; paintVpl(); render();
-  if(selected&&!selected.poi) openDetail(selected);
-  clearTimeout(vplTimer); vplTimer=setTimeout(save,400);
-};
-document.getElementById('go').onclick=trace;
-document.getElementById('dest').addEventListener('keydown',e=>{ if(e.key==='Enter') trace(); });
+    function renderChargers(items) {
+      clearChargers();
+      const box = document.getElementById("list");
+      box.innerHTML = "";
+      items.forEach((item, idx) => {
+        const p = item.place;
+        const marker = new google.maps.Marker({
+          map,
+          position: p.geometry.location,
+          icon: pinColor("#3ee0a2"),
+          title: p.name
+        });
+        chargerMarkers.push(marker);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<h3>${p.name}</h3>
+          <div class="meta">${(item.detour / 1000).toFixed(1)} km dalla rotta
+          ${p.rating ? " · ★ " + p.rating : ""}<br>${p.vicinity || ""}</div>
+          <div class="poi" data-poi></div>`;
+        card.onclick = async () => {
+          document.querySelectorAll(".card").forEach((c) => c.classList.remove("active"));
+          card.classList.add("active");
+          map.panTo(p.geometry.location);
+          map.setZoom(14);
+          marker.setAnimation(google.maps.Animation.BOUNCE);
+          setTimeout(() => marker.setAnimation(null), 700);
+          const hold = card.querySelector("[data-poi]");
+          hold.innerHTML = "<span class='chip'>cerco dintorni…</span>";
+          const pois = await poisNear(p.geometry.location);
+          hold.innerHTML = pois.length
+            ? pois.map((x) => `<span class="chip">${x.name}${x.rating ? " ★" + x.rating.toFixed(1) : ""}</span>`).join("")
+            : "<span class='chip'>Niente di evidenziato nei 2,5 km</span>";
+        };
+        box.appendChild(card);
+      });
+      if (!items.length) box.innerHTML = "<div class='meta' style='padding:8px'>Nessuna colonnina entro la distanza scelta. Allarga lo slider.</div>";
+    }
 
-(async()=>{
-  document.getElementById('ver').textContent='v'+APP_VERSION;
-  document.getElementById('verSet').textContent=`${t('version')} ${APP_VERSION} ${t('ofDate')} ${APP_DATE}.`;
-  await load(); applyI18n(); paintSoc();
-  document.getElementById('vpl').value=S.vplan||130; paintVpl();
-  document.getElementById('arr').value=S.reserve; paintArr();
-  tminEl.value=S.tmin; tmaxEl.value=S.tmax; dstEl.value=S.destsoc;
-  document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x.dataset.pf===S.profile));
-  stations=DEMO.slice(); bootMap(); renderStops(); renderVias(); renderRoutes(); applyWake(); render();
-  if(!S.gkey) toast(t('tKeyAsk'));
-})();
-</script>
+    async function run() {
+      status("Calcolo il percorso…");
+      await resolveEnds();
+      const base = await requestDirections({});
+      const noHwy = await requestDirections({ avoidHighways: true }).catch(() => null);
+      const picked = await pickRoute([base, noHwy].filter(Boolean));
+      directionsRenderer.setDirections({
+        ...picked.raw,
+        routes: [picked.route]
+      });
+      routePath = picked.path;
+      const km = (picked.dist / 1000).toFixed(1);
+      const min = Math.round(picked.time / 60);
+      const gain = Math.round(picked.gain);
+      const maxM = (+document.getElementById("offroad").value) * 1000;
+      status(`${km} km · ${min} min · dislivello +${gain} m. Cerco colonnine…`);
+      const chargers = await searchChargers(routePath, maxM);
+      renderChargers(chargers);
+      status(`${km} km · ${min} min · +${gain} m · ${chargers.length} colonnine entro ${document.getElementById("offroad").value} km`);
+    }
+
+    loadMaps();
+  </script>
 </body>
 </html>
