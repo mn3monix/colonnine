@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.7.3</title>
+  <title>Model Y AWD 2026 — Route Planner v1.7.4</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -126,7 +126,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.7.3</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.7.4</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -223,7 +223,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.7.3 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.7.4 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -265,7 +265,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.7.3";
+  const APP_VERSION = "1.7.4";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -588,7 +588,7 @@
     for (let i=0;i<pts.length;i++){
       const p = pts[i];
       const sign = i%2===0 ? 1 : -1;
-      const off = offsetBeside(coords, p, 2.4, sign);
+      const off = offsetBeside(coords, p, 6, sign);
       try { samples.push({...p, olat:off.lat, olng:off.lng, cur: await fetchWxPoint(p.lat,p.lng)}); }
       catch(e){ samples.push({...p, olat:off.lat, olng:off.lng, cur:null}); }
     }
@@ -687,6 +687,10 @@
   ];
   /* Map */
   state.map = L.map("map").setView([45.46, 9.19], 6);
+  if (!state.map.getPane("weather")){
+    state.map.createPane("weather");
+    state.map.getPane("weather").style.zIndex = 650;
+  }
   state.osmLight = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19, attribution: "&copy; OpenStreetMap"
   });
@@ -1706,7 +1710,8 @@
       const fog = em==="NEBBIA";
       const m = L.marker([s.olat||s.lat, s.olng||s.lng], {
         icon: L.divIcon({ className:"", html:`<div class="wx-pin${fog?" fog":""}">${em}</div>`, iconSize: fog?[72,36]:[44,44], iconAnchor: fog?[36,18]:[22,22] }),
-        zIndexOffset: 350
+        zIndexOffset: 1200,
+        pane: "weather"
       }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
       state.layers.push(m);
     });
@@ -1846,7 +1851,8 @@
           ? { url:fogUrl, scaledSize:new google.maps.Size(86,36), anchor:new google.maps.Point(43,18) }
           : { path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
         title: `Meteo ${lab}`,
-        zIndex: 180
+        zIndex: 1200,
+        optimized: false
       });
       const info = new google.maps.InfoWindow({
         content:`<div style="color:#111"><b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h</div>`
