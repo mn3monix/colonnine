@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.5.2</title>
+  <title>Model Y AWD 2026 — Route Planner v1.5.3</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -114,7 +114,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.5.2</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.5.3</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -215,7 +215,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.5.2 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.5.3 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
@@ -258,7 +258,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.5.2";
+  const APP_VERSION = "1.5.3";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1281,6 +1281,16 @@
     return { leg:{ v, arrive:socStart-energy/CAR.kwh*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
   }
 
+  function realisticDriveMin(dkm, v, route, totalKm){
+    const tot = totalKm || (route.meters ? route.meters/1000 : 0) || (route.km||0);
+    const cruise = Math.max(105, Math.min(135, v||120));
+    if (route.seconds && tot>1 && dkm>0){
+      const share = dkm / tot;
+      const scale = Math.min(1.15, Math.max(0.88, 112 / cruise));
+      return (route.seconds/60) * share * scale;
+    }
+    return dkm / (cruise * 0.72) * 60;
+  }
   function planTrip(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
     const maxSoc = chargeMax;
@@ -1371,7 +1381,8 @@
       const price = state.prices[chosen.net];
       const stopObj = {
         ...chosen, dkm, speed: st.v, arriveSoc: arrive, targetSoc: target,
-        chargeMin: mins, kwh: kwhAdd, cost: kwhAdd*price, driveMin: st.driveMin,
+        chargeMin: mins, kwh: kwhAdd, cost: kwhAdd*price,
+        driveMin: realisticDriveMin(dkm, st.v, route, km),
         reservedPct: backupOn ? backupPct : 0,
         cons: st.cons || consAt(st.v),
         smartScore: st.score
@@ -1403,7 +1414,8 @@
       v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
       driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
     };
-    return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
+    const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km);
+    return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:driveLast, energy:st.energy }, km, navMin: route.seconds? route.seconds/60 : null };
   }
 
   function nearestBackup(stop, others){
