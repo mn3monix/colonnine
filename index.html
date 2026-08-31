@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.16</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.17</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.16</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.17</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -234,7 +234,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.16 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.17 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,7 +276,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.16";
+  const APP_VERSION = "1.8.17";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -2384,16 +2384,19 @@
         return { ...r, id:i, plan, _extra:extra };
       });
       alts.sort((a,b)=> altTotalMin(a)-altTotalMin(b));
-      alts.forEach((a,i)=> a.id=i);
-      state.alts=alts; state.selected=0;
-      renderResults(alts);
-      draw(alts,0);
+      const bestT = altTotalMin(alts[0]);
+      const kept = alts.filter(x => altTotalMin(x) <= bestT * 1.25);
+      const shown = kept.length ? kept : alts.slice(0,1);
+      shown.forEach((x,i)=> x.id=i);
+      state.alts=shown; state.selected=0;
+      renderResults(shown);
+      draw(shown,0);
       const viaTxt = vias.length ? ` via ${vias.map(v=>v.label.split(",")[0]).join(", ")}` : "";
-      const nStop = alts[0].plan.stops.length;
+      const nStop = shown[0].plan.stops.length;
       const nChg = (state.routeChargers||[]).length;
-      const low = alts[0].plan.final.arrive < destArrive;
+      const low = shown[0].plan.final.arrive < destArrive;
       setStatus(
-        `Trovati ${alts.length} percorsi · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
+        `Trovati ${shown.length} percorsi (max +25% sul più veloce) · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
         (low ? " Attenzione: SoC all'arrivo sotto il minimo voluto, servono più soste o una % dedicata minore." : "") +
         (state.smart && state.wx && state.wx.worst && state.wx.worst.lvl>=3
           ? ` Meteo: evito il peggio, resta ${state.wx.text}${state.wx.headOn?` · vento contrario ${state.wx.avgWind.toFixed(0)} km/h`:""}.`
