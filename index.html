@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.15</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.16</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.15</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.16</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -234,7 +234,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.15 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.16 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,7 +276,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.15";
+  const APP_VERSION = "1.8.16";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1974,8 +1974,8 @@
     const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
     (state.routeChargers||[]).forEach(c=>{
       if (plannedIds.has(c.id)) return;
-      const m = L.circleMarker([c.lat,c.lng], {radius:6, color:"#0b0d10", weight:1, fillColor:netColor(c.net), fillOpacity:0.7})
-        .bindPopup(`<b>${c.name}</b><br>${c.net} · ${c.kw} kW`)
+      const m = L.circleMarker([c.lat,c.lng], {radius:7, color:"#fff", weight:1.5, fillColor:netColor(c.net), fillOpacity:0.9})
+        .bindPopup(`<b>${c.name||"Colonnina"}</b><br>${c.net||"HPC"} · ${c.kw||"—"} kW<br><i>Sul percorso, non nel piano</i>`)
         .addTo(state.map);
       state.layers.push(m);
     });
@@ -2095,10 +2095,19 @@
       bounds.extend({lat:c.lat,lng:c.lng});
       const m = new google.maps.Marker({
         position:{lat:c.lat,lng:c.lng}, map:state.gmap,
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale:6, fillColor:netColor(c.net), fillOpacity:0.75, strokeColor:"#0b0d10", strokeWeight:1 },
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:7, fillColor:netColor(c.net), fillOpacity:0.9, strokeColor:"#fff", strokeWeight:1.5 },
         title: c.name+" · "+c.net,
-        opacity: 0.85
+        zIndex: 50,
+        optimized: false
       });
+      const info = new google.maps.InfoWindow({
+        content: `<div style="color:#111;font-family:Outfit,sans-serif;max-width:220px">
+          <b>${c.name||"Colonnina"}</b><br>
+          ${c.net||"HPC"} · ${c.kw||"—"} kW<br>
+          <span style="color:#666">Sul percorso, non nel piano. È una HPC disponibile se vuoi fermarti.</span>
+        </div>`
+      });
+      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
       state.gOverlays.push(m);
     });
     state.stopMarkers = [];
