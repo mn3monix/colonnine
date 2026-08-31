@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.6.2</title>
+  <title>Model Y AWD 2026 — Route Planner v1.6.4</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -99,6 +99,12 @@
     .poi-card img { width:100%; max-height:140px; object-fit:cover; border-radius:8px; display:block; margin:6px 0; }
     .openyes { color:#0a7a3c; font-weight:700; }
     .openno { color:#b42318; font-weight:700; }
+    .charge-halo { width:54px;height:54px;border-radius:50%;background:rgba(227,25,55,.28);border:3px solid #e31937;
+      position:absolute;left:50%;top:18px;transform:translate(-50%,-50%);animation:pulse 1.6s ease-out infinite; }
+    .charge-flag { background:#e31937; color:#fff; border:2px solid #fff; border-radius:10px;
+      padding:4px 8px; font-size:11px; font-weight:800; line-height:1.2; white-space:nowrap;
+      text-align:center; box-shadow:0 3px 10px rgba(227,25,55,.55); position:relative; z-index:2; }
+    @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
     .wx-pin { width:28px;height:28px;border-radius:50%;background:#111c16;border:1px solid #3dd68c;
       display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.4); }
     .smart-flag { background:#111c16; color:#e8fff3; border:1px solid #3dd68c; border-radius:8px;
@@ -117,7 +123,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.6.2</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.6.4</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -182,9 +188,9 @@
       <label>Attrazioni lungo il percorso</label>
       <div class="chips" id="poiCats">
         <span class="chip on" data-cat="hotel">Hotel</span>
-        <span class="chip on" data-cat="ristorante">Ristoranti</span>
-        <span class="chip on" data-cat="osteria">Osterie</span>
-        <span class="chip on" data-cat="pizzeria">Pizzerie</span>
+        <span class="chip on" data-cat="ristorante">Ristoranti e Osteria</span>
+        <span class="chip on" data-cat="pizzeria">Pizzeria</span>
+        <span class="chip on" data-cat="piadineria">Piadineria</span>
         <span class="chip on" data-cat="bar">Bar</span>
       </div>
       <div class="row" style="align-items:end">
@@ -214,7 +220,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.6.2 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.6.4 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -222,7 +228,7 @@
       <div id="map"></div>
       <div id="gmap"></div>
       <div class="legend">
-        <div><i style="background:#e31937"></i> percorso selezionato</div>
+        <div><i style="background:#e31937"></i> percorso + RICARICA</div>
         <div><i style="background:#e8edf4;outline:2px solid #1a1d22"></i> alternative</div>
         <div><i style="background:#3dd68c"></i> colonnina HPC</div>
         <div><i style="background:#f5c542"></i> panico / riserva</div>
@@ -256,7 +262,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.6.2";
+  const APP_VERSION = "1.6.4";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1024,9 +1030,9 @@
 
   const POI_DEF = {
     hotel: { label:"Hotel", color:"#7ec8ff", osm:['["tourism"="hotel"]'], gtype:"lodging", gkw:"" },
-    ristorante: { label:"Ristorante", color:"#ffb347", osm:['["amenity"="restaurant"]'], gtype:"restaurant", gkw:"" },
-    osteria: { label:"Osteria", color:"#ff7a59", osm:['["amenity"="restaurant"]["cuisine"~"italian|regional",i]', '["name"~"osteria|trattoria|locanda",i]'], gtype:"restaurant", gkw:"osteria trattoria" },
+    ristorante: { label:"Ristoranti e Osteria", color:"#ffb347", osm:['["amenity"="restaurant"]','["name"~"osteria|trattoria|locanda",i]'], gtype:"restaurant", gkw:"osteria trattoria ristorante" },
     pizzeria: { label:"Pizzeria", color:"#ff5c7a", osm:['["amenity"="restaurant"]["cuisine"~"pizza",i]', '["name"~"pizzeria|pizza",i]'], gtype:"restaurant", gkw:"pizzeria pizza" },
+    piadineria: { label:"Piadineria", color:"#ff8a3d", osm:['["amenity"="fast_food"]["cuisine"~"piadina",i]', '["name"~"piadin|piada",i]'], gtype:"restaurant", gkw:"piadineria piadina" },
     bar: { label:"Bar", color:"#c9a0ff", osm:['["amenity"="bar"]','["amenity"="cafe"]','["amenity"="pub"]'], gtype:"bar", gkw:"bar caffè" }
   };
   function selectedPoiCats(){
@@ -1063,9 +1069,9 @@
         let cat = cats[0];
         const blob = (tags.tourism||"")+" "+(tags.amenity||"")+" "+(tags.leisure||"")+" "+(tags.historic||"")+" "+(tags.place||"")+" "+name;
         if (/hotel|guest_house/i.test(blob)) cat="hotel";
-        else if (/osteria|trattoria|locanda/i.test(blob)) cat="osteria";
+        else if (/piadin|piada/i.test(blob)) cat="piadineria";
         else if (/pizza|pizzeria/i.test(blob)) cat="pizzeria";
-        else if (/restaurant/i.test(blob)) cat="ristorante";
+        else if (/osteria|trattoria|locanda|restaurant/i.test(blob)) cat="ristorante";
         else if (/bar|cafe|caff|pub/i.test(blob)) cat="bar";
         if (!cats.includes(cat)) continue;
         out.push({
@@ -1553,15 +1559,17 @@
     state.stopMarkers = [];
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
-      const html = state.smart
-        ? `<div class="smart-flag">#${n} · ${s.speed||"—"} km/h<br>arrivo ${s.arriveSoc.toFixed(0)}%</div>`
-        : `<div style="width:26px;height:26px;border-radius:50%;background:${netColor(s.net)};color:#111;border:2px solid #0b0d10;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">${n}</div>`;
+      const html = `<div style="position:relative;width:120px;height:52px">
+        <div class="charge-halo"></div>
+        <div class="charge-flag">⚡ RICARICA #${n}<br>${s.net}<br>${s.speed||"—"} km/h · ${s.arriveSoc.toFixed(0)}%</div>
+      </div>`;
       const icon = L.divIcon({
         className: "num-pin",
         html,
-        iconSize: state.smart ? [92,36] : [26,26],
-        iconAnchor: state.smart ? [46,18] : [13,13]
+        iconSize: [120,52],
+        iconAnchor: [60,26]
       });
+      state.layers.push(L.circle([s.lat,s.lng], {radius:450, color:"#e31937", weight:2, fillColor:"#e31937", fillOpacity:0.18}).addTo(state.map));
       const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
         .bindPopup(`<b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SMART ${s.speed||"—"} km/h<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
         .addTo(state.map);
@@ -1665,26 +1673,26 @@
       state.gOverlays.push(m);
     });
     state.stopMarkers = [];
-    function smartSvg(n, speed, soc, color){
-      const t1 = `#${n}  ${speed} km/h`;
-      const t2 = `arrivo ${soc}%`;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="118" height="40">
-        <rect x="1" y="1" width="116" height="38" rx="8" fill="#111c16" stroke="${color}" stroke-width="2"/>
-        <text x="59" y="16" text-anchor="middle" fill="#e8fff3" font-size="11" font-family="Arial" font-weight="700">${t1}</text>
-        <text x="59" y="31" text-anchor="middle" fill="#3dd68c" font-size="11" font-family="Arial" font-weight="700">${t2}</text>
+    function smartSvg(n, speed, soc, net){
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="52">
+        <circle cx="75" cy="26" r="22" fill="#e31937" fill-opacity="0.25" stroke="#e31937" stroke-width="3"/>
+        <rect x="8" y="8" width="134" height="36" rx="8" fill="#e31937" stroke="#fff" stroke-width="2"/>
+        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial" font-weight="800">RICARICA #${n}  ${net}</text>
+        <text x="75" y="38" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial" font-weight="700">${speed} km/h · arrivo ${soc}%</text>
       </svg>`;
       return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
     }
     alt.plan.stops.forEach((s, si)=>{
       const n = String(si+1);
+      state.gOverlays.push(new google.maps.Circle({
+        map:state.gmap, center:{lat:s.lat,lng:s.lng}, radius:450,
+        fillColor:"#e31937", fillOpacity:0.22, strokeColor:"#e31937", strokeWeight:2, zIndex:199
+      }));
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        label: state.smart ? undefined : {text:n, color:"#111", fontWeight:"800"},
-        icon: state.smart
-          ? { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), netColor(s.net)), scaledSize: new google.maps.Size(118,40), anchor: new google.maps.Point(59,20) }
-          : { path: google.maps.SymbolPath.CIRCLE, scale:14, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
-        title: `#${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
-        zIndex: 200+si
+        icon: { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), s.net||""), scaledSize: new google.maps.Size(150,52), anchor: new google.maps.Point(75,26) },
+        title: `RICARICA #${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
+        zIndex: 220+si
       });
       const info = new google.maps.InfoWindow({
         content: `<div style="color:#111"><b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>Velocità SMART: <b>${s.speed||"—"} km/h</b><br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
