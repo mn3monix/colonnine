@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.7.4</title>
+  <title>Model Y AWD 2026 — Route Planner v1.7.6</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -22,7 +24,7 @@
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt);
-      font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+      font-family: Outfit, Inter, ui-sans-serif, system-ui, sans-serif; }
     .app { display: grid; grid-template-columns: 400px 1fr; height: 100%; }
     aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 18px; }
     header.appbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
@@ -101,10 +103,15 @@
     .openno { color:#b42318; font-weight:700; }
     .charge-halo { width:54px;height:54px;border-radius:50%;background:rgba(227,25,55,.28);border:3px solid #e31937;
       position:absolute;left:50%;top:18px;transform:translate(-50%,-50%);animation:pulse 1.6s ease-out infinite; }
-    .charge-flag { background:#fff; color:#111; border:2px solid #e31937; border-radius:10px;
-      padding:5px 10px; font-size:12px; font-weight:800; line-height:1.25; white-space:nowrap;
-      text-align:center; box-shadow:0 3px 12px rgba(0,0,0,.45); position:relative; z-index:2; }
-    .charge-flag b { color:#e31937; }
+    .charge-flag { background:rgba(12,14,18,.92); color:#fff; border:1px solid rgba(255,255,255,.14);
+      border-radius:16px; padding:7px 12px; font-size:12px; font-weight:600; line-height:1.3;
+      white-space:nowrap; text-align:left; box-shadow:0 8px 24px rgba(0,0,0,.4);
+      backdrop-filter:blur(10px); font-family:Outfit,sans-serif; }
+    .charge-flag .k { color:#ff6b7d; font-weight:800; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+    .charge-flag .v { font-weight:700; font-size:13px; }
+    .dest-flag { background:#111c16; color:#3dd68c; border:1px solid #3dd68c; border-radius:999px;
+      padding:6px 12px; font-weight:800; font-size:13px; font-family:Outfit,sans-serif;
+      box-shadow:0 6px 18px rgba(0,0,0,.35); }
     @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
     .wx-pin { width:44px;height:44px;border-radius:50%;background:#111c16;border:2px solid #3dd68c;
       display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,.5); }
@@ -126,7 +133,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.7.4</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.7.6</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -223,7 +230,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.7.4 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.7.6 · SMART: prima possibile, ≥15% SoC. Autostrada 105–135. Altre strade al limite. Traffico, pendenza, meteo.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -265,7 +272,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.7.4";
+  const APP_VERSION = "1.7.6";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -517,6 +524,14 @@
     const x=Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dLng);
     return (Math.atan2(y,x)*180/Math.PI+360)%360;
   }
+  function fogSvgInner(){
+    return `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="11" r="6" fill="#f2f4f7" opacity=".55"/>
+      <rect x="4" y="16" width="20" height="2.2" rx="1" fill="#e8edf3"/>
+      <rect x="6" y="20" width="16" height="2.2" rx="1" fill="#d5dce6"/>
+      <rect x="8" y="24" width="12" height="2" rx="1" fill="#c5ced8"/>
+    </svg>`;
+  }
   function wxEmoji(code){
     const c=+(code||0);
     if ([96,99].includes(c)) return "🧊";
@@ -524,7 +539,7 @@
     if ([71,73,75,85,86].includes(c)) return "❄️";
     if ([65,82].includes(c)) return "🌧️";
     if ([61,63,80,81,51,53,55].includes(c)) return "🌦️";
-    if ([45,48].includes(c)) return "NEBBIA";
+    if ([45,48].includes(c)) return "FOG";
     if ([2,3].includes(c)) return "☁️";
     if (c===1) return "🌤️";
     return "☀️";
@@ -601,7 +616,18 @@
     let d = Math.abs(((avgDir - course + 540)%360)-180);
     const headOn = d < 55; // wind FROM similar to heading = face wind
     const rain = winds.reduce((a,c)=>a+(+c.precipitation||+c.rain||0),0);
+    let climb=0;
+    try {
+      const elu = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p=>p.lat).join(",")}&longitude=${pts.map(p=>p.lng).join(",")}`;
+      const elj = await fetch(elu).then(r=>r.json());
+      const els = elj.elevation||[];
+      for (let i=1;i<els.length;i++){
+        const d = els[i]-els[i-1];
+        if (d>0) climb += d;
+      }
+    } catch(e){}
     let consMul = 1;
+    if (climb>80) consMul += Math.min(0.22, climb/2500);
     if (worst.lvl>=5) consMul += 0.18;
     else if (worst.lvl>=4) consMul += 0.12;
     else if (worst.lvl>=3) consMul += 0.10;
@@ -610,9 +636,9 @@
     const maxV = worst.lvl>=4 ? 110 : worst.lvl>=3 ? 120 : 135;
     const names = [...new Set(hazards.map(h=>h.name))];
     return {
-      worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples,
-      text: names.length ? names.join(", ") : "meteo ok",
-      score: worst.lvl*1000 + (headOn?avgWind:0) + rain
+      worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples, climb,
+      text: (names.length ? names.join(", ") : "meteo ok") + (climb>80?` · +${Math.round(climb)} m dislivello`:""),
+      score: worst.lvl*1000 + (headOn?avgWind:0) + rain + climb*0.1
     };
   }
   function consAt(speed){
@@ -777,9 +803,12 @@
   function extractGoogleSteps(rt){
     const steps=[]; let acc=0;
     (rt.legs||[]).forEach(leg=>{
+      const base = (leg.duration && leg.duration.value) || 0;
+      const traf = (leg.duration_in_traffic && leg.duration_in_traffic.value) || base;
+      const trafMul = base>0 ? traf/base : 1;
       (leg.steps||[]).forEach(st=>{
         const m=st.distance&&st.distance.value||0;
-        const s=st.duration&&st.duration.value||0;
+        const s=((st.duration_in_traffic&&st.duration_in_traffic.value)||(st.duration&&st.duration.value)||0)*trafMul;
         const v=s>0?(m/s)*3.6:80;
         const txt = String(st.instructions||"").replace(/<[^>]+>/g," ");
         const limit = legalSnap(v);
@@ -944,13 +973,17 @@
         optimizeWaypoints: false,
         travelMode: google.maps.TravelMode.DRIVING,
         provideRouteAlternatives: true,
+        drivingOptions: { departureTime: new Date(), trafficModel: "bestguess" },
         avoidHighways: !!(opt && opt.avoidHighways)
       }, (res,stt)=>{
         if (stt!=="OK") return reject(new Error(explainGoogleStatus(stt)));
         resolve(res.routes.slice(0,3).map((rt,i)=>{
           const path = rt.overview_path.map(p=>({lat:p.lat(), lng:p.lng()}));
           let meters=0, seconds=0;
-          rt.legs.forEach(l=>{ meters+=l.distance.value; seconds+=l.duration.value; });
+          rt.legs.forEach(l=>{
+            meters+=l.distance.value;
+            seconds+=(l.duration_in_traffic&&l.duration_in_traffic.value)||l.duration.value;
+          });
           return { id:i, meters, seconds, coords:path, summary: rt.summary, steps: extractGoogleSteps(rt) };
         }));
       });
@@ -1475,7 +1508,7 @@
   function planTrip(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
     const maxSoc = chargeMax;
-    const minForStop = minSoc;
+    const minForStop = Math.max(15, minSoc||15);
     const { pts, km } = samplePath(route.coords, 8);
     const allowed = selectedNets();
     const along = opts.chargers
@@ -1664,14 +1697,12 @@
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
       const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
-      const html = `<div style="position:relative;width:168px;height:54px;overflow:visible">
-        <div class="charge-flag"><b>R${n}</b> ${shortNet}<br>arrivo ${s.arriveSoc.toFixed(0)}% · ${fmtMin(s.chargeMin)} → ${Math.round(s.targetSoc)}%</div>
-      </div>`;
+      const html = `<div class="charge-flag"><div class="k">${shortNet} ${n}</div><div class="v">${s.arriveSoc.toFixed(0)}% → ${Math.round(s.targetSoc)}% · ${fmtMin(s.chargeMin)}</div></div>`;
       const icon = L.divIcon({
         className: "",
         html,
-        iconSize: [168,54],
-        iconAnchor: [84,58]
+        iconSize: [170,48],
+        iconAnchor: [85,54]
       });
       state.layers.push(L.circle([s.lat,s.lng], {radius:450, color:"#e31937", weight:2, fillColor:"#e31937", fillOpacity:0.18}).addTo(state.map));
       const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
@@ -1694,7 +1725,7 @@
       const dm = L.marker([end.lat,end.lng], {
         icon: L.divIcon({
           className:"",
-          html:`<div class="smart-flag">Arrivo ${Number(f.arrive||0).toFixed(0)}%</div>`,
+          html:`<div class="dest-flag">${Number(f.arrive||0).toFixed(0)}%</div>`,
           iconSize:[130,36], iconAnchor:[65,18]
         }),
         zIndexOffset: 500
@@ -1707,9 +1738,10 @@
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
-      const fog = em==="NEBBIA";
+      const fog = em==="FOG";
+      const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}</div>`;
       const m = L.marker([s.olat||s.lat, s.olng||s.lng], {
-        icon: L.divIcon({ className:"", html:`<div class="wx-pin${fog?" fog":""}">${em}</div>`, iconSize: fog?[72,36]:[44,44], iconAnchor: fog?[36,18]:[22,22] }),
+        icon: L.divIcon({ className:"", html: fog?fogHtml:`<div class="wx-pin">${em}</div>`, iconSize:[44,44], iconAnchor:[22,22] }),
         zIndexOffset: 1200,
         pane: "weather"
       }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
@@ -1782,10 +1814,17 @@
     function smartSvg(n, chargeMin, soc, target, net){
       const short = net==="SUPERCHARGER"?"Tesla":net==="IONITY"?"Ionity":(net||"HPC");
       const tchg = (typeof fmtMin==="function") ? fmtMin(chargeMin) : Math.round(chargeMin||0)+" min";
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="56">
-        <rect x="2" y="2" width="196" height="52" rx="10" fill="#ffffff" stroke="#e31937" stroke-width="3"/>
-        <text x="100" y="22" text-anchor="middle" fill="#e31937" font-size="13" font-family="Arial" font-weight="800">R${n} ${short}</text>
-        <text x="100" y="42" text-anchor="middle" fill="#111111" font-size="12" font-family="Arial" font-weight="700">arrivo ${soc}% · ${tchg} → ${target}%</text>
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="196" height="52">
+        <rect x="1" y="1" width="194" height="50" rx="16" fill="#0c0e12" fill-opacity="0.92" stroke="rgba(255,255,255,0.16)"/>
+        <text x="16" y="20" fill="#ff6b7d" font-size="10" font-family="Outfit,Arial" font-weight="800" letter-spacing="1">${short.toUpperCase()} ${n}</text>
+        <text x="16" y="38" fill="#ffffff" font-size="14" font-family="Outfit,Arial" font-weight="700">${soc}% → ${target}% · ${tchg}</text>
+      </svg>`;
+      return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+    }
+    function destSvg(soc){
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="36">
+        <rect x="1" y="1" width="70" height="34" rx="17" fill="#111c16" stroke="#3dd68c"/>
+        <text x="36" y="24" text-anchor="middle" fill="#3dd68c" font-size="14" font-family="Outfit,Arial" font-weight="800">${soc}%</text>
       </svg>`;
       return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
     }
@@ -1830,7 +1869,7 @@
       const f = alt.plan.final||{};
       const dm = new google.maps.Marker({
         position:{lat:end.lat,lng:end.lng}, map:state.gmap,
-        icon: { url: smartSvg("D", 0, Math.round(f.arrive||0), Math.round(f.arrive||0), "Arrivo"), scaledSize: new google.maps.Size(200,56), anchor: new google.maps.Point(100,62) },
+        icon: { url: destSvg(Math.round(f.arrive||0)), scaledSize: new google.maps.Size(72,36), anchor: new google.maps.Point(36,40) },
         title: `Arrivo ${Number(f.arrive||0).toFixed(0)}%`,
         zIndex: 250
       });
@@ -1842,13 +1881,13 @@
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
-      const fog = em==="NEBBIA";
-      const fogUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="86" height="36"><rect x="1" y="1" width="84" height="34" rx="8" fill="#5b6570" stroke="#d7dee6" stroke-width="2"/><text x="43" y="24" text-anchor="middle" fill="#eef2f6" font-size="12" font-family="Arial" font-weight="800">NEBBIA</text></svg>`);
+      const fog = em==="FOG";
+      const fogUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"><circle cx="22" cy="22" r="20" fill="#8a93a0" stroke="#dfe6ee" stroke-width="2"/><circle cx="22" cy="16" r="7" fill="#f2f4f7" fill-opacity=".6"/><rect x="8" y="24" width="28" height="3" rx="1.5" fill="#e8edf3"/><rect x="10" y="29" width="24" height="3" rx="1.5" fill="#d5dce6"/><rect x="12" y="34" width="20" height="2.5" rx="1.2" fill="#c5ced8"/></svg>`);
       const m = new google.maps.Marker({
         position:{lat:s.olat||s.lat,lng:s.olng||s.lng}, map:state.gmap,
         label: fog ? undefined : {text:em, fontSize:"22px"},
         icon: fog
-          ? { url:fogUrl, scaledSize:new google.maps.Size(86,36), anchor:new google.maps.Point(43,18) }
+          ? { url:fogUrl, scaledSize:new google.maps.Size(44,44), anchor:new google.maps.Point(22,22) }
           : { path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
         title: `Meteo ${lab}`,
         zIndex: 1200,
