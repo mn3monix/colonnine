@@ -629,7 +629,8 @@
   }
   function classifyNet(text){
     const t = (text||"").toUpperCase();
-    if (t.includes("SUPERCHARGER") || t.includes("TESLA")) return "SUPERCHARGER";
+    if (t.includes("DESTINATION")) return null;
+    if (t.includes("SUPERCHARGER") || (t.includes("TESLA") && !t.includes("DESTINATION"))) return "SUPERCHARGER";
     if (t.includes("IONITY")) return "IONITY";
     if (t.includes("ELECTRA")) return "ELECTRA";
     if (t.includes("ENBW") || t.includes("HYPERNETZ")) return "ENBW";
@@ -1286,17 +1287,17 @@
     const allowed = selectedNets();
     const along = opts.chargers
       .filter(c => !c.net || allowed.includes(c.net))
+      .filter(c => !/destination charger|destinationcharging|destinazione/i.test(c.name||""))
       .map(c => {
         const pr = progressOnPath(c, route.coords);
         return { ...c, atKm: pr.km, off: distToPath(c, route.coords) };
       })
-      .filter(c => c.off <= 12 && c.atKm > 12 && c.atKm < km - 8)
+      .filter(c => c.off <= 12 && c.atKm > 25 && c.atKm < km - 12)
       .sort((a,b)=> a.atKm-b.atKm);
 
-    /* dedup vicini stesso network */
     const uniq=[];
     for (const c of along){
-      if (uniq.some(u => haversine(u,c)<1.2)) continue;
+      if (uniq.some(u => haversine(u,c)<8)) continue;
       uniq.push(c);
     }
 
@@ -1322,20 +1323,27 @@
         return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
       }
       const reach = rangeKm(soc, speedGuess);
-      const windowFrom = fromKm + Math.max(25, reach*0.52);
-      const windowTo = fromKm + Math.max(reach - 8, windowFrom + 15);
-      const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && c.off<=12 && !stops.some(s=>s.id===c.id));
+      const minGap = Math.max(80, reach*0.48);
+      const windowFrom = fromKm + minGap;
+      const windowTo = fromKm + Math.max(reach - 12, windowFrom + 20);
+      const used = new Set(stops.map(s=>s.id));
+      const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && c.off<=12 && !used.has(c.id));
       let chosen = cand.sort((a,b)=>{
-        const pref = {SUPERCHARGER:0, IONITY:1, ELECTRA:2, ENBW:3, GREENWAY:4, EVDC:5};
+        const pref = {SUPERCHARGER:0, IONITY:1};
         const ideal = fromKm + reach*0.78;
-        return (a.off-b.off) || Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (pref[a.net]-pref[b.net]);
+        return Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (a.off-b.off) || ((pref[a.net]||9)-(pref[b.net]||9));
       })[0];
       if (!chosen){
-        chosen = uniq.filter(c => c.atKm>fromKm+20 && c.atKm<=windowTo+25 && c.off<=14 && !stops.some(s=>s.id===c.id))
-          .sort((a,b)=>a.off-b.off || a.atKm-b.atKm)[0];
+        chosen = uniq.filter(c => c.atKm>=fromKm+minGap && c.atKm<=windowTo+30 && c.off<=14 && !used.has(c.id))
+          .sort((a,b)=>a.atKm-b.atKm || a.off-b.off)[0];
       }
       if (!chosen) break;
       const dkm = chosen.atKm - fromKm;
+      const usedPct = (consAt(speedGuess)*dkm/100)/CAR.kwh*100;
+      if (dkm < 80 || usedPct < 14){
+        uniq.splice(uniq.findIndex(x=>x.id===chosen.id),1);
+        continue;
+      }
       const nextCh = uniq.filter(c => c.atKm > chosen.atKm + 15).sort((a,b)=>a.atKm-b.atKm)[0];
       const toDest = km - chosen.atKm;
       const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : toDest;
