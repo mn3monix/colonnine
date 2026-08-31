@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.12</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.14</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.12</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.14</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -234,7 +234,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.12 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.14 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,11 +276,12 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.12";
+  const APP_VERSION = "1.8.14";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
     kwh: 79,
+    mass: 2160,
     peakKw: 250,
     curve: [ /* [soc, kW] */
       [5,240],[10,235],[15,220],[20,205],[25,190],[30,175],[35,155],
@@ -570,7 +571,7 @@
     return {lvl:0, name:"ok"};
   }
   async function fetchWxPoint(lat,lng){
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,precipitation,rain,showers,wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh&timezone=auto`;
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,precipitation,rain,showers,wind_speed_10m,wind_direction_10m,temperature_2m&wind_speed_unit=kmh&timezone=auto`;
     const r = await fetch(u);
     if (!r.ok) throw new Error("meteo");
     const j = await r.json();
@@ -620,30 +621,78 @@
     let d = Math.abs(((avgDir - course + 540)%360)-180);
     const headOn = d < 55; // wind FROM similar to heading = face wind
     const rain = winds.reduce((a,c)=>a+(+c.precipitation||+c.rain||0),0);
-    let climb=0;
+    let climb=0, desc=0, elevProf=[];
     try {
-      const elu = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p=>p.lat).join(",")}&longitude=${pts.map(p=>p.lng).join(",")}`;
+      const epts = sampleCoords(coords, 16);
+      const elu = `https://api.open-meteo.com/v1/elevation?latitude=${epts.map(p=>p.lat).join(",")}&longitude=${epts.map(p=>p.lng).join(",")}`;
       const elj = await fetch(elu).then(r=>r.json());
       const els = elj.elevation||[];
+      const totalKm = (function(){ let k=0; for(let i=1;i<coords.length;i++) k+=haversine(coords[i-1],coords[i]); return k; })();
+      for (let i=0;i<els.length;i++){
+        elevProf.push({ km: totalKm*(i/Math.max(1,els.length-1)), alt:+els[i]||0 });
+      }
       for (let i=1;i<els.length;i++){
-        const d = els[i]-els[i-1];
-        if (d>0) climb += d;
+        const dlt = els[i]-els[i-1];
+        if (dlt>0) climb += dlt; else desc += -dlt;
       }
     } catch(e){}
+    const temps = winds.map(c=>+c.temperature_2m).filter(t=>isFinite(t));
+    const tempC = temps.length ? temps.reduce((a,b)=>a+b,0)/temps.length : 18;
+    const tempFx = tempEffects(tempC);
     let consMul = 1;
-    if (climb>80) consMul += Math.min(0.22, climb/2500);
     if (worst.lvl>=5) consMul += 0.18;
     else if (worst.lvl>=4) consMul += 0.12;
     else if (worst.lvl>=3) consMul += 0.10;
     else if (worst.lvl>=2) consMul += 0.06;
     if (headOn) consMul += Math.min(0.16, avgWind/250);
-    const maxV = worst.lvl>=4 ? 110 : worst.lvl>=3 ? 120 : 135;
+    consMul *= tempFx.consMul;
+    const maxV = worst.lvl>=4 ? 110 : worst.lvl>=3 ? 115 : 115;
     const names = [...new Set(hazards.map(h=>h.name))];
+    const gradeKwh = gradeEnergy(climb, desc);
     return {
-      worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples, climb,
-      text: (names.length ? names.join(", ") : "meteo ok") + (climb>80?` · +${Math.round(climb)} m dislivello`:""),
+      worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples, climb, desc, elevProf, tempC,
+      capMul: tempFx.capMul, chargeMul: tempFx.chargeMul, gradeKwh,
+      text: (names.length ? names.join(", ") : "meteo ok")
+        + (isFinite(tempC)?` · ${Math.round(tempC)}°C`:"")
+        + (climb>80?` · +${Math.round(climb)} m / −${Math.round(desc)} m`:"")
+        + (gradeKwh>0.3?` · +${gradeKwh.toFixed(1)} kWh salite`:""),
       score: worst.lvl*1000 + (headOn?avgWind:0) + rain + climb*0.1
     };
+  }
+  function tempEffects(t){
+    const T = isFinite(t) ? t : 18;
+    let capMul=1, consMul=1, chargeMul=1;
+    if (T >= 26){ consMul = 1 + Math.min(0.12, (T-26)*0.01); chargeMul = T>35 ? 0.9 : 1; }
+    else if (T >= 15){ capMul = 1; consMul = 1; }
+    else if (T >= 5){ capMul = 0.97 - (15-T)*0.006; consMul = 1 + (15-T)*0.012; chargeMul = 0.92; }
+    else if (T >= -5){ capMul = 0.90 - (5-T)*0.01; consMul = 1.14 + (5-T)*0.018; chargeMul = 0.78; }
+    else { capMul = 0.78; consMul = 1.38 + Math.min(0.2, (-5-T)*0.02); chargeMul = 0.62; }
+    return { capMul: Math.max(0.72, capMul), consMul, chargeMul };
+  }
+  function gradeEnergy(climbM, descM){
+    const m = CAR.mass || 2160;
+    const up = (climbM||0) * m * 9.81 / 3.6e6 / 0.87;
+    const down = (descM||0) * m * 9.81 / 3.6e6 * 0.52;
+    return Math.max(0, up - down);
+  }
+  function gradeEnergySpan(fromKm, toKm){
+    const prof = state.wx && state.wx.elevProf;
+    if (!prof || prof.length<2){
+      const tot = (state.wx && ((state.wx.climb||0)+(state.wx.desc||0))) || 0;
+      const kmAll = 1;
+      return 0;
+    }
+    let climb=0, desc=0;
+    for (let i=1;i<prof.length;i++){
+      const a=prof[i-1], b=prof[i];
+      if (b.km < fromKm || a.km > toKm) continue;
+      const dlt = (b.alt||0)-(a.alt||0);
+      if (dlt>0) climb += dlt; else desc += -dlt;
+    }
+    return gradeEnergy(climb, desc);
+  }
+  function battKwh(){
+    return CAR.kwh * ((state.wx && state.wx.capMul) || 1);
   }
   function consAt(speed){
     const table = [[90,15.4],[100,16.6],[110,18.0],[120,19.8],[130,22.2],[140,25.0]];
@@ -678,7 +727,7 @@
     const step = 1;
     while (soc < to){
       const p = Math.min(stallKw, kwAt(soc)) * 0.94;
-      t += (CAR.kwh * (step/100) / Math.max(8, p)) * 60;
+      t += (battKwh() * (step/100) / Math.max(8, p)) * 60 / ((state.wx && state.wx.chargeMul) || 1);
       soc += step;
     }
     return t;
@@ -941,6 +990,7 @@
       km += d;
       lim += cap*d;
     }
+    e += gradeEnergySpan(fromKm, toKm);
     return { driveMin:t, energy:e, km, limitAvg: km?lim/km:90, vAvg: t>0? km/(t/60):90 };
   }
   function floorDriveMin(route){
@@ -1052,6 +1102,18 @@
     });
   }
 
+  function alpineHubs(a,b){
+    const north = Math.max(a.lat,b.lat);
+    if (north < 45.9) return [];
+    return [
+      {lat:46.3207, lng:9.3982},
+      {lat:46.1370, lng:9.3740},
+      {lat:46.4008, lng:9.6947},
+      {lat:46.4679, lng:10.3721},
+      {lat:46.1700, lng:10.1517},
+      {lat:46.4908, lng:9.8355}
+    ];
+  }
   function midpointOffset(a,b, km, sign){
     const lat = (a.lat+b.lat)/2;
     const lng = (a.lng+b.lng)/2;
@@ -1083,6 +1145,7 @@
   async function fillToThree(points, a, b, seed, noMotorway){
     let out = uniqRoutes(seed||[], 10);
     const tries = [
+      ...alpineHubs(a,b),
       midpointOffset(a,b,18,1),
       midpointOffset(a,b,18,-1),
       midpointOffset(a,b,38,1),
@@ -1112,7 +1175,9 @@
       if (useG) {
         try { seed = seed.concat(await routeGoogle(points,{})); }
         catch(e){ setStatus(e.message+" Integro alternative autostradali.","err"); }
+        const alpine = alpineHubs(a,b);
         const hubs = [
+          ...alpine,
           {lat:45.4642,lng:9.1900},
           {lat:45.5416,lng:10.2118},
           {lat:44.8015,lng:10.3279},
@@ -1144,6 +1209,9 @@
       return three.slice(0,5);
     }
     const scenicHubs = [
+      {lat:46.321, lng:9.398, name:"Chiavenna"},
+      {lat:46.401, lng:9.695, name:"Maloja"},
+      {lat:46.468, lng:10.372, name:"Bormio"},
       {lat:44.472, lng:9.928, name:"Passo della Cisa"},
       {lat:45.660, lng:10.052, name:"Lago d'Iseo"},
       {lat:45.810, lng:9.086, name:"Como"},
@@ -1535,7 +1603,7 @@
     for (const v of use){
       const phys = (ctx && ctx.route) ? spanDrive(ctx.route, ctx.fromKm, ctx.toKm, v) : {energy:consAt(v)*km/100, driveMin:km/v*60};
       const energy = phys.energy;
-      const arrive = socStart - energy/CAR.kwh*100;
+      const arrive = socStart - energy/battKwh()*100;
       if (arrive < minArrive + 1) continue;
       const driveMin = phys.driveMin;
       if (chargeMin == null || chargeMax == null){
@@ -1545,10 +1613,10 @@
       }
       for (let t=chargeMin; t<=chargeMax; t+=5){
         if (t < arrive + 1) continue;
-        const rangeAfter = ((t - minArrive - 2)/100)*CAR.kwh / consAt(v) * 100;
+        const rangeAfter = ((t - minArrive - 2)/100)*battKwh() / consAt(v) * 100;
         if (remainAfterKm > 1 && rangeAfter < remainAfterKm - 2) continue;
         const cmin = chargeMinutes(arrive, t, stallKw||250);
-        const add = CAR.kwh * (t-arrive)/100 / 0.95;
+        const add = battKwh() * (t-arrive)/100 / 0.95;
         const cost = add * price;
         const score = state.mode==="fast"
           ? driveMin + cmin + cost * 0.7
@@ -1560,7 +1628,7 @@
     }
     if (best) return { leg:best };
     const v=105, energy=consAt(v)*km/100;
-    return { leg:{ v, arrive:socStart-energy/CAR.kwh*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
+    return { leg:{ v, arrive:socStart-energy/battKwh()*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
   }
 
   function realisticDriveMin(dkm, v, route, totalKm, fromKm){
@@ -1572,7 +1640,7 @@
     let best = null;
     for (const v of cruises){
       const phys = spanDrive(route, fromKm, toKm, v);
-      const arrive = leaveSoc - (phys.energy / CAR.kwh) * 100;
+      const arrive = leaveSoc - (phys.energy / battKwh()) * 100;
       if (arrive < minArrive - 0.4) continue;
       const score = phys.driveMin + Math.max(0, (leaveSoc - arrive) * 0.04);
       if (!best || score < best.score){
@@ -1582,7 +1650,7 @@
     if (best) return best;
     const v = 115;
     const phys = spanDrive(route, fromKm, toKm, v);
-    return { v, arrive: leaveSoc - (phys.energy / CAR.kwh) * 100, driveMin: phys.driveMin, energy: phys.energy, cons: consAt(v), score: 1e9 };
+    return { v, arrive: leaveSoc - (phys.energy / battKwh()) * 100, driveMin: phys.driveMin, energy: phys.energy, cons: consAt(v), score: 1e9 };
   }
   function frvcpPlan(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, backupOn, backupPct, destArrive } = opts;
@@ -1659,7 +1727,7 @@
               soc: tgt, time: tArr + cmin, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
               arrive: leg.arrive, target: tgt, cons: leg.cons, dkm,
-              kwhAdd: CAR.kwh * (tgt - leg.arrive) / 100 / 0.95
+              kwhAdd: battKwh() * (tgt - leg.arrive) / 100 / 0.95
             });
           }
         }
@@ -1688,7 +1756,7 @@
       const s = step.st;
       const ch = step.node;
       const price = (state.prices && state.prices[ch.net]) || 0.39;
-      const kwhAdd = s.kwhAdd != null ? s.kwhAdd : CAR.kwh * Math.max(0, s.target - s.arrive) / 100 / 0.95;
+      const kwhAdd = s.kwhAdd != null ? s.kwhAdd : battKwh() * Math.max(0, s.target - s.arrive) / 100 / 0.95;
       const stopObj = {
         ...ch, dkm: s.dkm, speed: s.v, arriveSoc: s.arrive, targetSoc: s.target,
         chargeMin: s.chargeMin, kwh: kwhAdd, cost: kwhAdd * price,
@@ -1741,7 +1809,7 @@
       const usable = Math.max(0, socNow - minForStop - 2);
       const lim = impliedSpeed(route, fromKm, km);
       const v = Math.min(speed||120, lim||120);
-      return (usable/100)*CAR.kwh / consAt(v) * 100;
+      return (usable/100)*battKwh() / consAt(v) * 100;
     }
 
     let guard=0;
@@ -1751,9 +1819,9 @@
       const needDest = Math.max(minSoc, destArrive || minSoc);
       if (rangeKm(soc, speedGuess) >= remain - 1){
         const st = smart ? smartSpeed(remain, soc, needDest) : {
-          v:120, arrive: soc - (consAt(120)*remain/100)/CAR.kwh*100, driveMin: remain/120*60, energy: consAt(120)*remain/100
+          v:120, arrive: soc - (consAt(120)*remain/100)/battKwh()*100, driveMin: remain/120*60, energy: consAt(120)*remain/100
         };
-        if (!smart) st.arrive = soc - (consAt(120)*remain/100)/CAR.kwh*100;
+        if (!smart) st.arrive = soc - (consAt(120)*remain/100)/battKwh()*100;
         return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
       }
       const reach = rangeKm(soc, speedGuess);
@@ -1773,7 +1841,7 @@
       }
       if (!chosen) break;
       const dkm = chosen.atKm - fromKm;
-      const usedPct = (consAt(speedGuess)*dkm/100)/CAR.kwh*100;
+      const usedPct = (consAt(speedGuess)*dkm/100)/battKwh()*100;
       if (dkm < 80 || usedPct < 14){
         uniq.splice(uniq.findIndex(x=>x.id===chosen.id),1);
         continue;
@@ -1790,17 +1858,17 @@
         arrive = Math.max(1, combo.arrive);
         target = Math.round(combo.target != null ? combo.target : chargeMax);
         mins = combo.chargeMin != null ? combo.chargeMin : chargeMinutes(arrive, target, chosen.kw);
-        kwhAdd = combo.kwhAdd != null ? combo.kwhAdd : CAR.kwh * Math.max(0,target-arrive)/100 / 0.95;
+        kwhAdd = combo.kwhAdd != null ? combo.kwhAdd : battKwh() * Math.max(0,target-arrive)/100 / 0.95;
       } else {
-        st = { v:120, arrive: soc - (consAt(120)*dkm/100)/CAR.kwh*100, driveMin: dkm/120*60, energy: consAt(120)*dkm/100, cons:consAt(120) };
+        st = { v:120, arrive: soc - (consAt(120)*dkm/100)/battKwh()*100, driveMin: dkm/120*60, energy: consAt(120)*dkm/100, cons:consAt(120) };
         arrive = Math.max(1, st.arrive);
         target = chargeMax;
-        if (((Math.max(arrive, chargeMin) - minForStop - 2)/100)*CAR.kwh / consAt(120) * 100 >= remainAfter - 1){
+        if (((Math.max(arrive, chargeMin) - minForStop - 2)/100)*battKwh() / consAt(120) * 100 >= remainAfter - 1){
           target = Math.max(chargeMin, Math.min(chargeMax, arrive + 5));
         }
         target = Math.round(Math.max(chargeMin, Math.min(chargeMax, target)));
         mins = chargeMinutes(arrive, target, chosen.kw);
-        kwhAdd = CAR.kwh * Math.max(0, target-arrive)/100 / 0.95;
+        kwhAdd = battKwh() * Math.max(0, target-arrive)/100 / 0.95;
       }
       const price = state.prices[chosen.net];
       const stopObj = {
@@ -1826,18 +1894,18 @@
     if (stops.length){
       const last = stops[stops.length-1];
       const speedL = last.speed || 120;
-      const needLeave = Math.min(chargeMax, needDest + (consAt(speedL)*Math.max(remain,0)/100)/CAR.kwh*100 + 3);
+      const needLeave = Math.min(chargeMax, needDest + (consAt(speedL)*Math.max(remain,0)/100)/battKwh()*100 + 3);
       if (needLeave > last.targetSoc + 0.5){
         last.targetSoc = Math.max(last.targetSoc, Math.min(chargeMax, needLeave));
         last.chargeMin = chargeMinutes(last.arriveSoc, last.targetSoc, last.kw);
-        last.kwh = CAR.kwh * Math.max(0, last.targetSoc-last.arriveSoc)/100 / 0.95;
+        last.kwh = battKwh() * Math.max(0, last.targetSoc-last.arriveSoc)/100 / 0.95;
         last.cost = last.kwh * (last.livePrice || state.prices[last.net]);
         soc = last.targetSoc;
       }
     }
     const lastRoad = roadCap(impliedSpeed(route, fromKm, km));
     const st = (smart || state.mode==="fast") && remain>1 ? smartCombo(remain, soc, needDest, null, null, 250, 0, null, lastRoad, {route, fromKm, toKm:km}).leg : {
-      v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
+      v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/battKwh()*100,
       driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
     };
     const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km, fromKm);
@@ -1861,7 +1929,7 @@
         if (c.id === stop.id || !allOperatorNets().includes(c.net)) return false;
         const km = haversine(c, stop);
         if (km < 0.5 || km > 35) return false;
-        const need = (consAt(Math.min(stop.speed||90,110))*km/100)/CAR.kwh*100;
+        const need = (consAt(Math.min(stop.speed||90,110))*km/100)/battKwh()*100;
         const maxPct = +$("backupPct").value || 5;
         return need <= maxPct + 0.15;
       })
@@ -1870,7 +1938,7 @@
   function attachBackup(stop, bu, reservedPct, arriveSoc){
     const km = haversine(stop, bu);
     const speed = stop.speed || 90;
-    const needPct = (consAt(Math.min(speed,110))*km/100)/CAR.kwh*100;
+    const needPct = (consAt(Math.min(speed,110))*km/100)/battKwh()*100;
     const fromArrive = (arriveSoc != null ? arriveSoc : stop.arriveSoc) - needPct;
     const fromFull = stop.targetSoc - needPct;
     stop.backup = {
