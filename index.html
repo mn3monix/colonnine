@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.6.0</title>
+  <title>Model Y AWD 2026 — Route Planner v1.6.2</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -46,6 +46,7 @@
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); cursor: pointer; user-select: none; }
     .chip.on { color: #fff; }
+    #poiCats .chip.on { background: #ff7a18; color: #111; border-color: #ff9a40; font-weight: 700; }
     .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
     .mode { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: left; color: var(--txt); }
     .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
@@ -98,6 +99,8 @@
     .poi-card img { width:100%; max-height:140px; object-fit:cover; border-radius:8px; display:block; margin:6px 0; }
     .openyes { color:#0a7a3c; font-weight:700; }
     .openno { color:#b42318; font-weight:700; }
+    .wx-pin { width:28px;height:28px;border-radius:50%;background:#111c16;border:1px solid #3dd68c;
+      display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.4); }
     .smart-flag { background:#111c16; color:#e8fff3; border:1px solid #3dd68c; border-radius:8px;
       padding:3px 7px; font-size:11px; font-weight:700; line-height:1.25; white-space:nowrap;
       text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
@@ -114,7 +117,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.6.0</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.6.2</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -142,13 +145,13 @@
         </div>
         <div>
           <label>SoC minimo in viaggio %</label>
-          <input id="socMin" type="number" min="5" max="40" value="10" />
+          <input id="socMin" type="number" min="5" max="40" value="15" />
         </div>
       </div>
       <div class="row2">
         <div>
           <label>Ricarica % min</label>
-          <input id="socChargeMin" type="number" min="20" max="90" value="40" title="Non lasciare la colonnina sotto questa %" />
+          <input id="socChargeMin" type="number" min="20" max="90" value="60" title="Non lasciare la colonnina sotto questa %" />
         </div>
         <div>
           <label>Ricarica % max</label>
@@ -163,7 +166,7 @@
       <div class="row2">
         <div>
           <label>% ricarica a destinazione</label>
-          <input id="socArriveWant" type="number" min="5" max="80" value="15" />
+          <input id="socArriveWant" type="number" min="5" max="80" value="50" />
         </div>
         <div>
           <label>% max per raggiungere il backup</label>
@@ -211,7 +214,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.6.0 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.6.2 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -253,7 +256,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.6.0";
+  const APP_VERSION = "1.6.2";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -504,6 +507,18 @@
     const y=Math.sin(dLng)*Math.cos(lb);
     const x=Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dLng);
     return (Math.atan2(y,x)*180/Math.PI+360)%360;
+  }
+  function wxEmoji(code){
+    const c=+(code||0);
+    if ([96,99].includes(c)) return "🧊";
+    if (c===95) return "⛈️";
+    if ([71,73,75,85,86].includes(c)) return "❄️";
+    if ([65,82].includes(c)) return "🌧️";
+    if ([61,63,80,81,51,53,55].includes(c)) return "🌦️";
+    if ([45,48].includes(c)) return "🌫️";
+    if ([2,3].includes(c)) return "☁️";
+    if (c===1) return "🌤️";
+    return "☀️";
   }
   function wxLabel(code){
     if ([96,99].includes(code)) return "grandine";
@@ -1574,6 +1589,18 @@
       }).addTo(state.map);
       state.layers.push(dm);
     }
+    const wxs = (alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || [];
+    wxs.forEach(s=>{
+      if (!s || !s.lat) return;
+      const code = s.cur && s.cur.weather_code;
+      const em = wxEmoji(code);
+      const lab = wxLabel(code) || "sereno";
+      const m = L.marker([s.lat,s.lng], {
+        icon: L.divIcon({ className:"", html:`<div class="wx-pin">${em}</div>`, iconSize:[28,28], iconAnchor:[14,14] }),
+        zIndexOffset: 350
+      }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
+      state.layers.push(m);
+    });
     (state.pois||[]).forEach(p=>{
       const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?p.stars+"★":"·");
       const icon = L.divIcon({
@@ -1694,6 +1721,25 @@
       });
       state.gOverlays.push(dm);
     }
+    const wxs = (alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || [];
+    wxs.forEach(s=>{
+      if (!s || !s.lat) return;
+      const code = s.cur && s.cur.weather_code;
+      const em = wxEmoji(code);
+      const lab = wxLabel(code) || "sereno";
+      const m = new google.maps.Marker({
+        position:{lat:s.lat,lng:s.lng}, map:state.gmap,
+        label:{text:em, fontSize:"16px"},
+        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:12, fillColor:"#111c16", fillOpacity:0.9, strokeColor:"#3dd68c", strokeWeight:1 },
+        title: `Meteo ${lab}`,
+        zIndex: 180
+      });
+      const info = new google.maps.InfoWindow({
+        content:`<div style="color:#111"><b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h</div>`
+      });
+      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
+      state.gOverlays.push(m);
+    });
     (state.pois||[]).forEach(p=>{
       bounds.extend({lat:p.lat,lng:p.lng});
       const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?String(p.stars):"·");
