@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.14</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.15</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -54,12 +54,12 @@
     .chip.on { color: #fff; }
     #poiCats .chip.on { background: #ff7a18; color: #111; border-color: #ff9a40; font-weight: 700; }
     .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
-    .mode { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: left; color: var(--txt); }
+    .mode { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; color: var(--txt); }
     .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
     .mode b { display: block; font-size: 13px; }
     .mode span { color: var(--muted); font-size: 11px; }
     .toggles { display: flex; gap: 8px; margin: 0; }
-    .tog { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--txt); }
+    .tog { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--txt); text-align: center; }
     .tog.on { border-color: var(--ok); background: #10231a; }
     .tog b { display: block; font-size: 13px; }
     .tog span { color: var(--muted); font-size: 11px; }
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.14</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.15</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -180,8 +180,8 @@
       </div>
 
       <div class="modes">
-        <button class="mode active" data-mode="fast" id="modeFast"><b>Più veloce</b><span>5 alternative autostradali</span></button>
-        <button class="mode" data-mode="pano" id="modePano"><b>Veloce panoramico</b><span>veloce + tratti di paesaggio</span></button>
+        <button class="mode active" data-mode="fast" id="modeFast"><b>VELOCE</b><span>5 alternative</span></button>
+        <button class="mode" data-mode="pano" id="modePano"><b>PANORAMICO</b><span>paesaggio + velocità</span></button>
       </div>
       <div class="row2">
         <div>
@@ -234,7 +234,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.14 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.15 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,7 +276,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.14";
+  const APP_VERSION = "1.8.15";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1129,15 +1129,15 @@
     const c=r.coords; return c[Math.floor(c.length/2)];
   }
   function routesAlike(a,b){
-    if (Math.abs((a.meters||0)-(b.meters||0)) < 12000) return true;
-    if (a.coords && b.coords) return haversine(midCoord(a), midCoord(b)) < 12;
-    return false;
+    const midOk = a.coords && b.coords && haversine(midCoord(a), midCoord(b)) < 8;
+    const lenOk = Math.abs((a.meters||0)-(b.meters||0)) < 8000;
+    return midOk && lenOk;
   }
   function uniqRoutes(list, minDiffKm){
     const uniq=[];
     for (const r of list){
       if (!r || !r.coords || r.coords.length<2) continue;
-      if (uniq.every(u => !routesAlike(u,r) && Math.abs(u.meters-r.meters) > (minDiffKm||22)*1000)) uniq.push(r);
+      if (uniq.every(u => !routesAlike(u,r))) uniq.push(r);
       if (uniq.length===5) break;
     }
     return uniq;
@@ -1187,7 +1187,7 @@
           {lat:44.6471,lng:10.9252}
         ];
         for (const h of hubs){
-          if (seed.length>=5) break;
+          if (uniqRoutes(seed,8).length>=5) break;
           if (haversine(h,a)<25 || haversine(h,b)<25) continue;
           if ((vias||[]).some(v=>haversine(h,v)<25)) continue;
           try { seed = seed.concat(await routeGoogle(points,{via:h})); } catch(e){}
@@ -1197,7 +1197,7 @@
         try { seed = await routeOsrm(points, null, false); } catch(e){}
       }
       seed.sort((x,y)=>(x.seconds||0)-(y.seconds||0));
-      let three = uniqRoutes(seed, 22);
+      let three = uniqRoutes(seed, 8);
       if (three.length<5) three = await fillToThree(points, a, b, seed, false);
       if (!three.length) throw new Error("Nessun percorso trovato");
       while (three.length<5){
@@ -1247,13 +1247,14 @@
       r.scenic = (r.seconds||fastest) + (r.scenicHit ? -fastest*0.12 : fastest*0.08) + (over>1.28 ? (over-1.28)*fastest : 0);
     });
     seed.sort((x,y)=> (x.scenic||0)-(y.scenic||0) || (x.seconds||0)-(y.seconds||0));
-    let three = uniqRoutes(seed, 16);
+    let three = uniqRoutes(seed, 8);
     if (three.length && !three.some(r=>r.scenicHit)){
       const withView = seed.find(r => r.scenicHit && three.every(t=>!routesAlike(t,r)));
-      if (withView) three = [three[0], withView, ...three.slice(1)].slice(0,3);
+      if (withView) three = [three[0], withView, ...three.slice(1)].slice(0,5);
     }
+    if (three.length<5) three = await fillToThree(points, a, b, seed, false);
     if (!three.length) throw new Error("Nessun percorso panoramico");
-    return three.slice(0,3);
+    return three.slice(0,5);
   }
 
   function samplePath(coords, everyKm){
@@ -2228,7 +2229,7 @@
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
-      const title = (state.mode==="fast" ? `Veloce #${i+1}` : `Panoramico #${i+1}`) + (p.algo==="FRVCP" ? " · FRVCP" : "");
+      const title = (state.mode==="fast" ? `VELOCE #${i+1}` : `PANORAMICO #${i+1}`) + (p.algo==="FRVCP" ? " · FRVCP" : "");
       const stopsHtml = p.stops.map((s,si)=>{
         const bu = s.backup ? `<div class="backup-box">
             <b>BACKUP</b> · ${s.backup.name} · ${s.backup.net} · ${s.backup.kw} kW<br>
