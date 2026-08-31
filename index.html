@@ -98,6 +98,9 @@
     .poi-card img { width:100%; max-height:140px; object-fit:cover; border-radius:8px; display:block; margin:6px 0; }
     .openyes { color:#0a7a3c; font-weight:700; }
     .openno { color:#b42318; font-weight:700; }
+    .smart-flag { background:#111c16; color:#e8fff3; border:1px solid #3dd68c; border-radius:8px;
+      padding:3px 7px; font-size:11px; font-weight:700; line-height:1.25; white-space:nowrap;
+      text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; grid-template-rows: auto 55vh; }
       aside { height: auto; max-height: 45vh; }
@@ -159,20 +162,20 @@
       </div>
       <div class="row2">
         <div>
-          <label>% ricarica all'arrivo destinazione (minimo voluto)</label>
+          <label>% ricarica a destinazione</label>
           <input id="socArriveWant" type="number" min="5" max="80" value="15" />
         </div>
         <div>
-          <label>% batteria dedicata al BACKUP</label>
+          <label>% batteria dedicata al backup</label>
           <input id="backupPct" type="number" min="0" max="30" value="8" title="Quota SoC tenuta da parte per raggiungere la colonnina di riserva" />
         </div>
       </div>
 
       <div class="toggles">
-        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità · tempo ricarica · consumi</span></button>
-        <button class="tog on" id="togBackup" type="button"><b>BACKUP</b><span>colonnina di riserva</span></button>
+        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità · ricarica · consumi · meteo</span></button>
+        <button class="tog" id="togBackup" type="button"><b>PANICO RICARICA</b><span>colonnine più vicine · qualsiasi rete</span></button>
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
-        <button class="tog" id="togDarkMap" type="button"><b>MAPPA SCURA</b><span>chiara / scura</span></button>
+        <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
       </div>
 
       <label>Attrazioni lungo il percorso</label>
@@ -216,6 +219,7 @@
       <button class="go" id="btnGo">Calcola percorsi</button>
       <div class="hint">v1.4.7 · Solo Supercharger Tesla e Ionity. Imposta i km max fuori percorso per ristoranti e attrazioni.</div>
       <div id="status"></div>
+      <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
     </aside>
     <div class="mapwrap">
@@ -269,13 +273,19 @@
   };
   const NETS = {
     SUPERCHARGER: { color: "#e31937", price: 0.39, power: 250 },
-    IONITY:       { color: "#0b6e4f", price: 0.69, power: 350 }
+    IONITY:       { color: "#0b6e4f", price: 0.69, power: 350 },
+    ELECTRA:      { color: "#6ea8ff", price: 0.54, power: 300 },
+    EVDC:         { color: "#b07cff", price: 0.55, power: 150 },
+    ENBW:         { color: "#f5c542", price: 0.61, power: 300 },
+    GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 }
   };
-  const NET_KEYS = Object.keys(NETS);
+  const PLAN_NETS = ["SUPERCHARGER","IONITY"];
+  const NET_KEYS = PLAN_NETS.slice();
   function selectedNets(){
     const on = [...document.querySelectorAll("#netChips .chip.on")].map(c=>c.dataset.net);
-    return on.length ? on : NET_KEYS.slice();
+    return on.length ? on : PLAN_NETS.slice();
   }
+  function allOperatorNets(){ return Object.keys(NETS); }
   function netColor(net){ return (NETS[net] && NETS[net].color) || "#3dd68c"; }
 
   /* Dataset HPC di riserva (Europa, focus IT + corridoi). Non esaustivo, serve offline. */
@@ -387,7 +397,8 @@
   const state = {
     mode: "fast",
     smart: false,
-    backup: true,
+    backup: false,
+    panicList: [],
     map: null,
     layers: [],
     gOverlays: [],
@@ -494,16 +505,95 @@
     stop.cost = (stop.kwh||0) * price;
     return stop;
   }
+  function headingDeg(a,b){
+    const dLng=(b.lng-a.lng)*Math.PI/180;
+    const la=a.lat*Math.PI/180, lb=b.lat*Math.PI/180;
+    const y=Math.sin(dLng)*Math.cos(lb);
+    const x=Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dLng);
+    return (Math.atan2(y,x)*180/Math.PI+360)%360;
+  }
+  function wxLabel(code){
+    if ([96,99].includes(code)) return "grandine";
+    if (code===95) return "temporale / fulmini";
+    if ([82,65].includes(code)) return "pioggia intensa";
+    if ([61,63,80,81].includes(code)) return "pioggia";
+    if ([71,73,75,85,86].includes(code)) return "neve";
+    if ([45,48].includes(code)) return "nebbia";
+    return "";
+  }
+  function wxSeverity(cur){
+    const code = +(cur && cur.weather_code);
+    const precip = +((cur && (cur.precipitation||cur.rain||cur.showers))||0);
+    const wind = +((cur && cur.wind_speed_10m)||0);
+    if ([96,99].includes(code)) return {lvl:5, name:"grandine"};
+    if (code===95) return {lvl:4, name:"temporale / fulmini"};
+    if (code===82 || code===65 || precip>=8) return {lvl:3, name:"pioggia intensa"};
+    if ([61,63,80,81].includes(code) || precip>=2.5) return {lvl:2, name:"pioggia"};
+    if (wind>=55) return {lvl:2, name:"vento forte"};
+    if (wind>=40) return {lvl:1, name:"vento"};
+    return {lvl:0, name:"ok"};
+  }
+  async function fetchWxPoint(lat,lng){
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,precipitation,rain,showers,wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh&timezone=auto`;
+    const r = await fetch(u);
+    if (!r.ok) throw new Error("meteo");
+    const j = await r.json();
+    return j.current || {};
+  }
+  function sampleCoords(coords, n){
+    if (!coords.length) return [];
+    const out=[];
+    for (let i=0;i<n;i++){
+      const idx = Math.round(i*(coords.length-1)/(n-1||1));
+      out.push(coords[idx]);
+    }
+    return out;
+  }
+  async function weatherForRoute(coords){
+    const pts = sampleCoords(coords, 5);
+    const samples=[];
+    for (const p of pts){
+      try { samples.push({...p, cur: await fetchWxPoint(p.lat,p.lng)}); }
+      catch(e){ samples.push({...p, cur:null}); }
+    }
+    const hazards = samples.map(s => s.cur ? wxSeverity(s.cur) : {lvl:0,name:"n/d"}).filter(h=>h.lvl>0);
+    const worst = hazards.reduce((a,b)=>b.lvl>a.lvl?b:a, {lvl:0,name:"ok"});
+    const winds = samples.filter(s=>s.cur).map(s=>s.cur);
+    const avgWind = winds.length ? winds.reduce((a,c)=>a+(+c.wind_speed_10m||0),0)/winds.length : 0;
+    const avgDir = winds.length ? winds.reduce((a,c)=>a+(+c.wind_direction_10m||0),0)/winds.length : 0;
+    const course = headingDeg(coords[0], coords[coords.length-1]);
+    let d = Math.abs(((avgDir - course + 540)%360)-180);
+    const headOn = d < 55; // wind FROM similar to heading = face wind
+    const rain = winds.reduce((a,c)=>a+(+c.precipitation||+c.rain||0),0);
+    let consMul = 1;
+    if (worst.lvl>=5) consMul += 0.18;
+    else if (worst.lvl>=4) consMul += 0.12;
+    else if (worst.lvl>=3) consMul += 0.10;
+    else if (worst.lvl>=2) consMul += 0.06;
+    if (headOn) consMul += Math.min(0.16, avgWind/250);
+    const maxV = worst.lvl>=4 ? 100 : worst.lvl>=3 ? 110 : 130;
+    const names = [...new Set(hazards.map(h=>h.name))];
+    return {
+      worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples,
+      text: names.length ? names.join(", ") : "meteo ok",
+      score: worst.lvl*1000 + (headOn?avgWind:0) + rain
+    };
+  }
   function consAt(speed){
     const table = [[90,15.4],[100,16.6],[110,18.0],[120,19.8],[130,22.2],[140,25.0]];
-    if (speed <= table[0][0]) return table[0][1];
-    for (let i=1;i<table.length;i++){
-      if (speed <= table[i][0]){
-        const [s0,c0]=table[i-1], [s1,c1]=table[i];
-        return c0 + (c1-c0)*(speed-s0)/(s1-s0);
+    let base;
+    if (speed <= table[0][0]) base = table[0][1];
+    else {
+      base = 25 + (speed-140)*0.35;
+      for (let i=1;i<table.length;i++){
+        if (speed <= table[i][0]){
+          const [s0,c0]=table[i-1], [s1,c1]=table[i];
+          base = c0 + (c1-c0)*(speed-s0)/(s1-s0);
+          break;
+        }
       }
     }
-    return 25 + (speed-140)*0.35;
+    return base * ((state.wx && state.wx.consMul) || 1);
   }
   function kwAt(soc){
     const c = CAR.curve;
@@ -541,6 +631,10 @@
     const t = (text||"").toUpperCase();
     if (t.includes("SUPERCHARGER") || t.includes("TESLA")) return "SUPERCHARGER";
     if (t.includes("IONITY")) return "IONITY";
+    if (t.includes("ELECTRA")) return "ELECTRA";
+    if (t.includes("ENBW") || t.includes("HYPERNETZ")) return "ENBW";
+    if (t.includes("GREENWAY") || t.includes("GREEN WAY")) return "GREENWAY";
+    if (t.includes("EVDC")) return "EVDC";
     return null;
   }
 
@@ -712,11 +806,19 @@
     return { lat: lat+dLat, lng: lng+dLng };
   }
 
+  function midCoord(r){
+    const c=r.coords; return c[Math.floor(c.length/2)];
+  }
+  function routesAlike(a,b){
+    if (Math.abs((a.meters||0)-(b.meters||0)) < 22000) return true;
+    if (a.coords && b.coords) return haversine(midCoord(a), midCoord(b)) < 18;
+    return false;
+  }
   function uniqRoutes(list, minDiffKm){
     const uniq=[];
     for (const r of list){
       if (!r || !r.coords || r.coords.length<2) continue;
-      if (uniq.every(u => Math.abs(u.meters-r.meters) > (minDiffKm||12)*1000)) uniq.push(r);
+      if (uniq.every(u => !routesAlike(u,r) && Math.abs(u.meters-r.meters) > (minDiffKm||22)*1000)) uniq.push(r);
       if (uniq.length===3) break;
     }
     return uniq;
@@ -767,8 +869,15 @@
         try { seed = await routeOsrm(points, null, false); } catch(e){}
       }
       seed.sort((x,y)=>(x.seconds||0)-(y.seconds||0));
-      const three = uniqRoutes(seed, 6);
+      let three = uniqRoutes(seed, 22);
+      if (three.length<3) three = await fillToThree(points, a, b, seed, false);
       if (!three.length) throw new Error("Nessun percorso trovato");
+      while (three.length<3){
+        try {
+          const more = await routeOsrm(points, midpointOffset(a,b, 25+three.length*20, three.length%2?1:-1), false);
+          three = uniqRoutes(three.concat(more), 18);
+        } catch(e){ break; }
+      }
       return three.slice(0,3);
     }
     if (useG){
@@ -1048,7 +1157,7 @@
     const keys = loadKeys();
     let extra=[];
     const samples = samplePath(pathCoords, 70).pts.slice(0, 14);
-    const allowed = selectedNets();
+    const allowed = allOperatorNets();
 
     async function ocmAt(p){
       const params = new URLSearchParams({
@@ -1139,7 +1248,8 @@
     return smartCombo(km, socStart, minSoc, null, null, 250, 0).leg;
   }
   function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm){
-    const speeds = [95,100,105,110,115,120,125,130];
+    const cap = (state.wx && state.wx.maxV) || 130;
+    const speeds = [95,100,105,110,115,120,125,130].filter(v=>v<=cap);
     let best=null;
     for (const v of speeds){
       const energy = consAt(v)*km/100;
@@ -1257,7 +1367,7 @@
         smartScore: st.score
       };
       if (backupOn){
-        const bu = nearestBackup(stopObj, uniq.concat(opts.chargers||[]));
+        const bu = nearestBackup(stopObj, (opts.backupPool||[]).concat(uniq, opts.chargers||[]));
         if (bu) attachBackup(stopObj, bu, backupPct, arrive);
       }
       stops.push(stopObj);
@@ -1288,7 +1398,7 @@
 
   function nearestBackup(stop, others){
     return others
-      .filter(c => c.id !== stop.id && selectedNets().includes(c.net) && haversine(c, stop) > 0.4 && haversine(c, stop) < 25)
+      .filter(c => c.id !== stop.id && allOperatorNets().includes(c.net) && haversine(c, stop) > 0.4 && haversine(c, stop) < 35)
       .sort((a,b)=>haversine(a,stop)-haversine(b,stop))[0] || null;
   }
   function attachBackup(stop, bu, reservedPct, arriveSoc){
@@ -1332,13 +1442,17 @@
     state.stopMarkers = [];
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
+      const html = state.smart
+        ? `<div class="smart-flag">#${n} · ${s.speed||"—"} km/h<br>arrivo ${s.arriveSoc.toFixed(0)}%</div>`
+        : `<div style="width:26px;height:26px;border-radius:50%;background:${netColor(s.net)};color:#111;border:2px solid #0b0d10;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">${n}</div>`;
       const icon = L.divIcon({
         className: "num-pin",
-        html: `<div style="width:26px;height:26px;border-radius:50%;background:${netColor(s.net)};color:#111;border:2px solid #0b0d10;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">${n}</div>`,
-        iconSize: [26,26], iconAnchor: [13,13]
+        html,
+        iconSize: state.smart ? [92,36] : [26,26],
+        iconAnchor: state.smart ? [46,18] : [13,13]
       });
       const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
-        .bindPopup(`<b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
+        .bindPopup(`<b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SMART ${s.speed||"—"} km/h<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
         .addTo(state.map);
       m.on("click", ()=> focusStop(si, false));
       state.layers.push(m);
@@ -1350,6 +1464,25 @@
         state.layers.push(b);
         state.layers.push(L.polyline([[s.lat,s.lng],[s.backup.lat,s.backup.lng]], {color:"#f5c542", dashArray:"6 6", weight:2}).addTo(state.map));
       }
+    });
+    if (state.smart && alt.coords.length){
+      const end = alt.coords[alt.coords.length-1];
+      const f = alt.plan.final||{};
+      const dm = L.marker([end.lat,end.lng], {
+        icon: L.divIcon({
+          className:"",
+          html:`<div class="smart-flag">destinazione · ${f.speed||"—"} km/h<br>arrivo ${Number(f.arrive||0).toFixed(0)}%</div>`,
+          iconSize:[130,36], iconAnchor:[65,18]
+        }),
+        zIndexOffset: 500
+      }).addTo(state.map);
+      state.layers.push(dm);
+    }
+    (state.panicList||[]).forEach((c,i)=>{
+      const m = L.circleMarker([c.lat,c.lng], {radius:8, color:"#fff", weight:2, fillColor:netColor(c.net), fillOpacity:1})
+        .bindPopup(`<b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria <b>${c.needPct.toFixed(1)}%</b>`)
+        .addTo(state.map);
+      state.layers.push(m);
     });
     (state.pois||[]).forEach(p=>{
       const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?p.stars+"★":"·");
@@ -1404,17 +1537,29 @@
       state.gOverlays.push(m);
     });
     state.stopMarkers = [];
+    function smartSvg(n, speed, soc, color){
+      const t1 = `#${n}  ${speed} km/h`;
+      const t2 = `arrivo ${soc}%`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="118" height="40">
+        <rect x="1" y="1" width="116" height="38" rx="8" fill="#111c16" stroke="${color}" stroke-width="2"/>
+        <text x="59" y="16" text-anchor="middle" fill="#e8fff3" font-size="11" font-family="Arial" font-weight="700">${t1}</text>
+        <text x="59" y="31" text-anchor="middle" fill="#3dd68c" font-size="11" font-family="Arial" font-weight="700">${t2}</text>
+      </svg>`;
+      return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+    }
     alt.plan.stops.forEach((s, si)=>{
       const n = String(si+1);
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        label:{text:n, color:"#111", fontWeight:"800"},
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale:14, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
-        title: "#"+n+" "+s.name+" · arrivo "+s.arriveSoc.toFixed(0)+"%",
+        label: state.smart ? undefined : {text:n, color:"#111", fontWeight:"800"},
+        icon: state.smart
+          ? { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), netColor(s.net)), scaledSize: new google.maps.Size(118,40), anchor: new google.maps.Point(59,20) }
+          : { path: google.maps.SymbolPath.CIRCLE, scale:14, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
+        title: `#${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
         zIndex: 200+si
       });
       const info = new google.maps.InfoWindow({
-        content: `<div style="color:#111"><b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
+        content: `<div style="color:#111"><b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>Velocità SMART: <b>${s.speed||"—"} km/h</b><br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
       });
       m._info = info;
       m.addListener("click", ()=> focusStop(si, false));
@@ -1436,6 +1581,31 @@
           map:state.gmap, strokeColor:"#f5c542", strokeWeight:2, icons:[{icon:{path:"M 0,-1 0,1", strokeOpacity:1, scale:3}, offset:"0", repeat:"12px"}]
         }));
       }
+    });
+    if (state.smart && alt.coords.length){
+      const end = alt.coords[alt.coords.length-1];
+      const f = alt.plan.final||{};
+      const dm = new google.maps.Marker({
+        position:{lat:end.lat,lng:end.lng}, map:state.gmap,
+        icon: { url: smartSvg("D", f.speed||0, Math.round(f.arrive||0), "#3dd68c"), scaledSize: new google.maps.Size(118,40), anchor: new google.maps.Point(59,20) },
+        title: `Destinazione · ${f.speed||"—"} km/h · arrivo ${Number(f.arrive||0).toFixed(0)}%`,
+        zIndex: 250
+      });
+      state.gOverlays.push(dm);
+    }
+    (state.panicList||[]).forEach((c,i)=>{
+      const m = new google.maps.Marker({
+        position:{lat:c.lat,lng:c.lng}, map:state.gmap,
+        label:{text:"P"+String(i+1), color:"#111", fontSize:"10px", fontWeight:"800"},
+        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:11, fillColor:netColor(c.net), fillOpacity:1, strokeColor:"#fff", strokeWeight:2 },
+        title:`PANICO ${c.name} · ${c.needPct.toFixed(1)}%`,
+        zIndex: 260
+      });
+      const info = new google.maps.InfoWindow({
+        content:`<div style="color:#111"><b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria: <b>${c.needPct.toFixed(1)}%</b><br>SoC all'arrivo: <b>${c.arrive.toFixed(0)}%</b></div>`
+      });
+      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
+      state.gOverlays.push(m);
     });
     (state.pois||[]).forEach(p=>{
       bounds.extend({lat:p.lat,lng:p.lng});
@@ -1570,8 +1740,19 @@
       const vias = await readVias();
       const b = await resolvePlace($("dest"));
       setStatus("Percorsi in calcolo…");
-      const routes = await getRoutes(a,b,state.mode,vias);
+      let routes = await getRoutes(a,b,state.mode,vias);
       if (!routes.length) throw new Error("Nessun itinerario");
+      if (state.smart){
+        setStatus("SMART: controllo meteo sul percorso (grandine, temporali, pioggia, vento)…");
+        for (const r of routes){
+          try { r.wx = await weatherForRoute(r.coords); }
+          catch(e){ r.wx = {score:0, text:"meteo n/d", consMul:1, maxV:130, worst:{lvl:0,name:"ok"}, names:[], headOn:false, avgWind:0}; }
+        }
+        routes.sort((x,y)=>(x.wx.score-y.wx.score) || ((x.seconds||0)-(y.seconds||0)));
+        state.wx = routes[0].wx;
+      } else {
+        state.wx = { consMul:1, maxV:130 };
+      }
       setStatus("Scarico tariffe Supercharger da SuC Tracker…");
       try {
         await loadSucTracker();
@@ -1588,18 +1769,20 @@
       const fromSuc = state.sucStations.map(s => ({
         id:"suc-"+s.id, net:"SUPERCHARGER", name:s.name, lat:s.lat, lng:s.lng, kw:s.kw||250
       }));
-      const chargers = [];
+      const allChargers = [];
       for (const c of HPC.concat(extra, fromSuc)){
-        if (!selectedNets().includes(c.net)) continue;
-        if (chargers.some(u => u.net===c.net && haversine(u,c)<0.7)) continue;
-        chargers.push(c);
+        if (!c.net || !allOperatorNets().includes(c.net)) continue;
+        if (allChargers.some(u => u.net===c.net && haversine(u,c)<0.7)) continue;
+        allChargers.push(c);
       }
+      const chargers = allChargers.filter(c => selectedNets().includes(c.net));
       state.routeChargers = chargers.filter(c => distToPath(c, routes[0].coords) <= 14);
+      state.backupPool = allChargers;
       setStatus("Cerco attrazioni lungo il percorso…");
       const pois = await loadPoisForRoute(routes[0].coords);
       state.pois = pois;
       const alts = routes.slice(0,3).map((r,i)=>{
-        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:state.smart,chargers, backupOn:state.backup, backupPct, destArrive});
+        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:state.smart,chargers, backupPool:allChargers, backupOn:state.backup, backupPct, destArrive});
         plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
       });
@@ -1612,7 +1795,10 @@
       const low = alts[0].plan.final.arrive < destArrive;
       setStatus(
         `Trovati ${alts.length} percorsi · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
-        (low ? " Attenzione: SoC all'arrivo sotto il minimo voluto, servono più soste o una % dedicata minore." : ""),
+        (low ? " Attenzione: SoC all'arrivo sotto il minimo voluto, servono più soste o una % dedicata minore." : "") +
+        (state.smart && state.wx && state.wx.worst && state.wx.worst.lvl>=3
+          ? ` Meteo: evito il peggio, resta ${state.wx.text}${state.wx.headOn?` · vento contrario ${state.wx.avgWind.toFixed(0)} km/h`:""}.`
+          : (state.smart && state.wx ? ` Meteo: ${state.wx.text}${state.wx.headOn?` · vento contrario ${state.wx.avgWind.toFixed(0)} km/h`:""}.` : "")),
         low ? "err" : "ok"
       );
     }catch(e){
@@ -1626,24 +1812,101 @@
   /* UI bindings */
   $("modeFast").onclick = ()=>{ state.mode="fast"; $("modeFast").classList.add("active"); $("modePano").classList.remove("active"); };
   $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
-  $("togSmart").onclick = ()=>{ state.smart=!state.smart; $("togSmart").classList.toggle("on", state.smart); };
-  $("togBackup").onclick = ()=>{ state.backup=!state.backup; $("togBackup").classList.toggle("on", state.backup); };
+  $("togSmart").onclick = ()=>{
+    state.smart=!state.smart;
+    $("togSmart").classList.toggle("on", state.smart);
+    if (state.alts && state.alts.length) $("btnGo").click();
+  };
+  async function panicRicarica(){
+    $("togBackup").classList.add("on");
+    setStatus("PANICO RICARICA: cerco le colonnine più vicine di qualsiasi operatore…");
+    try{
+      const here = await resolvePlace($("origin"));
+      const soc = +$("soc").value || 50;
+      const minSoc = +$("socMin").value || 10;
+      let extra=[];
+      try { extra = await extraChargers([{lat:here.lat,lng:here.lng}, {lat:here.lat+0.3,lng:here.lng+0.3}]); } catch(e){}
+      const pool=[];
+      for (const c of HPC.concat(extra, state.backupPool||[], state.sucStations.map(s=>({id:"suc-"+s.id,net:"SUPERCHARGER",name:s.name,lat:s.lat,lng:s.lng,kw:s.kw||250})))){
+        if (!c || !c.lat) continue;
+        if (pool.some(u=>haversine(u,c)<0.6)) continue;
+        pool.push(c);
+      }
+      const speed = 90;
+      const list = pool.map(c=>{
+        const km = haversine(here, c);
+        const needPct = (consAt(speed)*km/100)/CAR.kwh*100;
+        return { ...c, km, needPct, arrive: soc-needPct, ok: soc-needPct >= minSoc };
+      }).filter(c=>c.km>0.2 && c.km<80).sort((a,b)=>a.km-b.km).slice(0,10);
+      state.panicList = list;
+      state.panicHere = here;
+      if (!list.length) throw new Error("Nessuna colonnina entro 80 km");
+      setStatus(`PANICO RICARICA: ${list.length} colonnine vicine. La più vicina è ${list[0].name} (${list[0].net}) a ${list[0].km.toFixed(1)} km · servono ${list[0].needPct.toFixed(1)}% di batteria.`,"ok");
+      if (state.alts && state.alts.length) draw(state.alts, state.selected);
+      else drawPanicOnly();
+      renderPanicBox();
+    }catch(e){
+      setStatus("PANICO RICARICA: "+(e.message||e),"err");
+    }
+  }
+  function renderPanicBox(){
+    const box = $("panicBox");
+    if (!box) return;
+    const list = state.panicList||[];
+    if (!list.length){ box.innerHTML=""; return; }
+    box.innerHTML = `<article class="alt sel" style="cursor:default">
+      <h3>PANICO RICARICA</h3>
+      ${list.map((c,i)=>`<div class="stop">
+        <div class="name">${i+1}. ${c.name}<span class="net" style="background:${netColor(c.net)};color:#111">${c.net||"HPC"}</span></div>
+        <div class="meta">${c.km.toFixed(1)} km · servono <b>${c.needPct.toFixed(1)}%</b> di batteria
+        · arrivo stimato <b class="socpill">${c.arrive.toFixed(0)}%</b>
+        ${c.ok?"":" · NON BASTA lo SoC attuale"}</div>
+      </div>`).join("")}
+    </article>`;
+  }
+  function drawPanicOnly(){
+    const list = state.panicList||[];
+    const here = state.panicHere;
+    if (useGoogle() && state.gmap && here){
+      list.forEach((c,i)=>{
+        const m = new google.maps.Marker({
+          position:{lat:c.lat,lng:c.lng}, map:state.gmap,
+          label:{text:String(i+1), color:"#111", fontWeight:"800"},
+          icon:{ path: google.maps.SymbolPath.CIRCLE, scale:11, fillColor:netColor(c.net), fillOpacity:1, strokeColor:"#fff", strokeWeight:2 },
+          title:`${c.name} · ${c.km.toFixed(1)} km · ${c.needPct.toFixed(1)}%`
+        });
+        const info = new google.maps.InfoWindow({
+          content:`<div style="color:#111"><b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria: <b>${c.needPct.toFixed(1)}%</b><br>SoC all'arrivo: <b>${c.arrive.toFixed(0)}%</b></div>`
+        });
+        m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
+        state.gOverlays.push(m);
+      });
+      state.gmap.panTo({lat:here.lat,lng:here.lng});
+      state.gmap.setZoom(10);
+    }
+  }
+  $("togBackup").onclick = ()=> panicRicarica();
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
     $("togTraffic").classList.toggle("on", state.trafficOn);
     if (state.traffic) state.traffic.setMap(state.trafficOn ? state.gmap : null);
     else if (state.trafficOn && useGoogle()) initGoogleMap();
   };
+  function syncMapColorBtn(){
+    $("togDarkMap").classList.toggle("on", !!state.darkMap);
+    const lab=$("mapColorLbl");
+    if (lab) lab.textContent = state.darkMap ? "scura" : "chiara";
+  }
   $("togDarkMap").onclick = ()=>{
     state.darkMap = !state.darkMap;
-    $("togDarkMap").classList.toggle("on", state.darkMap);
     applyMapTheme();
+    syncMapColorBtn();
   };
   if (localStorage.getItem("my_dark_map")==="1"){
     state.darkMap = true;
-    $("togDarkMap").classList.add("on");
     applyMapTheme();
   }
+  syncMapColorBtn();
   function focusStop(idx, fromList){
     state.focusStop = idx;
     document.querySelectorAll(".stop").forEach(el => el.classList.toggle("on", +el.dataset.stop===idx));
