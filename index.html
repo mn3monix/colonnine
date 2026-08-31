@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.7.6</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.0</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -133,7 +133,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.7.6</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.0</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -230,7 +230,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.7.6 · SMART: prima possibile, ≥15% SoC. Autostrada 105–135. Altre strade al limite. Traffico, pendenza, meteo.</div>
+      <div class="hint">v1.8.0 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -272,7 +272,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.7.6";
+  const APP_VERSION = "1.8.0";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1505,7 +1505,151 @@
     const start = fromKm||0;
     return spanDrive(route, start, start+dkm, v).driveMin;
   }
-  function planTrip(route, opts){
+  function frvcpBestLeg(route, fromKm, toKm, leaveSoc, minArrive){
+    const cruises = [105, 110, 115, 120, 125, 130, 135];
+    let best = null;
+    for (const v of cruises){
+      const phys = spanDrive(route, fromKm, toKm, v);
+      const arrive = leaveSoc - (phys.energy / CAR.kwh) * 100;
+      if (arrive < minArrive - 0.4) continue;
+      const score = phys.driveMin + Math.max(0, (leaveSoc - arrive) * 0.04);
+      if (!best || score < best.score){
+        best = { v, arrive, driveMin: phys.driveMin, energy: phys.energy, cons: phys.km ? phys.energy / phys.km * 100 : consAt(v), score };
+      }
+    }
+    if (best) return best;
+    const v = 105;
+    const phys = spanDrive(route, fromKm, toKm, v);
+    return { v, arrive: leaveSoc - (phys.energy / CAR.kwh) * 100, driveMin: phys.driveMin, energy: phys.energy, cons: consAt(v), score: 1e9 };
+  }
+  function frvcpPlan(route, opts){
+    const { soc0, minSoc, chargeMin, chargeMax, backupOn, backupPct, destArrive } = opts;
+    const minArrive = Math.max(15, minSoc || 15);
+    const wantDest = Math.max(minArrive, destArrive || minArrive);
+    const { km } = samplePath(route.coords, 8);
+    const allowed = selectedNets();
+    const along = (opts.chargers || [])
+      .filter(c => !c.net || allowed.includes(c.net))
+      .filter(c => !/destination charger|destinationcharging|destinazione/i.test(c.name || ""))
+      .map(c => {
+        const pr = progressOnPath(c, route.coords);
+        return { ...c, atKm: pr.km, off: distToPath(c, route.coords) };
+      })
+      .filter(c => c.off <= 12 && c.atKm > 20 && c.atKm < km - 10)
+      .sort((a, b) => a.atKm - b.atKm);
+    const stations = [];
+    for (const c of along){
+      if (stations.some(u => Math.abs(u.atKm - c.atKm) < 18 || haversine(u, c) < 8)) continue;
+      stations.push(c);
+      if (stations.length >= 16) break;
+    }
+    const start = { kind: "start", atKm: 0, lat: route.coords[0].lat, lng: route.coords[0].lng, name: "Partenza" };
+    const dest = { kind: "dest", atKm: km, lat: route.coords[route.coords.length - 1].lat, lng: route.coords[route.coords.length - 1].lng, name: "Destinazione" };
+    const nodes = [start, ...stations.map(s => ({ ...s, kind: "chg" })), dest];
+    const N = nodes.length;
+    const INF = 1e12;
+    const leave = Array.from({ length: N }, () => []);
+    leave[0].push({ soc: soc0, time: 0, prev: -1, prevK: -1, v: 0, driveMin: 0, energy: 0, chargeMin: 0, arrive: soc0, target: soc0 });
+
+    function prune(list){
+      list.sort((a, b) => a.soc - b.soc || a.time - b.time);
+      const out = [];
+      let bestT = INF;
+      for (const st of list){
+        if (st.time + 0.4 < bestT || (out.length && st.soc - out[out.length - 1].soc >= 4 && st.time <= bestT + 8)){
+          out.push(st);
+          bestT = Math.min(bestT, st.time);
+        }
+      }
+      return out.slice(-10);
+    }
+
+    for (let i = 0; i < N - 1; i++){
+      const from = nodes[i];
+      const options = leave[i];
+      if (!options.length) continue;
+      for (let j = i + 1; j < N; j++){
+        const to = nodes[j];
+        const dkm = to.atKm - from.atKm;
+        if (dkm < 8) continue;
+        for (const st of options){
+          const leg = frvcpBestLeg(route, from.atKm, to.atKm, st.soc, minArrive);
+          if (leg.arrive < minArrive - 0.6) continue;
+          const tArr = st.time + leg.driveMin;
+          if (to.kind === "dest"){
+            if (leg.arrive + 0.6 < wantDest) continue;
+            leave[j].push({
+              soc: leg.arrive, time: tArr, prev: i, prevSt: st,
+              v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: 0,
+              arrive: leg.arrive, target: leg.arrive, cons: leg.cons, dkm
+            });
+            continue;
+          }
+          const lo = Math.max(Math.ceil((leg.arrive + 4) / 5) * 5, chargeMin);
+          const hi = chargeMax;
+          const targets = [];
+          for (let t = lo; t <= hi; t += 5) targets.push(t);
+          if (!targets.length && hi > leg.arrive + 2) targets.push(Math.min(hi, Math.round(leg.arrive + 10)));
+          for (const tgt of targets){
+            if (tgt <= leg.arrive + 1) continue;
+            const cmin = chargeMinutes(leg.arrive, tgt, to.kw || 250);
+            leave[j].push({
+              soc: tgt, time: tArr + cmin, prev: i, prevSt: st,
+              v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
+              arrive: leg.arrive, target: tgt, cons: leg.cons, dkm,
+              kwhAdd: CAR.kwh * (tgt - leg.arrive) / 100 / 0.95
+            });
+          }
+        }
+        leave[j] = prune(leave[j]);
+      }
+    }
+
+    const destStates = leave[N - 1];
+    if (!destStates.length) return null;
+    destStates.sort((a, b) => a.time - b.time);
+    let cur = destStates[0];
+    const chain = [];
+    let idx = N - 1;
+    let guard = 0;
+    while (idx > 0 && cur && guard++ < 24){
+      chain.push({ node: nodes[idx], st: cur });
+      const p = cur.prev;
+      if (p < 0) break;
+      cur = cur.prevSt;
+      idx = p;
+    }
+    chain.reverse();
+    const stops = [];
+    for (const step of chain){
+      if (step.node.kind !== "chg") continue;
+      const s = step.st;
+      const ch = step.node;
+      const price = (state.prices && state.prices[ch.net]) || 0.39;
+      const kwhAdd = s.kwhAdd != null ? s.kwhAdd : CAR.kwh * Math.max(0, s.target - s.arrive) / 100 / 0.95;
+      const stopObj = {
+        ...ch, dkm: s.dkm, speed: s.v, arriveSoc: s.arrive, targetSoc: s.target,
+        chargeMin: s.chargeMin, kwh: kwhAdd, cost: kwhAdd * price,
+        driveMin: s.driveMin, reservedPct: backupOn ? backupPct : 0,
+        cons: s.cons || consAt(s.v), roadKind: "FRVCP · autostrada 105–135 / altre al limite"
+      };
+      if (backupOn){
+        const bu = nearestBackup(stopObj, (opts.backupPool || []).concat(stations, opts.chargers || []));
+        if (bu) attachBackup(stopObj, bu, backupPct, s.arrive);
+      }
+      stops.push(stopObj);
+    }
+    const last = chain[chain.length - 1];
+    const final = last && last.node.kind === "dest" ? last.st : destStates[0];
+    return {
+      stops,
+      final: { km: final.dkm || (km - (stops.length ? stops[stops.length - 1].atKm : 0)), speed: final.v, arrive: final.arrive, driveMin: final.driveMin, energy: final.energy },
+      km,
+      navMin: route.seconds ? route.seconds / 60 : null,
+      algo: "FRVCP"
+    };
+  }
+  function planTripGreedy(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
     const maxSoc = chargeMax;
     const minForStop = Math.max(15, minSoc||15);
@@ -1636,6 +1780,17 @@
     };
     const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km, fromKm);
     return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:driveLast, energy:st.energy }, km, navMin: route.seconds? route.seconds/60 : null };
+  }
+  function planTrip(route, opts){
+    try {
+      const dp = frvcpPlan(route, opts);
+      if (dp && dp.final && (dp.stops.length || dp.final.arrive >= Math.max(15, opts.minSoc || 15) - 1)){
+        return dp;
+      }
+    } catch (e) { console.warn("FRVCP fallback", e); }
+    const g = planTripGreedy(route, opts);
+    if (g) g.algo = "greedy";
+    return g;
   }
 
   function nearestBackup(stop, others){
@@ -1934,7 +2089,7 @@
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
-      const title = state.mode==="fast" ? `Veloce #${i+1}` : `Panoramico #${i+1}`;
+      const title = (state.mode==="fast" ? `Veloce #${i+1}` : `Panoramico #${i+1}`) + (p.algo==="FRVCP" ? " · FRVCP" : "");
       const stopsHtml = p.stops.map((s,si)=>{
         const bu = s.backup ? `<div class="backup-box">
             <b>BACKUP</b> · ${s.backup.name} · ${s.backup.net} · ${s.backup.kw} kW<br>
