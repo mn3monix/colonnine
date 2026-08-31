@@ -94,7 +94,7 @@
         <div class="brand">
           <div class="logo">V</div>
           <div>
-            <h1>VoltVia <span id="appVer" style="font-size:12px;color:#8fa3c0;font-weight:600">v0.7.0</span></h1>
+            <h1>VoltVia <span id="appVer" style="font-size:12px;color:#8fa3c0;font-weight:600">v0.8.0</span></h1>
             <div class="sub">Percorso · colonnine · dintorni</div>
           </div>
         </div>
@@ -111,11 +111,6 @@
         <div>
           <label>Veicolo</label>
           <select id="vehicle"></select>
-        </div>
-        <div class="row3" id="customVeh" style="display:none">
-          <div><label>Batteria kWh</label><input id="batKwh" type="number" min="20" max="200" step="0.5" value="70" /></div>
-          <div><label>kWh/100 km</label><input id="cons" type="number" min="8" max="40" step="0.1" value="17" /></div>
-          <div><label>kW max auto</label><input id="peakKw" type="number" min="40" max="400" step="10" value="150" /></div>
         </div>
         <div class="row2">
           <div>
@@ -206,14 +201,9 @@
     const activeNets = new Set(NETWORKS.map((n) => n.id));
     const info = new WeakMap();
 
-    const APP_VERSION = "0.7.0";
+    const APP_VERSION = "0.8.0";
     const VEHICLES = [
-      { id: "m3", label: "Tesla Model 3", bat: 57.5, kwh100: 14.5, peak: 170 },
-      { id: "my", label: "Tesla Model Y", bat: 75, kwh100: 16.5, peak: 250 },
-      { id: "compact", label: "Compatta EV (50-55 kWh)", bat: 52, kwh100: 15.5, peak: 130 },
-      { id: "id4", label: "VW ID.4 / simile", bat: 77, kwh100: 17.5, peak: 175 },
-      { id: "suv", label: "SUV EV grande", bat: 96, kwh100: 20.5, peak: 200 },
-      { id: "custom", label: "Personalizzato", bat: 70, kwh100: 17, peak: 150 }
+      { id: "my-awd-2026", label: "Tesla Model Y AWD 2026", bat: 78, kwh100: 16.8, peak: 250 }
     ];
     const NET_PRICE = { tesla: 0.52, ionity: 0.69, electra: 0.44, enbw: 0.59 };
     document.getElementById("vehicle").innerHTML = VEHICLES.map((v) =>
@@ -352,12 +342,8 @@
     };
 
     document.getElementById("minKw").onchange = () => refreshVisible();
-    document.getElementById("vehicle").onchange = () => {
-      document.getElementById("customVeh").style.display =
-        document.getElementById("vehicle").value === "custom" ? "grid" : "none";
-      refreshVisible();
-    };
-    ["soc", "eurKwh", "batKwh", "cons", "peakKw"].forEach((id) => {
+    document.getElementById("vehicle").onchange = () => refreshVisible();
+    ["soc", "eurKwh"].forEach((id) => {
       document.getElementById(id).oninput = () => refreshVisible();
     });
 
@@ -534,17 +520,7 @@
     }
 
     function getVehicle() {
-      const id = document.getElementById("vehicle").value;
-      const base = VEHICLES.find((v) => v.id === id) || VEHICLES[0];
-      if (id === "custom") {
-        return {
-          ...base,
-          bat: +document.getElementById("batKwh").value || base.bat,
-          kwh100: +document.getElementById("cons").value || base.kwh100,
-          peak: +document.getElementById("peakKw").value || base.peak
-        };
-      }
-      return base;
+      return VEHICLES[0];
     }
 
     function userPrice(netId) {

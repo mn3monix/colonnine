@@ -1,6 +1,6 @@
 # VoltVia
 
-Versione **0.7.0**
+Versione **0.8.0**
 
 App HTML per percorsi in auto elettrica: itinerario, colonnine lungo il tragitto e cosa vedere vicino alle soste.
 
