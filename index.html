@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.11</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.12</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.11</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.12</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -234,7 +234,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.11 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.12 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,7 +276,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.11";
+  const APP_VERSION = "1.8.12";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -955,6 +955,13 @@
     const share = tot>8 ? fast/tot : 0.55;
     const avg = 72 + share * 38;
     return km / Math.max(70, Math.min(110, avg)) * 60;
+  }
+  function altTotalMin(alt){
+    const p = alt.plan || {};
+    const driveSum = (p.stops||[]).reduce((s,x)=>s+(x.driveMin||0),0) + ((p.final&&p.final.driveMin)||0);
+    const drive = honestDriveMin(alt, driveSum);
+    const charge = (p.stops||[]).reduce((s,x)=>s+(x.chargeMin||0),0);
+    return drive + charge;
   }
   function honestDriveMin(route, computed){
     const km = (route.meters ? route.meters/1000 : 0) || (route.km||0);
@@ -2298,6 +2305,8 @@
         plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
       });
+      alts.sort((a,b)=> altTotalMin(a)-altTotalMin(b));
+      alts.forEach((a,i)=> a.id=i);
       state.alts=alts; state.selected=0;
       renderResults(alts);
       draw(alts,0);
