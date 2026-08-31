@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.4.6</title>
+  <title>Model Y AWD 2026 — Route Planner v1.5.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -114,7 +114,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.4.7</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.5.1</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -172,7 +172,7 @@
       </div>
 
       <div class="toggles">
-        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità · ricarica · consumi · meteo</span></button>
+        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>105–135 km/h · tempo · ricarica · costo</span></button>
         <button class="tog" id="togBackup" type="button"><b>PANICO RICARICA</b><span>colonnine più vicine · qualsiasi rete</span></button>
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
@@ -217,7 +217,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.4.7 · Solo Supercharger Tesla e Ionity. Imposta i km max fuori percorso per ristoranti e attrazioni.</div>
+      <div class="hint">v1.5.1 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
@@ -227,9 +227,9 @@
       <div id="gmap"></div>
       <div class="legend">
         <div><i style="background:#e31937"></i> percorso selezionato</div>
-        <div><i style="background:#6ea8ff"></i> alternative</div>
+        <div><i style="background:#e8edf4;outline:2px solid #1a1d22"></i> alternative</div>
         <div><i style="background:#3dd68c"></i> colonnina HPC</div>
-        <div><i style="background:#f5c542"></i> backup</div>
+        <div><i style="background:#f5c542"></i> panico / riserva</div>
         <div><i style="background:#d4a0ff"></i> attrazioni</div>
       </div>
     </div>
@@ -260,7 +260,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.4.7";
+  const APP_VERSION = "1.5.1";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -399,6 +399,7 @@
     smart: false,
     backup: false,
     panicList: [],
+    panicOn: false,
     map: null,
     layers: [],
     gOverlays: [],
@@ -571,7 +572,7 @@
     else if (worst.lvl>=3) consMul += 0.10;
     else if (worst.lvl>=2) consMul += 0.06;
     if (headOn) consMul += Math.min(0.16, avgWind/250);
-    const maxV = worst.lvl>=4 ? 100 : worst.lvl>=3 ? 110 : 130;
+    const maxV = worst.lvl>=4 ? 110 : worst.lvl>=3 ? 120 : 135;
     const names = [...new Set(hazards.map(h=>h.name))];
     return {
       worst, hazards, names, avgWind, avgDir, headOn, rain, consMul, maxV, samples,
@@ -1248,9 +1249,11 @@
   function smartSpeed(km, socStart, minSoc){
     return smartCombo(km, socStart, minSoc, null, null, 250, 0).leg;
   }
-  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm){
-    const cap = (state.wx && state.wx.maxV) || 130;
-    const speeds = [95,100,105,110,115,120,125,130].filter(v=>v<=cap);
+  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm, priceEur){
+    const wxCap = (state.wx && state.wx.maxV) || 135;
+    const cap = Math.min(135, Math.max(105, wxCap));
+    const speeds = [105,110,115,120,125,130,135].filter(v=>v<=cap);
+    const price = priceEur != null ? priceEur : ((state.prices && state.prices.SUPERCHARGER) || 0.39);
     let best=null;
     for (const v of speeds){
       const energy = consAt(v)*km/100;
@@ -1258,7 +1261,7 @@
       if (arrive < minArrive + 1) continue;
       const driveMin = km/v*60;
       if (chargeMin == null || chargeMax == null){
-        const score = energy*1.25 + driveMin*0.06;
+        const score = driveMin + energy * price * 8;
         if (!best || score < best.score) best = { v, arrive, driveMin, energy, score, cons:consAt(v) };
         continue;
       }
@@ -1268,14 +1271,15 @@
         if (remainAfterKm > 1 && rangeAfter < remainAfterKm - 2) continue;
         const cmin = chargeMinutes(arrive, t, stallKw||250);
         const add = CAR.kwh * (t-arrive)/100 / 0.95;
-        const score = energy*1.15 + driveMin*0.07 + cmin*0.12 + Math.max(0, t-72)*0.18;
+        const cost = add * price;
+        const score = driveMin + cmin * 1.2 + cost * 8;
         if (!best || score < best.score){
-          best = { v, arrive, driveMin, energy, target:t, chargeMin:cmin, kwhAdd:add, score, cons:consAt(v) };
+          best = { v, arrive, driveMin, energy, target:t, chargeMin:cmin, kwhAdd:add, score, cons:consAt(v), cost };
         }
       }
     }
     if (best) return { leg:best };
-    const v=95, energy=consAt(v)*km/100;
+    const v=105, energy=consAt(v)*km/100;
     return { leg:{ v, arrive:socStart-energy/CAR.kwh*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
   }
 
@@ -1313,7 +1317,7 @@
     let guard=0;
     while (guard++ < 20){
       const remain = km - fromKm;
-      const speedGuess = cruiseDefault || 115;
+      const speedGuess = cruiseDefault || 120;
       const needDest = Math.max(minSoc, destArrive || minSoc);
       if (rangeKm(soc, speedGuess) >= remain - 1){
         const st = smart ? smartSpeed(remain, soc, needDest) : {
@@ -1349,7 +1353,7 @@
       const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : toDest;
       let arrive, target, mins, kwhAdd, st;
       if (smart){
-        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter).leg;
+        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter, state.prices[chosen.net]).leg;
         st = combo;
         arrive = Math.max(1, combo.arrive);
         target = combo.target != null ? combo.target : chargeMax;
@@ -1430,13 +1434,18 @@
       return;
     }
     clearLayers();
-    const colors = ["#6ea8ff","#9aa6b4","#7a8898"];
     alts.forEach((alt,i)=>{
-      const col = i===selected ? "#e31937" : colors[i%colors.length];
-      const w = i===selected ? 6 : 4;
-      const pl = L.polyline(alt.coords, {color:col, weight:w, opacity:i===selected?0.95:0.55}).addTo(state.map);
-      state.layers.push(pl);
+      if (i===selected) return;
+      const casing = L.polyline(alt.coords, {color:"#1a1d22", weight:8, opacity:0.85}).addTo(state.map);
+      const pl = L.polyline(alt.coords, {color:"#e8edf4", weight:5, opacity:1}).addTo(state.map);
+      pl.on("click", ()=>{ state.selected=i; renderResults(state.alts); draw(state.alts, i); });
+      state.layers.push(casing, pl);
     });
+    if (alts[selected]){
+      const casing = L.polyline(alts[selected].coords, {color:"#3a0a10", weight:9, opacity:0.9}).addTo(state.map);
+      const pl = L.polyline(alts[selected].coords, {color:"#e31937", weight:6, opacity:1}).addTo(state.map);
+      state.layers.push(casing, pl);
+    }
     const alt = alts[selected];
     if (!alt) return;
     const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
@@ -1522,14 +1531,25 @@
     alts.forEach((alt,i)=>{
       const path = alt.coords.map(c => new google.maps.LatLng(c.lat,c.lng));
       path.forEach(p=>bounds.extend(p));
-      const line = new google.maps.Polyline({
-        path, map: state.gmap,
-        strokeColor: i===selected ? "#e31937" : colors[i%colors.length],
-        strokeOpacity: i===selected ? 0.95 : 0.45,
-        strokeWeight: i===selected ? 6 : 4
+      if (i===selected) return;
+      const under = new google.maps.Polyline({
+        path, map: state.gmap, strokeColor:"#1a1d22", strokeOpacity:0.9, strokeWeight:9, zIndex:1
       });
-      state.gOverlays.push(line);
+      const line = new google.maps.Polyline({
+        path, map: state.gmap, strokeColor:"#e8edf4", strokeOpacity:1, strokeWeight:5, zIndex:2
+      });
+      line.addListener("click", ()=>{ state.selected=i; renderResults(state.alts); draw(state.alts, i); });
+      state.gOverlays.push(under, line);
     });
+    if (alts[selected]){
+      const path = alts[selected].coords.map(c => new google.maps.LatLng(c.lat,c.lng));
+      state.gOverlays.push(new google.maps.Polyline({
+        path, map: state.gmap, strokeColor:"#3a0a10", strokeOpacity:0.95, strokeWeight:10, zIndex:3
+      }));
+      state.gOverlays.push(new google.maps.Polyline({
+        path, map: state.gmap, strokeColor:"#e31937", strokeOpacity:1, strokeWeight:6, zIndex:4
+      }));
+    }
     const alt = alts[selected];
     if (!alt) return;
     const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
@@ -1893,7 +1913,27 @@
       state.gmap.setZoom(10);
     }
   }
-  $("togBackup").onclick = ()=> panicRicarica();
+  function clearPanic(){
+    state.panicOn = false;
+    state.panicList = [];
+    state.panicHere = null;
+    $("togBackup").classList.remove("on");
+    renderPanicBox();
+    if (state.alts && state.alts.length) draw(state.alts, state.selected);
+    else {
+      if (typeof clearG==="function") try{ clearG(); }catch(e){}
+      if (typeof clearLayers==="function") try{ clearLayers(); }catch(e){}
+    }
+    setStatus("PANICO RICARICA disattivato.");
+  }
+  $("togBackup").onclick = ()=>{
+    if (state.panicOn || ($("togBackup").classList.contains("on") && (state.panicList||[]).length)) {
+      clearPanic();
+      return;
+    }
+    state.panicOn = true;
+    panicRicarica();
+  };
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
     $("togTraffic").classList.toggle("on", state.trafficOn);
