@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.6.9</title>
+  <title>Model Y AWD 2026 — Route Planner v1.7.0</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -101,9 +101,10 @@
     .openno { color:#b42318; font-weight:700; }
     .charge-halo { width:54px;height:54px;border-radius:50%;background:rgba(227,25,55,.28);border:3px solid #e31937;
       position:absolute;left:50%;top:18px;transform:translate(-50%,-50%);animation:pulse 1.6s ease-out infinite; }
-    .charge-flag { background:#e31937; color:#fff; border:2px solid #fff; border-radius:10px;
-      padding:4px 8px; font-size:11px; font-weight:800; line-height:1.2; white-space:nowrap;
-      text-align:center; box-shadow:0 3px 10px rgba(227,25,55,.55); position:relative; z-index:2; }
+    .charge-flag { background:#fff; color:#111; border:2px solid #e31937; border-radius:10px;
+      padding:5px 10px; font-size:12px; font-weight:800; line-height:1.25; white-space:nowrap;
+      text-align:center; box-shadow:0 3px 12px rgba(0,0,0,.45); position:relative; z-index:2; }
+    .charge-flag b { color:#e31937; }
     @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
     .wx-pin { width:44px;height:44px;border-radius:50%;background:#111c16;border:2px solid #3dd68c;
       display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,.5); }
@@ -123,7 +124,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.6.9</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.7.0</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -220,7 +221,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.6.9 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.7.0 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -262,7 +263,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.6.9";
+  const APP_VERSION = "1.7.0";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1639,15 +1640,15 @@
     state.stopMarkers = [];
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
-      const html = `<div style="position:relative;width:120px;height:52px">
-        <div class="charge-halo"></div>
-        <div class="charge-flag">⚡ RICARICA #${n}<br>${s.net}<br>${s.speed||"—"} km/h · ${s.arriveSoc.toFixed(0)}%</div>
+      const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
+      const html = `<div style="position:relative;width:168px;height:54px;overflow:visible">
+        <div class="charge-flag"><b>Ricarica ${n}</b> · ${shortNet}<br>${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%</div>
       </div>`;
       const icon = L.divIcon({
-        className: "num-pin",
+        className: "",
         html,
-        iconSize: [120,52],
-        iconAnchor: [60,26]
+        iconSize: [168,54],
+        iconAnchor: [84,58]
       });
       state.layers.push(L.circle([s.lat,s.lng], {radius:450, color:"#e31937", weight:2, fillColor:"#e31937", fillOpacity:0.18}).addTo(state.map));
       const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
@@ -1754,11 +1755,11 @@
     });
     state.stopMarkers = [];
     function smartSvg(n, speed, soc, net){
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="52">
-        <circle cx="75" cy="26" r="22" fill="#e31937" fill-opacity="0.25" stroke="#e31937" stroke-width="3"/>
-        <rect x="8" y="8" width="134" height="36" rx="8" fill="#e31937" stroke="#fff" stroke-width="2"/>
-        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial" font-weight="800">RICARICA #${n}  ${net}</text>
-        <text x="75" y="38" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial" font-weight="700">${speed} km/h · arrivo ${soc}%</text>
+      const short = net==="SUPERCHARGER"?"Tesla":net==="IONITY"?"Ionity":(net||"HPC");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="188" height="56">
+        <rect x="2" y="2" width="184" height="52" rx="10" fill="#ffffff" stroke="#e31937" stroke-width="3"/>
+        <text x="94" y="22" text-anchor="middle" fill="#e31937" font-size="13" font-family="Arial" font-weight="800">Ricarica ${n} · ${short}</text>
+        <text x="94" y="42" text-anchor="middle" fill="#111111" font-size="12" font-family="Arial" font-weight="700">${speed} km/h · arrivo ${soc}%</text>
       </svg>`;
       return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
     }
@@ -1770,7 +1771,7 @@
       }));
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        icon: { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), s.net||""), scaledSize: new google.maps.Size(150,52), anchor: new google.maps.Point(75,26) },
+        icon: { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), s.net||""), scaledSize: new google.maps.Size(188,56), anchor: new google.maps.Point(94,62) },
         title: `RICARICA #${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
         zIndex: 220+si
       });
