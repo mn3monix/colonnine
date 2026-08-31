@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.5.7</title>
+  <title>Model Y AWD 2026 — Route Planner v1.5.8</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -114,7 +114,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.5.7</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.5.8</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -166,13 +166,12 @@
           <input id="socArriveWant" type="number" min="5" max="80" value="15" />
         </div>
         <div>
-          <label>% batteria dedicata al backup</label>
-          <input id="backupPct" type="number" min="0" max="30" value="8" title="Quota SoC tenuta da parte per raggiungere la colonnina di riserva" />
+          <label>% max per raggiungere il backup</label>
+          <input id="backupPct" type="number" min="1" max="20" value="5" title="Massimo % di batteria per andare dalla colonnina di tratta a quella di riserva" />
         </div>
       </div>
 
       <div class="toggles">
-        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>105–135 km/h · tempo · ricarica · costo</span></button>
         <button class="tog" id="togBackup" type="button"><b>PANICO RICARICA</b><span>colonnine più vicine · qualsiasi rete</span></button>
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
@@ -215,7 +214,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.5.7 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.5.8 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
@@ -258,7 +257,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.5.7";
+  const APP_VERSION = "1.5.8";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -394,8 +393,8 @@
 
   const state = {
     mode: "fast",
-    smart: false,
-    backup: false,
+    smart: true,
+    backup: true,
     panicList: [],
     panicOn: false,
     map: null,
@@ -1362,7 +1361,7 @@
   function planTrip(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
     const maxSoc = chargeMax;
-    const minForStop = minSoc + (backupOn ? backupPct : 0);
+    const minForStop = minSoc;
     const { pts, km } = samplePath(route.coords, 8);
     const allowed = selectedNets();
     const along = opts.chargers
@@ -1492,7 +1491,14 @@
 
   function nearestBackup(stop, others){
     return others
-      .filter(c => c.id !== stop.id && allOperatorNets().includes(c.net) && haversine(c, stop) > 0.4 && haversine(c, stop) < 35)
+      .filter(c => {
+        if (c.id === stop.id || !allOperatorNets().includes(c.net)) return false;
+        const km = haversine(c, stop);
+        if (km < 0.5 || km > 35) return false;
+        const need = (consAt(Math.min(stop.speed||90,110))*km/100)/CAR.kwh*100;
+        const maxPct = +$("backupPct").value || 5;
+        return need <= maxPct + 0.15;
+      })
       .sort((a,b)=>haversine(a,stop)-haversine(b,stop))[0] || null;
   }
   function attachBackup(stop, bu, reservedPct, arriveSoc){
@@ -1892,7 +1898,7 @@
       const pois = await loadPoisForRoute(routes[0].coords);
       state.pois = pois;
       const alts = routes.slice(0,3).map((r,i)=>{
-        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:state.smart,chargers, backupPool:allChargers, backupOn:state.backup, backupPct, destArrive});
+        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:true,chargers, backupPool:allChargers, backupOn:true, backupPct, destArrive});
         plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
       });
@@ -1922,11 +1928,7 @@
   /* UI bindings */
   $("modeFast").onclick = ()=>{ state.mode="fast"; $("modeFast").classList.add("active"); $("modePano").classList.remove("active"); };
   $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
-  $("togSmart").onclick = ()=>{
-    state.smart=!state.smart;
-    $("togSmart").classList.toggle("on", state.smart);
-    if (state.alts && state.alts.length) $("btnGo").click();
-  };
+  /* SMART è sempre attivo */
   async function panicRicarica(){
     $("togBackup").classList.add("on");
     setStatus("PANICO RICARICA: cerco le colonnine più vicine di qualsiasi operatore…");
