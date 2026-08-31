@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.7.0</title>
+  <title>Model Y AWD 2026 — Route Planner v1.7.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -124,7 +124,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.7.0</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.7.1</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -221,7 +221,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.7.0 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.7.1 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -263,7 +263,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.7.0";
+  const APP_VERSION = "1.7.1";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -775,8 +775,10 @@
         const m=st.distance&&st.distance.value||0;
         const s=st.duration&&st.duration.value||0;
         const v=s>0?(m/s)*3.6:80;
+        const txt = String(st.instructions||"").replace(/<[^>]+>/g," ");
         const limit = legalSnap(v);
-        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit});
+        const hwy = limit>=125 || /autostrada|\bA[0-9]{1,3}\b/i.test(txt);
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit,hwy});
         acc+=m;
       });
     });
@@ -804,7 +806,7 @@
           const s=+(durs[i]||0);
           const v=s>0?(m/s)*3.6:(posted||90);
           const limit=posted || legalSnap(v);
-          fine.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s||m/(limit/3.6),v,limit});
+          fine.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s||m/(limit/3.6),v,limit,hwy:limit>=125});
           acc+=m;
         }
       }
@@ -817,7 +819,9 @@
         const v=s>0?(m/s)*3.6:80;
         const posted = parsePosted(st.maxspeed);
         const limit = posted || legalSnap(v);
-        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit});
+        const ref = String(st.ref||st.name||"");
+        const hwy = limit>=125 || /autostrada|\bA[0-9]{1,3}\b/i.test(ref);
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit,hwy});
         acc+=m;
       });
     });
@@ -853,7 +857,15 @@
       const d = Math.max(0, Math.min(st.toKm,toKm)-Math.max(st.fromKm,fromKm));
       if (d < 0.01) continue;
       const cap = st.limit || legalSnap(st.v||90);
-      const v = Math.max(30, Math.min(cruise==null?cap:cruise, cap, 135));
+      const hwy = !!(st.hwy || cap>=125);
+      let v;
+      if (hwy){
+        const cruiseUse = cruise==null ? cap : cruise;
+        v = Math.max(105, Math.min(135, cruiseUse, cap));
+      } else {
+        v = cap;
+      }
+      v = Math.max(30, Math.min(v, cap, 135));
       t += d/Math.max(30,v)*60;
       e += consAt(v)*d/100;
       km += d;
@@ -862,14 +874,16 @@
     return { driveMin:t, energy:e, km, limitAvg: km?lim/km:90, vAvg: t>0? km/(t/60):90 };
   }
   function roadCap(implied){
-    const lim = implied||90;
-    if (lim>=124) return {min:110, max:130, kind:"autostrada (limite 130)"};
-    if (lim>=112) return {min:100, max:110, kind:"autostrada (limite 110)"};
-    if (lim>=97) return {min:90, max:100, kind:"autostrada (limite 100)"};
-    if (lim>=88) return {min:80, max:90, kind:"extraurbana (limite 90)"};
-    if (lim>=76) return {min:70, max:80, kind:"extraurbana (limite 80)"};
-    if (lim>=65) return {min:60, max:70, kind:"extraurbana (limite 70)"};
-    return {min:30, max:50, kind:"urbana (limite 50)"};
+    return {min:105, max:135, kind:"autostrada 105–135 · altre strade al limite"};
+  }
+  function spanHasHighway(route, fromKm, toKm){
+    let hwy=0, tot=0;
+    for (const st of stepsInSpan(route, fromKm, toKm)){
+      const d = Math.max(0, Math.min(st.toKm,toKm)-Math.max(st.fromKm,fromKm));
+      tot += d;
+      if (st.hwy || (st.limit||0)>=125) hwy += d;
+    }
+    return hwy >= 8 || (tot>0 && hwy/tot>=0.25);
   }
   async function routeOsrm(points, extraVia, noMotorway){
     const pts = extraVia ? [points[0], extraVia, ...points.slice(1)] : points.slice();
