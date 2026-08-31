@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.2.1</title>
+  <title>Model Y AWD 2026 — Route Planner v1.3.1</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -44,8 +44,8 @@
     .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); }
-    .chip.on { color: #fff; border-color: #6b1c28; background: #2a1014; }
+    .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); cursor: pointer; user-select: none; }
+    .chip.on { color: #fff; }
     .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
     .mode { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: left; color: var(--txt); }
     .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
@@ -83,7 +83,8 @@
     .sheet { width: min(520px, calc(100% - 24px)); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
     .prices { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; font-size: 13px; }
     .field { position: relative; }
-    .suggest { position: absolute; left: 0; right: 0; top: calc(100% - 2px); z-index: 40; background: #0f1318;
+    .field { z-index: 2; }
+    .suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 80; background: #0f1318;
       border: 1px solid var(--line); border-radius: 0 0 10px 10px; max-height: 220px; overflow: auto; display: none; }
     .suggest button { display: block; width: 100%; text-align: left; background: transparent; color: var(--txt);
       padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--line); }
@@ -103,7 +104,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.2.1</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.4.0</span></h1>
             <div class="sub">Planner HPC · Google Maps · Supercharger / Ionity / Electra / EVDC / EnBW / GreenWay</div>
           </div>
         </div>
@@ -124,18 +125,24 @@
         <div class="suggest" id="sug-dest"></div>
       </div>
 
-      <div class="row">
+      <div class="row2">
         <div>
           <label>SoC attuale %</label>
           <input id="soc" type="number" min="1" max="100" value="80" />
         </div>
         <div>
-          <label>SoC minimo %</label>
+          <label>SoC minimo in viaggio %</label>
           <input id="socMin" type="number" min="5" max="40" value="10" />
         </div>
+      </div>
+      <div class="row2">
         <div>
-          <label>Ricarica max %</label>
-          <input id="socMax" type="number" min="50" max="100" value="80" />
+          <label>Ricarica % min</label>
+          <input id="socChargeMin" type="number" min="20" max="90" value="40" title="Non lasciare la colonnina sotto questa %" />
+        </div>
+        <div>
+          <label>Ricarica % max</label>
+          <input id="socChargeMax" type="number" min="50" max="100" value="80" title="Non superare questa % in colonnina" />
         </div>
       </div>
 
@@ -155,12 +162,45 @@
       </div>
 
       <div class="toggles">
-        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità e consumi</span></button>
+        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità · tempo ricarica · consumi</span></button>
         <button class="tog on" id="togBackup" type="button"><b>BACKUP</b><span>colonnina di riserva</span></button>
+        <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
+      </div>
+
+      <label>Attrazioni lungo il percorso</label>
+      <div class="chips" id="poiCats">
+        <span class="chip on" data-cat="hotel">Hotel</span>
+        <span class="chip on" data-cat="ristorante">Ristoranti</span>
+        <span class="chip on" data-cat="osteria">Osterie</span>
+        <span class="chip" data-cat="paesaggio">Paesaggi</span>
+        <span class="chip" data-cat="mostra">Mostre / musei</span>
+        <span class="chip on" data-cat="centro">Centri storici</span>
+        <span class="chip" data-cat="spa">Spa</span>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Stelle minime hotel</label>
+          <select id="hotelStars">
+            <option value="0">Qualsiasi</option>
+            <option value="3">3 stelle e più</option>
+            <option value="4" selected>4 stelle e più</option>
+            <option value="5">Solo 5 stelle</option>
+          </select>
+        </div>
+        <div>
+          <label>Voto minimo (tutte le categorie)</label>
+          <select id="minRating">
+            <option value="0">Qualsiasi</option>
+            <option value="3">3.0+</option>
+            <option value="3.5">3.5+</option>
+            <option value="4" selected>4.0+</option>
+            <option value="4.5">4.5+</option>
+          </select>
+        </div>
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.2.1 · Se Geocoding Google è negato (REQUEST_DENIED) l’app usa automaticamente OpenStreetMap. Per i suggerimenti Google attiva anche Places API e apri da http://localhost.</div>
+      <div class="hint">v1.4.0 · Prezzi Supercharger live da suc-tracker.eu (fasce orarie, tariffa Tesla o ospite). Cache 6 ore.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -172,6 +212,7 @@
         <div><i style="background:#6ea8ff"></i> alternative</div>
         <div><i style="background:#3dd68c"></i> colonnina HPC</div>
         <div><i style="background:#f5c542"></i> backup</div>
+        <div><i style="background:#d4a0ff"></i> attrazioni</div>
       </div>
     </div>
   </div>
@@ -183,6 +224,11 @@
       <p class="hint">In Google Cloud attiva: <b>Maps JavaScript API</b>, <b>Places API</b> (anche quella classica), <b>Directions API</b>, <b>Geocoding API</b>. Abilita la fatturazione. Restrizione referrer: <code>http://localhost/*</code> e <code>http://127.0.0.1/*</code>. Se apri il file con doppio clic (<code>file://</code>) Google spesso blocca la chiave.</p>
       <label>Google Maps JavaScript API key</label>
       <input id="gkey" type="password" autocomplete="off" placeholder="AIza..." />
+      <label>Tariffa Supercharger (SuC Tracker, dinamica)</label>
+      <select id="sucWho">
+        <option value="tesla">Tesla (proprietario)</option>
+        <option value="nonTesla">Ospite / non Tesla</option>
+      </select>
       <label>Open Charge Map key (opzionale)</label>
       <input id="ocmkey" type="password" autocomplete="off" placeholder="chiave gratuita openchargemap.org" />
       <p class="hint">Prezzi default €/kWh (modifica se hai un’offerta diversa)</p>
@@ -196,7 +242,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.2.1";
+  const APP_VERSION = "1.4.0";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -216,6 +262,11 @@
     GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 }
   };
   const NET_KEYS = Object.keys(NETS);
+  function selectedNets(){
+    const on = [...document.querySelectorAll("#netChips .chip.on")].map(c=>c.dataset.net);
+    return on.length ? on : NET_KEYS.slice();
+  }
+  function netColor(net){ return (NETS[net] && NETS[net].color) || "#3dd68c"; }
 
   /* Dataset HPC di riserva (Europa, focus IT + corridoi). Non esaustivo, serve offline. */
   const HPC = [
@@ -284,7 +335,43 @@
     ["SUPERCHARGER","Rimini",44.0678,12.5695,250],
     ["SUPERCHARGER","Perugia",43.1107,12.3908,250],
     ["IONITY","Capua A1",41.1050,14.2130,350],
-    ["SUPERCHARGER","Salerno",40.6824,14.7681,250]
+    ["SUPERCHARGER","Salerno",40.6824,14.7681,250],
+    ["SUPERCHARGER","Viareggio",43.8660,10.2500,250],
+    ["SUPERCHARGER","Lucca",43.8375,10.4950,250],
+    ["SUPERCHARGER","Pisa",43.7160,10.4010,250],
+    ["SUPERCHARGER","Livorno",43.5485,10.3106,250],
+    ["SUPERCHARGER","La Spezia",44.1070,9.8290,250],
+    ["IONITY","Lucca A11",43.8450,10.5300,350],
+    ["SUPERCHARGER","Modena Nord",44.7010,10.9050,250],
+    ["SUPERCHARGER","Rovereto",45.8900,11.0400,250],
+    ["SUPERCHARGER","Bressanone",46.7160,11.6570,250],
+    ["SUPERCHARGER","Vipiteno",46.8890,11.4300,250],
+    ["IONITY","Sterzing",46.8920,11.4330,350],
+    ["SUPERCHARGER","Kufstein",47.5830,12.1690,250],
+    ["SUPERCHARGER","Rosenheim",47.8560,12.1280,250],
+    ["SUPERCHARGER","München Ost",48.1230,11.6800,250],
+    ["SUPERCHARGER","Nürnberg",49.4521,11.0767,250],
+    ["SUPERCHARGER","Leipzig",51.3397,12.3731,250],
+    ["SUPERCHARGER","Dresden",51.0504,13.7373,250],
+    ["SUPERCHARGER","Berlin",52.5200,13.4050,250],
+    ["SUPERCHARGER","Frankfurt",50.1109,8.6821,250],
+    ["IONITY","München Süd",48.0610,11.5110,350],
+    ["IONITY","Nürnberg",49.4300,11.0900,350],
+    ["ENBW","München Ost",48.1340,11.6900,300],
+    ["ENBW","Nürnberg",49.4450,11.0800,300],
+    ["ENBW","Hof",50.3170,11.9130,300],
+    ["GREENWAY","Wrocław",51.1079,17.0385,175],
+    ["GREENWAY","Poznań",52.4064,16.9252,175],
+    ["GREENWAY","Łódź",51.7592,19.4560,175],
+    ["GREENWAY","Toruń",53.0138,18.5984,175],
+    ["GREENWAY","Bydgoszcz",53.1235,18.0084,175],
+    ["SUPERCHARGER","Wrocław",51.1079,17.0385,250],
+    ["SUPERCHARGER","Poznań",52.4064,16.9252,250],
+    ["SUPERCHARGER","Łódź",51.7592,19.4560,250],
+    ["SUPERCHARGER","Bydgoszcz",53.1235,18.0084,250],
+    ["IONITY","Wrocław",51.1200,17.0200,350],
+    ["SUPERCHARGER","Prag",50.0755,14.4378,250],
+    ["IONITY","Praha",50.0500,14.4500,350]
   ].map(([net,name,lat,lng,kw]) => ({id: net+"-"+name, net, name, lat, lng, kw}));
 
   const state = {
@@ -294,7 +381,14 @@
     map: null,
     layers: [],
     gOverlays: [],
+    pois: [],
+    routeChargers: [],
     gmap: null,
+    traffic: null,
+    trafficOn: true,
+    sucWho: "tesla",
+    sucStations: [],
+    sucUpdated: null,
     alts: [],
     selected: 0,
     prices: Object.fromEntries(NET_KEYS.map(k => [k, NETS[k].price]))
@@ -310,7 +404,82 @@
     const o = localStorage.getItem("my_ocm_key") || cfg.ocmApiKey || "";
     const p = localStorage.getItem("my_prices");
     if (p) { try { Object.assign(state.prices, JSON.parse(p)); } catch(e){} }
-    return { g: g && !g.includes("INCOLLA") ? g : "", o };
+    const who = localStorage.getItem("my_suc_who") || "tesla";
+    state.sucWho = who;
+    return { g: g && !g.includes("INCOLLA") ? g : "", o, who };
+  }
+  function sucPriceNow(book){
+    if (!book || !book.prices || !book.prices.length) return null;
+    const now = new Date();
+    const mins = now.getHours()*60 + now.getMinutes();
+    const slot = book.prices.find(s => mins >= s.start && mins < s.end) || book.prices[0];
+    const unit = book.pricingUnit || "kwh";
+    let eur = slot.price / 1e6;
+    if (unit !== "kwh") eur = slot.price / 1e6;
+    return { eur, start: slot.start, end: slot.end, currency: book.currency || "EUR" };
+  }
+  function nearestSuc(lat, lng){
+    let best=null, bestD=8;
+    for (const s of state.sucStations){
+      const d = haversine({lat,lng}, s);
+      if (d < bestD){ bestD=d; best=s; }
+    }
+    return best;
+  }
+  async function loadSucTracker(force){
+    if (state.sucStations.length && !force) return state.sucStations;
+    const cached = localStorage.getItem("my_suc_compact");
+    const ts = +localStorage.getItem("my_suc_ts") || 0;
+    if (!force && cached && Date.now()-ts < 6*3600*1000){
+      try {
+        state.sucStations = JSON.parse(cached);
+        state.sucUpdated = new Date(ts).toISOString();
+        return state.sucStations;
+      } catch(e){}
+    }
+    const urls = [
+      "https://suc-tracker.eu/data/europe.json",
+      "https://corsproxy.io/?"+encodeURIComponent("https://suc-tracker.eu/data/europe.json"),
+      "https://api.allorigins.win/raw?url="+encodeURIComponent("https://suc-tracker.eu/data/europe.json")
+    ];
+    let data=null, lastErr=null;
+    for (const u of urls){
+      try {
+        const r = await fetch(u);
+        if (!r.ok) throw new Error("HTTP "+r.status);
+        data = await r.json();
+        if (data && data.stations) break;
+      } catch(e){ lastErr=e; }
+    }
+    if (!data || !data.stations) throw lastErr || new Error("SuC Tracker non raggiungibile");
+    const compact = data.stations.filter(s=>s.lifecycle!=="closed").map(s=>({
+      id:s.id, name:s.name, lat:s.lat, lng:s.lon, kw:s.maxPowerKw||250, stalls:s.stallCount,
+      tesla:s.pricing && s.pricing.tesla, nonTesla:s.pricing && s.pricing.nonTesla
+    }));
+    state.sucStations = compact;
+    state.sucUpdated = data.generatedAt || new Date().toISOString();
+    try {
+      localStorage.setItem("my_suc_compact", JSON.stringify(compact));
+      localStorage.setItem("my_suc_ts", String(Date.now()));
+    } catch(e){}
+    return compact;
+  }
+  function applySucPrice(stop){
+    if (stop.net !== "SUPERCHARGER") return stop;
+    const hit = nearestSuc(stop.lat, stop.lng);
+    if (!hit) return stop;
+    const book = state.sucWho==="nonTesla" ? hit.nonTesla : hit.tesla;
+    const live = sucPriceNow(book);
+    if (!live) return stop;
+    stop.livePrice = live.eur;
+    stop.liveFrom = live.start;
+    stop.liveTo = live.end;
+    stop.liveSrc = "SuC Tracker";
+    stop.liveName = hit.name;
+    stop.kw = hit.kw || stop.kw;
+    const price = live.eur;
+    stop.cost = (stop.kwh||0) * price;
+    return stop;
   }
   function consAt(speed){
     const table = [[90,15.4],[100,16.6],[110,18.0],[120,19.8],[130,22.2],[140,25.0]];
@@ -382,15 +551,11 @@
     if (!googleReady() || state.gmap) return;
     state.gmap = new google.maps.Map($("gmap"), {
       center: {lat:45.46, lng:9.19}, zoom: 6,
-      mapTypeControl: true, streetViewControl: false, fullscreenControl: true,
-      styles: [
-        {elementType:"geometry", stylers:[{color:"#1c222b"}]},
-        {elementType:"labels.text.stroke", stylers:[{color:"#1c222b"}]},
-        {elementType:"labels.text.fill", stylers:[{color:"#9aa6b4"}]},
-        {featureType:"road", elementType:"geometry", stylers:[{color:"#2a3340"}]},
-        {featureType:"water", elementType:"geometry", stylers:[{color:"#0b0d10"}]}
-      ]
+      mapTypeId: "roadmap",
+      mapTypeControl: true, streetViewControl: false, fullscreenControl: true
     });
+    state.traffic = new google.maps.TrafficLayer();
+    if (state.trafficOn) state.traffic.setMap(state.gmap);
     $("map").style.display = "none";
     $("gmap").classList.add("show");
     $("gmap").style.display = "block";
@@ -434,12 +599,17 @@
     return geocodeNominatim(q);
   }
 
-  async function routeOsrm(points, extraVia){
+  async function routeOsrm(points, extraVia, noMotorway){
     const pts = extraVia ? [points[0], extraVia, ...points.slice(1)] : points.slice();
     const coords = pts.map(p => `${p.lng},${p.lat}`).join(";");
-    const alts = extraVia || pts.length>2 ? "false" : "true";
-    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=false`;
-    const r = await fetch(url);
+    const alts = extraVia || pts.length>2 || noMotorway ? "false" : "true";
+    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=false`;
+    if (noMotorway) url += "&exclude=motorway";
+    let r = await fetch(url);
+    if (!r.ok && noMotorway){
+      url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=false&steps=false`;
+      r = await fetch(url);
+    }
     if (!r.ok) throw new Error("OSRM HTTP "+r.status);
     const j = await r.json();
     if (!j.routes || !j.routes.length) throw new Error("Nessun percorso");
@@ -447,7 +617,8 @@
       id: i,
       meters: rt.distance,
       seconds: rt.duration,
-      coords: rt.geometry.coordinates.map(([lng,lat])=>({lat,lng}))
+      coords: rt.geometry.coordinates.map(([lng,lat])=>({lat,lng})),
+      panoramic: !!noMotorway
     }));
   }
 
@@ -512,15 +683,21 @@
     if (useG){
       try {
         const main = await routeGoogle(points,{avoidHighways:true});
-        if (main.length>=3) return main.slice(0,3);
-        const v1 = await routeOsrm(points, midpointOffset(a,b,22,1));
-        const v2 = await routeOsrm(points, midpointOffset(a,b,22,-1));
-        return [...main, ...v1, ...v2].slice(0,3);
-      } catch(e){ setStatus(e.message+" Uso il calcolatore di riserva.","err"); }
+        const v1 = await routeOsrm(points, midpointOffset(a,b,32,1), true);
+        const v2 = await routeOsrm(points, midpointOffset(a,b,32,-1), true);
+        const merged = [...main.map(r=>({...r, panoramic:true})), ...v1, ...v2];
+        const uniq=[];
+        for (const r of merged){
+          if (uniq.every(u => Math.abs(u.meters-r.meters)>8000)) uniq.push(r);
+          if (uniq.length===3) break;
+        }
+        if (uniq.length) return uniq;
+        return main.slice(0,3).map(r=>({...r, panoramic:true}));
+      } catch(e){ setStatus(e.message+" Panoramico: uso strade extraurbane di riserva.","err"); }
     }
-    const base = await routeOsrm(points);
-    const v1 = await routeOsrm(points, midpointOffset(a,b,24,1));
-    const v2 = await routeOsrm(points, midpointOffset(a,b,24,-1));
+    const base = await routeOsrm(points, null, true);
+    const v1 = await routeOsrm(points, midpointOffset(a,b,36,1), true);
+    const v2 = await routeOsrm(points, midpointOffset(a,b,36,-1), true);
     const all = [...base, ...v1, ...v2];
     /* preferisci i più lunghi/lenti come "panoramici" */
     all.sort((x,y)=> (y.meters/y.seconds) - (x.meters/x.seconds) || y.meters-x.meters);
@@ -574,30 +751,201 @@
     return { km:best, total:tot };
   }
 
+  const POI_DEF = {
+    hotel: { label:"Hotel", color:"#7ec8ff", osm:['["tourism"="hotel"]'], gtype:"lodging", gkw:"" },
+    ristorante: { label:"Ristorante", color:"#ffb347", osm:['["amenity"="restaurant"]'], gtype:"restaurant", gkw:"" },
+    osteria: { label:"Osteria", color:"#ff7a59", osm:['["amenity"="restaurant"]["cuisine"~"italian|regional",i]', '["name"~"osteria|trattoria|locanda",i]'], gtype:"restaurant", gkw:"osteria trattoria" },
+    paesaggio: { label:"Paesaggio", color:"#7dffb2", osm:['["tourism"="viewpoint"]','["natural"="peak"]','["leisure"="park"]'], gtype:"tourist_attraction", gkw:"panorama viewpoint" },
+    mostra: { label:"Mostra", color:"#c9a0ff", osm:['["tourism"="museum"]','["amenity"="arts_centre"]','["tourism"="gallery"]'], gtype:"museum", gkw:"mostra museo" },
+    centro: { label:"Centro storico", color:"#f0d27a", osm:['["historic"="yes"]','["place"="old_town"]','["historic"="centre"]'], gtype:"tourist_attraction", gkw:"centro storico" },
+    spa: { label:"Spa", color:"#8ad4ff", osm:['["leisure"="spa"]','["amenity"="public_bath"]','["wellness"="yes"]'], gtype:"spa", gkw:"spa terme wellness" }
+  };
+  function selectedPoiCats(){
+    return [...document.querySelectorAll("#poiCats .chip.on")].map(c=>c.dataset.cat);
+  }
+  function poiPasses(p){
+    const minR = parseFloat($("minRating").value)||0;
+    const minStars = parseInt($("hotelStars").value,10)||0;
+    if (p.rating != null && p.rating < minR) return false;
+    if (p.cat==="hotel" && minStars>0){
+      if (p.stars && p.stars < minStars) return false;
+      if (!p.stars && p.rating && p.rating < Math.min(4.2, 2.5+minStars*0.35)) return false;
+    }
+    return true;
+  }
+  async function fetchPoisOverpass(samples, cats){
+    const pts = samples.slice(0,7);
+    const around = (filter) => pts.map(s=>`  node${filter}(around:9000,${s.lat},${s.lng});\n  way${filter}(around:9000,${s.lat},${s.lng});`).join("\n");
+    let body = "[out:json][timeout:28];(\n";
+    cats.forEach(cat=>{
+      (POI_DEF[cat].osm||[]).forEach(f => { body += around(f)+"\n"; });
+    });
+    body += ");out center tags 80;";
+    try{
+      const r = await fetch("https://overpass-api.de/api/interpreter", { method:"POST", body });
+      const j = await r.json();
+      const out=[];
+      for (const el of (j.elements||[])){
+        const lat = el.lat || (el.center&&el.center.lat);
+        const lng = el.lon || (el.center&&el.center.lon);
+        if (!lat) continue;
+        const tags = el.tags||{};
+        const name = tags.name || tags["name:it"] || "Punto di interesse";
+        let cat = cats[0];
+        const blob = (tags.tourism||"")+" "+(tags.amenity||"")+" "+(tags.leisure||"")+" "+(tags.historic||"")+" "+(tags.place||"")+" "+name;
+        if (/hotel|guest_house/i.test(blob)) cat="hotel";
+        else if (/osteria|trattoria|locanda/i.test(blob)) cat="osteria";
+        else if (/restaurant/i.test(blob)) cat="ristorante";
+        else if (/viewpoint|peak|park/i.test(blob)) cat="paesaggio";
+        else if (/museum|gallery|arts_centre|mostra/i.test(blob)) cat="mostra";
+        else if (/spa|bath|terme|wellness/i.test(blob)) cat="spa";
+        else if (/historic|old_town|centre/i.test(blob)) cat="centro";
+        if (!cats.includes(cat)) continue;
+        out.push({
+          id:"osm-"+el.type+el.id, cat, name, lat, lng,
+          rating: tags.rating ? parseFloat(tags.rating) : null,
+          stars: tags.stars ? parseInt(tags.stars,10) : null,
+          src:"OSM"
+        });
+      }
+      return out;
+    }catch(e){ console.warn("Overpass", e); return []; }
+  }
+  function placesNearby(loc, type, keyword){
+    return new Promise(resolve=>{
+      const svc = new google.maps.places.PlacesService(state.gmap || document.createElement("div"));
+      svc.nearbySearch({ location:loc, radius:8000, type:type||undefined, keyword:keyword||undefined }, (res,stt)=>{
+        if (stt!=="OK" && stt!=="ZERO_RESULTS") return resolve([]);
+        resolve(res||[]);
+      });
+    });
+  }
+  async function fetchPoisGoogle(samples, cats){
+    if (!(window.google && google.maps && google.maps.places && google.maps.places.PlacesService)) return [];
+    const out=[];
+    const pts = samples.slice(0,5);
+    for (const cat of cats){
+      const def = POI_DEF[cat];
+      for (const s of pts){
+        try{
+          const list = await placesNearby({lat:s.lat,lng:s.lng}, def.gtype, def.gkw);
+          list.forEach(p=>{
+            if (!p.geometry || !p.geometry.location) return;
+            out.push({
+              id:"g-"+p.place_id, cat, name:p.name,
+              lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
+              rating: p.rating || null, stars:null, src:"Google",
+              address: p.vicinity||""
+            });
+          });
+        }catch(e){}
+      }
+    }
+    return out;
+  }
+  function dedupPois(list){
+    const out=[];
+    for (const p of list){
+      if (out.some(u => u.cat===p.cat && haversine(u,p)<0.45)) continue;
+      out.push(p);
+    }
+    return out;
+  }
+  async function loadPoisForRoute(coords){
+    const cats = selectedPoiCats();
+    if (!cats.length) return [];
+    const samples = samplePath(coords, 60).pts;
+    let list = await fetchPoisOverpass(samples, cats);
+    const g = await fetchPoisGoogle(samples, cats);
+    list = dedupPois(list.concat(g)).filter(poiPasses).filter(p => distToPath(p, coords)<=12);
+    list.sort((a,b)=>(b.rating||0)-(a.rating||0));
+    return list.slice(0, 80);
+  }
+  function poiMarkerColor(cat){ return (POI_DEF[cat]&&POI_DEF[cat].color)||"#d4a0ff"; }
+
   async function extraChargers(pathCoords){
     const keys = loadKeys();
     let extra=[];
-    if (keys.o){
-      const mid = pathCoords[Math.floor(pathCoords.length/2)];
-      const url = `https://api.openchargemap.io/v3/poi/?output=json&maxresults=80&distance=250&distanceunit=KM&latitude=${mid.lat}&longitude=${mid.lng}&minpowerkw=100&key=${encodeURIComponent(keys.o)}`;
-      try {
-        const r = await fetch(url);
-        const j = await r.json();
-        for (const poi of j){
-          const op = (poi.OperatorInfo && poi.OperatorInfo.Title) || "";
-          const title = (poi.AddressInfo && poi.AddressInfo.Title) || op;
-          const net = classifyNet(op+" "+title);
-          if (!net) continue;
-          const conns = poi.Connections||[];
-          const kw = Math.max(...conns.map(c=>c.PowerKW||0), NETS[net].power);
-          extra.push({
-            id:"OCM-"+poi.ID, net, name: title, lat: poi.AddressInfo.Latitude,
-            lng: poi.AddressInfo.Longitude, kw
-          });
-        }
-      } catch(e){ console.warn("OCM", e); }
+    const samples = samplePath(pathCoords, 70).pts.slice(0, 14);
+    const allowed = selectedNets();
+
+    async function ocmAt(p){
+      const params = new URLSearchParams({
+        output:"json", maxresults:"40", compact:"true", verbose:"false",
+        latitude:String(p.lat), longitude:String(p.lng), distance:"35",
+        distanceunit:"KM", minpowerkw:"100"
+      });
+      if (keys.o) params.set("key", keys.o);
+      const r = await fetch("https://api.openchargemap.io/v3/poi/?"+params.toString());
+      if (!r.ok) return [];
+      const j = await r.json();
+      const out=[];
+      for (const poi of j){
+        const op = (poi.OperatorInfo && poi.OperatorInfo.Title) || "";
+        const title = (poi.AddressInfo && poi.AddressInfo.Title) || op;
+        const net = classifyNet(op+" "+title);
+        if (!net || !allowed.includes(net)) continue;
+        const conns = poi.Connections||[];
+        const kw = Math.max(...conns.map(c=>c.PowerKW||0), NETS[net].power);
+        out.push({ id:"OCM-"+poi.ID, net, name:title, lat:poi.AddressInfo.Latitude, lng:poi.AddressInfo.Longitude, kw });
+      }
+      return out;
     }
-    return extra;
+
+    const ocmPts = [samples[0], samples[Math.floor(samples.length/2)], samples[samples.length-1]].filter(Boolean);
+    for (const p of ocmPts){
+      try { extra.push(...await ocmAt(p)); } catch(e){ console.warn("OCM", e); }
+    }
+
+    try {
+      const around = samples.slice(0,8).map(s =>
+        `node["amenity"="charging_station"](around:12000,${s.lat},${s.lng});`
+      ).join("\n");
+      const body = `[out:json][timeout:22];(${around});out tags 120;`;
+      const r = await fetch("https://overpass-api.de/api/interpreter", { method:"POST", body });
+      const j = await r.json();
+      for (const el of (j.elements||[])){
+        if (!el.lat) continue;
+        const tags = el.tags||{};
+        const blob = [tags.name, tags.operator, tags.brand, tags.network].filter(Boolean).join(" ");
+        const net = classifyNet(blob);
+        if (!net || !allowed.includes(net)) continue;
+        extra.push({
+          id:"osm-chg-"+el.id, net,
+          name: tags.name || tags.operator || net,
+          lat: el.lat, lng: el.lon,
+          kw: parseFloat(tags["socket:type2_combo:output"]) || NETS[net].power
+        });
+      }
+    } catch(e){ console.warn("OSM chargers", e); }
+
+    if (window.google && google.maps && google.maps.places){
+      for (const net of allowed){
+        const kwWord = net==="SUPERCHARGER" ? "Tesla Supercharger" : net;
+        for (const s of samples.slice(0,6)){
+          try {
+            const list = await placesNearby({lat:s.lat,lng:s.lng}, "electric_vehicle_charging_station", kwWord);
+            list.forEach(p=>{
+              if (!p.geometry) return;
+              const n = classifyNet((p.name||"")+" "+kwWord) || net;
+              if (!allowed.includes(n)) return;
+              extra.push({
+                id:"g-chg-"+(p.place_id||p.name), net:n, name:p.name,
+                lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
+                kw: NETS[n].power
+              });
+            });
+          } catch(e){}
+        }
+      }
+    }
+
+    const uniq=[];
+    for (const c of extra){
+      if (uniq.some(u => u.net===c.net && haversine(u,c)<0.6)) continue;
+      uniq.push(c);
+    }
+    return uniq;
   }
 
   function pickChargersAlong(coords){
@@ -607,34 +955,51 @@
   }
 
   function smartSpeed(km, socStart, minSoc){
+    return smartCombo(km, socStart, minSoc, null, null, 250, 0).leg;
+  }
+  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm){
     const speeds = [95,100,105,110,115,120,125,130];
     let best=null;
     for (const v of speeds){
-      const used = consAt(v)*km/100;
-      const arrive = socStart - used/CAR.kwh*100;
-      if (arrive < minSoc + 2) continue;
+      const energy = consAt(v)*km/100;
+      const arrive = socStart - energy/CAR.kwh*100;
+      if (arrive < minArrive + 1) continue;
       const driveMin = km/v*60;
-      const energy = used;
-      const score = energy + driveMin*0.04; /* privilegia energia, non ferma il viaggio */
-      if (!best || score < best.score) best = { v, arrive, driveMin, energy, score };
+      if (chargeMin == null || chargeMax == null){
+        const score = energy*1.25 + driveMin*0.06;
+        if (!best || score < best.score) best = { v, arrive, driveMin, energy, score, cons:consAt(v) };
+        continue;
+      }
+      for (let t=chargeMin; t<=chargeMax; t+=5){
+        if (t < arrive + 1) continue;
+        const rangeAfter = ((t - minArrive - 2)/100)*CAR.kwh / consAt(v) * 100;
+        if (remainAfterKm > 1 && rangeAfter < remainAfterKm - 2) continue;
+        const cmin = chargeMinutes(arrive, t, stallKw||250);
+        const add = CAR.kwh * (t-arrive)/100 / 0.95;
+        const score = energy*1.15 + driveMin*0.07 + cmin*0.12 + Math.max(0, t-72)*0.18;
+        if (!best || score < best.score){
+          best = { v, arrive, driveMin, energy, target:t, chargeMin:cmin, kwhAdd:add, score, cons:consAt(v) };
+        }
+      }
     }
-    if (best) return best;
-    /* se nessuno rispetta il minimo, prendi il più lento */
-    const v=95;
-    const used=consAt(v)*km/100;
-    return { v, arrive: socStart - used/CAR.kwh*100, driveMin: km/v*60, energy:used, score:999 };
+    if (best) return { leg:best };
+    const v=95, energy=consAt(v)*km/100;
+    return { leg:{ v, arrive:socStart-energy/CAR.kwh*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
   }
 
   function planTrip(route, opts){
-    const { soc0, minSoc, maxSoc, smart, backupOn, backupPct, destArrive } = opts;
+    const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
+    const maxSoc = chargeMax;
     const minForStop = minSoc + (backupOn ? backupPct : 0);
     const { pts, km } = samplePath(route.coords, 8);
+    const allowed = selectedNets();
     const along = opts.chargers
+      .filter(c => !c.net || allowed.includes(c.net))
       .map(c => {
         const pr = progressOnPath(c, route.coords);
         return { ...c, atKm: pr.km, off: distToPath(c, route.coords) };
       })
-      .filter(c => c.off <= 16 && c.atKm > 8 && c.atKm < km - 6)
+      .filter(c => c.off <= 30 && c.atKm > 4 && c.atKm < km - 2)
       .sort((a,b)=> a.atKm-b.atKm);
 
     /* dedup vicini stesso network */
@@ -654,7 +1019,7 @@
     }
 
     let guard=0;
-    while (guard++ < 12){
+    while (guard++ < 20){
       const remain = km - fromKm;
       const speedGuess = cruiseDefault || 115;
       const needDest = Math.max(minSoc, destArrive || minSoc);
@@ -666,35 +1031,48 @@
         return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
       }
       const reach = rangeKm(soc, speedGuess);
-      const windowFrom = fromKm + Math.max(15, reach*0.45);
-      const windowTo = fromKm + reach;
+      const windowFrom = fromKm + Math.max(8, reach*0.30);
+      const windowTo = fromKm + Math.max(reach, 40);
       const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && !stops.some(s=>s.id===c.id));
       let chosen = cand.sort((a,b)=>{
-        /* preferisci arrivare ~ min+12 e reti Tesla/Ionity */
         const pref = {SUPERCHARGER:0, IONITY:1, ELECTRA:2, ENBW:3, GREENWAY:4, EVDC:5};
-        return (pref[a.net]-pref[b.net]) || (b.kw-a.kw) || (a.off-b.off);
+        const ideal = fromKm + reach*0.72;
+        return Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (pref[a.net]-pref[b.net]) || (a.off-b.off);
       })[0];
       if (!chosen){
-        chosen = uniq.filter(c => c.atKm>fromKm+20 && c.atKm<=windowTo+40 && !stops.some(s=>s.id===c.id))
-          .sort((a,b)=>Math.abs((fromKm+reach*0.75)-a.atKm)-Math.abs((fromKm+reach*0.75)-b.atKm))[0];
+        chosen = uniq.filter(c => c.atKm>fromKm+12 && !stops.some(s=>s.id===c.id))
+          .sort((a,b)=>a.atKm-b.atKm)[0];
       }
       if (!chosen) break;
       const dkm = chosen.atKm - fromKm;
-      const st = smart ? smartSpeed(dkm, soc, minForStop) : {
-        v:120,
-        arrive: soc - (consAt(120)*dkm/100)/CAR.kwh*100,
-        driveMin: dkm/120*60,
-        energy: consAt(120)*dkm/100
-      };
-      const arrive = Math.max(1, st.arrive);
-      const target = maxSoc;
-      const mins = chargeMinutes(arrive, target, chosen.kw);
-      const kwhAdd = CAR.kwh * Math.max(0, target-arrive)/100 / 0.95;
+      const nextCh = uniq.filter(c => c.atKm > chosen.atKm + 15).sort((a,b)=>a.atKm-b.atKm)[0];
+      const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : (km - chosen.atKm);
+      let arrive, target, mins, kwhAdd, st;
+      if (smart){
+        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter).leg;
+        st = combo;
+        arrive = Math.max(1, combo.arrive);
+        target = combo.target != null ? combo.target : chargeMax;
+        mins = combo.chargeMin != null ? combo.chargeMin : chargeMinutes(arrive, target, chosen.kw);
+        kwhAdd = combo.kwhAdd != null ? combo.kwhAdd : CAR.kwh * Math.max(0,target-arrive)/100 / 0.95;
+      } else {
+        st = { v:120, arrive: soc - (consAt(120)*dkm/100)/CAR.kwh*100, driveMin: dkm/120*60, energy: consAt(120)*dkm/100, cons:consAt(120) };
+        arrive = Math.max(1, st.arrive);
+        target = chargeMax;
+        if (((Math.max(arrive, chargeMin) - minForStop - 2)/100)*CAR.kwh / consAt(120) * 100 >= remainAfter - 1){
+          target = Math.max(chargeMin, Math.min(chargeMax, arrive + 5));
+        }
+        target = Math.max(chargeMin, Math.min(chargeMax, target));
+        mins = chargeMinutes(arrive, target, chosen.kw);
+        kwhAdd = CAR.kwh * Math.max(0, target-arrive)/100 / 0.95;
+      }
       const price = state.prices[chosen.net];
       const stopObj = {
         ...chosen, dkm, speed: st.v, arriveSoc: arrive, targetSoc: target,
         chargeMin: mins, kwh: kwhAdd, cost: kwhAdd*price, driveMin: st.driveMin,
-        reservedPct: backupOn ? backupPct : 0
+        reservedPct: backupOn ? backupPct : 0,
+        cons: st.cons || consAt(st.v),
+        smartScore: st.score
       };
       if (backupOn){
         const bu = nearestBackup(stopObj, uniq.concat(opts.chargers||[]));
@@ -715,7 +1093,7 @@
 
   function nearestBackup(stop, others){
     return others
-      .filter(c => c.id !== stop.id && haversine(c, stop) > 0.4 && haversine(c, stop) < 25)
+      .filter(c => c.id !== stop.id && selectedNets().includes(c.net) && haversine(c, stop) > 0.4 && haversine(c, stop) < 25)
       .sort((a,b)=>haversine(a,stop)-haversine(b,stop))[0] || null;
   }
   function attachBackup(stop, bu, reservedPct, arriveSoc){
@@ -748,18 +1126,36 @@
     });
     const alt = alts[selected];
     if (!alt) return;
+    const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
+    (state.routeChargers||[]).forEach(c=>{
+      if (plannedIds.has(c.id)) return;
+      const m = L.circleMarker([c.lat,c.lng], {radius:6, color:"#0b0d10", weight:1, fillColor:netColor(c.net), fillOpacity:0.7})
+        .bindPopup(`<b>${c.name}</b><br>${c.net} · ${c.kw} kW`)
+        .addTo(state.map);
+      state.layers.push(m);
+    });
     alt.plan.stops.forEach((s)=>{
-      const m = L.circleMarker([s.lat,s.lng], {radius:8, color:"#0b0d10", weight:2, fillColor:"#3dd68c", fillOpacity:1})
+      const m = L.circleMarker([s.lat,s.lng], {radius:9, color:"#0b0d10", weight:2, fillColor:netColor(s.net), fillOpacity:1})
         .bindPopup(`<b>${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
         .addTo(state.map);
       state.layers.push(m);
       if (s.backup){
-        const b = L.circleMarker([s.backup.lat,s.backup.lng], {radius:7, color:"#0b0d10", weight:2, fillColor:"#f5c542", fillOpacity:1})
+        const b = L.circleMarker([s.backup.lat,s.backup.lng], {radius:7, color:"#0b0d10", weight:2, fillColor:netColor(s.backup.net), fillOpacity:1})
           .bindPopup(`<b>BACKUP</b><br>${s.backup.name}<br>${s.backup.net}<br>Servono ${s.backup.needPct.toFixed(1)}% · dedicati ${s.backup.reservedPct}%`)
           .addTo(state.map);
         state.layers.push(b);
         state.layers.push(L.polyline([[s.lat,s.lng],[s.backup.lat,s.backup.lng]], {color:"#f5c542", dashArray:"6 6", weight:2}).addTo(state.map));
       }
+    });
+    (state.pois||[]).forEach(p=>{
+      const m = L.circleMarker([p.lat,p.lng], {radius:6, color:"#0b0d10", weight:1, fillColor:poiMarkerColor(p.cat), fillOpacity:0.95})
+        .bindPopup(`<b>${p.name}</b><br>${POI_DEF[p.cat].label}${p.stars?` · ${p.stars}★`:""}${p.rating?` · voto ${p.rating}`:""}<br><button data-plat="${p.lat}" data-plng="${p.lng}" data-pname="${p.name.replace(/"/g,"")}">Aggiungi fermata</button>`)
+        .addTo(state.map);
+      m.on("popupopen", ev=>{
+        const btn = ev.popup.getElement().querySelector("button");
+        if (btn) btn.onclick = ()=> addViaFromPoi(+btn.dataset.plat, +btn.dataset.plng, btn.dataset.pname);
+      });
+      state.layers.push(m);
     });
     if (alt.coords.length) state.map.fitBounds(L.latLngBounds(alt.coords).pad(0.12));
   }
@@ -780,11 +1176,24 @@
     });
     const alt = alts[selected];
     if (!alt) return;
+    const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
+    (state.routeChargers||[]).forEach(c=>{
+      if (plannedIds.has(c.id)) return;
+      bounds.extend({lat:c.lat,lng:c.lng});
+      const m = new google.maps.Marker({
+        position:{lat:c.lat,lng:c.lng}, map:state.gmap,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:6, fillColor:netColor(c.net), fillOpacity:0.75, strokeColor:"#0b0d10", strokeWeight:1 },
+        title: c.name+" · "+c.net,
+        opacity: 0.85
+      });
+      state.gOverlays.push(m);
+    });
     alt.plan.stops.forEach(s=>{
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        label:{text:String(Math.round(s.arriveSoc)), color:"#0b0d10", fontWeight:"700"},
-        title: s.name+" · arrivo "+s.arriveSoc.toFixed(0)+"%"
+        label:{text:String(Math.round(s.arriveSoc)), color:"#fff", fontWeight:"700"},
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:12, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
+        title: s.name+" · "+s.net+" · arrivo "+s.arriveSoc.toFixed(0)+"%"
       });
       const info = new google.maps.InfoWindow({
         content: `<div style="color:#111"><b>${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
@@ -794,7 +1203,8 @@
       if (s.backup){
         const bm = new google.maps.Marker({
           position:{lat:s.backup.lat,lng:s.backup.lng}, map:state.gmap,
-          title: "BACKUP "+s.backup.name
+          icon: { path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale:6, fillColor:netColor(s.backup.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:1 },
+          title: "BACKUP "+s.backup.name+" · "+s.backup.net
         });
         const binfo = new google.maps.InfoWindow({
           content: `<div style="color:#111"><b>BACKUP</b> ${s.backup.name}<br>${s.backup.net} · ${s.backup.km.toFixed(1)} km<br>Per arrivarci servono <b>${s.backup.needPct.toFixed(1)}%</b><br>Quota dedicata: <b>${s.backup.reservedPct}%</b><br>SoC stimato al backup (da arrivo): <b>${s.backup.arriveFromMain.toFixed(0)}%</b></div>`
@@ -806,6 +1216,25 @@
           map:state.gmap, strokeColor:"#f5c542", strokeWeight:2, icons:[{icon:{path:"M 0,-1 0,1", strokeOpacity:1, scale:3}, offset:"0", repeat:"12px"}]
         }));
       }
+    });
+    (state.pois||[]).forEach(p=>{
+      bounds.extend({lat:p.lat,lng:p.lng});
+      const m = new google.maps.Marker({
+        position:{lat:p.lat,lng:p.lng}, map:state.gmap,
+        title: p.name,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:6, fillColor:poiMarkerColor(p.cat), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:1 }
+      });
+      const info = new google.maps.InfoWindow({
+        content: `<div style="color:#111"><b>${p.name}</b><br>${POI_DEF[p.cat].label}${p.stars?` · ${p.stars} stelle`:""}${p.rating?` · voto ${p.rating}`:""}<br><button id="addpoi">Aggiungi come fermata</button></div>`
+      });
+      m.addListener("click", ()=>{
+        info.open({map:state.gmap, anchor:m});
+        google.maps.event.addListenerOnce(info, "domready", ()=>{
+          const b=document.getElementById("addpoi");
+          if (b) b.onclick=()=>addViaFromPoi(p.lat,p.lng,p.name);
+        });
+      });
+      state.gOverlays.push(m);
     });
     if (!bounds.isEmpty()) state.gmap.fitBounds(bounds, 48);
   }
@@ -830,11 +1259,15 @@
             Se ricarichi prima e poi vai al backup: <b>${s.backup.arriveAfterCharge.toFixed(0)}%</b>
           </div>` : "";
         return `<div class="stop">
-          <div class="name">${si+1}. ${s.name}<span class="net">${s.net}</span></div>
+          <div class="name">${si+1}. ${s.name}<span class="net" style="background:${netColor(s.net)};color:#111">${s.net}</span></div>
           <div class="meta">
-            Tratta ${s.dkm.toFixed(0)} km · ${state.smart?`SMART ${s.speed} km/h`:`${s.speed} km/h`} · guida ${fmtMin(s.driveMin)}<br>
+            Tratta ${s.dkm.toFixed(0)} km · guida ${fmtMin(s.driveMin)}<br>
+            ${state.smart
+              ? `<b>SMART</b> · velocità <b>${s.speed} km/h</b> · consumi <b>${(s.cons||consAt(s.speed)).toFixed(1)} kWh/100 km</b> (${s.kwh?"":""}${(consAt(s.speed)*s.dkm/100).toFixed(1)} kWh) · ricarica ottimizzata <b>${fmtMin(s.chargeMin)}</b> fino a ${s.targetSoc}%<br>`
+              : `${s.speed} km/h<br>`}
             SoC all'arrivo colonnina <b class="socpill">${s.arriveSoc.toFixed(0)}%</b> → ricarica a <b>${s.targetSoc}%</b><br>
-            ${s.kw} kW · ${s.kwh.toFixed(1)} kWh · ${state.prices[s.net].toFixed(2)} €/kWh · <b>${s.cost.toFixed(2)} €</b><br>
+            ${s.kw} kW · ${s.kwh.toFixed(1)} kWh · ${(s.livePrice||state.prices[s.net]).toFixed(2)} €/kWh${s.livePrice?` <span class="net">live SuC</span>`:""} · <b>${s.cost.toFixed(2)} €</b>
+            ${s.livePrice?`<br>Tariffa dinamica ${s.liveName||""} · fascia ${String(Math.floor(s.liveFrom/60)).padStart(2,"0")}:${String(s.liveFrom%60).padStart(2,"0")}–${String(Math.floor(s.liveTo/60)).padStart(2,"0")}:${String(s.liveTo%60).padStart(2,"0")} · <a href="https://suc-tracker.eu/" target="_blank">suc-tracker.eu</a>`:""}<br>
             Tempo ricarica stimato <b>${fmtMin(s.chargeMin)}</b>
           </div>
           ${state.backup?`<button class="backup" data-alt="${i}" data-stop="${si}">BACKUP colonnina di riserva</button>`:""}
@@ -853,18 +1286,27 @@
           <div>SoC all'arrivo destinazione <b class="socpill">${p.final.arrive.toFixed(0)}%</b></div>
           <div>${state.smart?`Ultima tratta <b>${p.final.speed} km/h</b>`:`Crociera 120 km/h`}</div>
         </div>
-        ${stopsHtml || `<div class="meta" style="margin-top:8px">Nessuna ricarica necessaria con questi SoC.</div>`}
+        ${stopsHtml || (p.km>180 && p.final.arrive<20
+          ? `<div class="meta" style="margin-top:8px">Non ho trovato abbastanza colonnine delle reti selezionate su questo tracciato. Attiva altri provider o usa il percorso più veloce (autostrada).</div>`
+          : `<div class="meta" style="margin-top:8px">Nessuna ricarica necessaria con questi SoC.</div>`)}
+        ${i===state.selected ? renderPoiList() : ""}
       </article>`;
     }).join("");
     box.querySelectorAll(".alt").forEach(el=>{
       el.addEventListener("click", ev=>{
-        if (ev.target.closest(".backup")) return;
+        if (ev.target.closest(".backup") || ev.target.closest("button")) return;
         state.selected = +el.dataset.i;
         renderResults(state.alts);
         draw(state.alts, state.selected);
       });
     });
-    box.querySelectorAll(".backup").forEach(btn=>{
+    box.querySelectorAll(".addpoi").forEach(btn=>{
+      btn.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        addViaFromPoi(+btn.dataset.plat, +btn.dataset.plng, decodeURIComponent(btn.dataset.pname));
+      });
+    });
+    box.querySelectorAll(".backup:not(.addpoi)").forEach(btn=>{
       btn.addEventListener("click", ev=>{
         ev.stopPropagation();
         const ai=+btn.dataset.alt, si=+btn.dataset.stop;
@@ -882,30 +1324,66 @@
 
   async function calculate(){
     const btn=$("btnGo"); btn.disabled=true;
+    hideAllSuggests();
     setStatus("Calcolo geocoding e percorsi…");
     try{
-      const soc0=+$("soc").value, minSoc=+$("socMin").value, maxSoc=+$("socMax").value;
+      const soc0=+$("soc").value, minSoc=+$("socMin").value;
+      const chargeMin=+$("socChargeMin").value, chargeMax=+$("socChargeMax").value;
       const backupPct=+$("backupPct").value || 0;
       const destArrive=+$("socArriveWant").value || minSoc;
-      if (minSoc>=maxSoc) throw new Error("SoC minimo deve essere < ricarica max");
-      if (state.backup && minSoc+backupPct>=maxSoc) throw new Error("SoC minimo + % dedicata al backup deve restare sotto la ricarica max");
+      if (chargeMin>=chargeMax) throw new Error("Ricarica % min deve essere < ricarica % max");
+      if (minSoc>=chargeMin) throw new Error("SoC minimo in viaggio deve essere < ricarica % min");
+      if (!document.querySelector("#netChips .chip.on")) throw new Error("Seleziona almeno un provider di colonnine");
+      if (state.backup && minSoc+backupPct>=chargeMax) throw new Error("SoC minimo + % backup deve restare sotto la ricarica % max");
       const a = await resolvePlace($("origin"));
       const vias = await readVias();
       const b = await resolvePlace($("dest"));
       setStatus("Percorsi in calcolo…");
       const routes = await getRoutes(a,b,state.mode,vias);
       if (!routes.length) throw new Error("Nessun itinerario");
+      setStatus("Scarico tariffe Supercharger da SuC Tracker…");
+      try {
+        await loadSucTracker();
+        const samples = state.sucStations.map(s => {
+          const book = state.sucWho==="nonTesla" ? s.nonTesla : s.tesla;
+          const live = sucPriceNow(book);
+          return live ? live.eur : null;
+        }).filter(x=>x>0).sort((a,b)=>a-b);
+        if (samples.length) state.prices.SUPERCHARGER = samples[Math.floor(samples.length/2)];
+      } catch(e){ console.warn(e); setStatus("SuC Tracker non disponibile, uso prezzi manuali. "+(e.message||""),"err"); }
+
+      setStatus("Cerco colonnine HPC sul percorso…");
       const extra = await extraChargers(routes[0].coords);
-      const chargers = HPC.concat(extra);
+      const fromSuc = state.sucStations.map(s => ({
+        id:"suc-"+s.id, net:"SUPERCHARGER", name:s.name, lat:s.lat, lng:s.lng, kw:s.kw||250
+      }));
+      const chargers = [];
+      for (const c of HPC.concat(extra, fromSuc)){
+        if (!selectedNets().includes(c.net)) continue;
+        if (chargers.some(u => u.net===c.net && haversine(u,c)<0.7)) continue;
+        chargers.push(c);
+      }
+      state.routeChargers = chargers.filter(c => distToPath(c, routes[0].coords) <= 30);
+      setStatus("Cerco attrazioni lungo il percorso…");
+      const pois = await loadPoisForRoute(routes[0].coords);
+      state.pois = pois;
       const alts = routes.slice(0,3).map((r,i)=>{
-        const plan = planTrip(r, {soc0,minSoc,maxSoc,smart:state.smart,chargers, backupOn:state.backup, backupPct, destArrive});
+        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:state.smart,chargers, backupOn:state.backup, backupPct, destArrive});
+        plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
       });
       state.alts=alts; state.selected=0;
       renderResults(alts);
       draw(alts,0);
       const viaTxt = vias.length ? ` via ${vias.map(v=>v.label.split(",")[0]).join(", ")}` : "";
-      setStatus(`Trovati ${alts.length} percorsi · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}`,"ok");
+      const nStop = alts[0].plan.stops.length;
+      const nChg = (state.routeChargers||[]).length;
+      const low = alts[0].plan.final.arrive < destArrive;
+      setStatus(
+        `Trovati ${alts.length} percorsi · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
+        (low ? " Attenzione: SoC all'arrivo sotto il minimo voluto, servono più soste o una % dedicata minore." : ""),
+        low ? "err" : "ok"
+      );
     }catch(e){
       console.error(e);
       setStatus(e.message||String(e), "err");
@@ -919,10 +1397,41 @@
   $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
   $("togSmart").onclick = ()=>{ state.smart=!state.smart; $("togSmart").classList.toggle("on", state.smart); };
   $("togBackup").onclick = ()=>{ state.backup=!state.backup; $("togBackup").classList.toggle("on", state.backup); };
+  $("togTraffic").onclick = ()=>{
+    state.trafficOn = !state.trafficOn;
+    $("togTraffic").classList.toggle("on", state.trafficOn);
+    if (state.traffic) state.traffic.setMap(state.trafficOn ? state.gmap : null);
+    else if (state.trafficOn && useGoogle()) initGoogleMap();
+  };
+  function renderPoiList(){
+    const list = state.pois||[];
+    if (!list.length) return `<div class="meta" style="margin-top:10px">Nessuna attrazione con i filtri scelti.</div>`;
+    const rows = list.slice(0,25).map(p=>`<div class="stop">
+      <div class="name">${p.name}<span class="net">${POI_DEF[p.cat].label}</span></div>
+      <div class="meta">${p.stars?`${p.stars} stelle · `:""}${p.rating!=null?`voto ${p.rating} · `:""}${p.src}
+      <button class="backup addpoi" data-plat="${p.lat}" data-plng="${p.lng}" data-pname="${encodeURIComponent(p.name)}">Aggiungi fermata</button></div>
+    </div>`).join("");
+    return `<div class="meta" style="margin-top:10px"><b>Attrazioni (${list.length})</b></div>${rows}`;
+  }
+  function addViaFromPoi(lat,lng,name){
+    addVia(name);
+    const inp = document.querySelector("#vias .via-inp:last-of-type") || document.querySelector("#vias .via-inp:last-child");
+    const last = [...document.querySelectorAll("#vias .via-inp")].pop();
+    if (last){
+      last.value = name;
+      last.dataset.lat = lat; last.dataset.lng = lng; last.dataset.label = name;
+    }
+    setStatus(`Fermata aggiunta: ${name}. Ricalcola i percorsi.`,"ok");
+  }
+  $("poiCats").addEventListener("click", ev=>{
+    const c = ev.target.closest(".chip");
+    if (c) c.classList.toggle("on");
+  });
   $("btnGo").onclick = calculate;
   $("btnSettings").onclick = ()=>{
     const k=loadKeys();
     $("gkey").value=k.g; $("ocmkey").value=k.o;
+    if ($("sucWho")) $("sucWho").value = state.sucWho || k.who || "tesla";
     $("priceGrid").innerHTML = NET_KEYS.map(n=>`<div>${n}</div><input data-n="${n}" type="number" step="0.01" min="0" value="${state.prices[n]}" />`).join("");
     $("modal").classList.add("show");
   };
@@ -930,6 +1439,7 @@
   $("btnSave").onclick = ()=>{
     localStorage.setItem("my_gmaps_key", $("gkey").value.trim());
     localStorage.setItem("my_ocm_key", $("ocmkey").value.trim());
+    if ($("sucWho")) { state.sucWho=$("sucWho").value; localStorage.setItem("my_suc_who", state.sucWho); }
     $("priceGrid").querySelectorAll("input").forEach(inp=> state.prices[inp.dataset.n]=+inp.value);
     localStorage.setItem("my_prices", JSON.stringify(state.prices));
     $("modal").classList.remove("show");
@@ -963,7 +1473,9 @@
             inp.dataset.lat = p.geometry.location.lat();
             inp.dataset.lng = p.geometry.location.lng();
             inp.dataset.label = p.formatted_address || p.name || inp.value;
+            inp.dataset.lock = "1";
           }
+          hideAllSuggests();
         });
         inp._gauto = ac;
       } catch(e){ console.warn(e); }
@@ -988,18 +1500,27 @@
   }
   maybeLoadGoogle();
 
+  function hideAllSuggests(){
+    document.querySelectorAll(".suggest").forEach(el => { el.style.display="none"; el.innerHTML=""; });
+    document.querySelectorAll(".pac-container").forEach(el => { el.style.display="none"; });
+  }
   async function nominatimSuggest(q){
-    const url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q="+encodeURIComponent(q);
+    const url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&featuretype=settlement&countrycodes=it,fr,de,at,ch,pl,si,hr,sk,cz,nl,be,es,pt,hu,ro,dk,se,no,fi,gb,ie,lu,lt,lv,ee,bg,gr&q="+encodeURIComponent(q);
     const r = await fetch(url, { headers: { "Accept":"application/json" } });
     return r.json();
   }
   function hookSuggest(input, box){
     let t=null;
     input.addEventListener("input", ()=>{
+      if (input.dataset.lock === "1"){
+        delete input.dataset.lock;
+        hideAllSuggests();
+        return;
+      }
       delete input.dataset.lat; delete input.dataset.lng; delete input.dataset.label;
       clearTimeout(t);
       const q=input.value.trim();
-      if (q.length<3){ box.style.display="none"; return; }
+      if (q.length<3){ hideAllSuggests(); return; }
       t=setTimeout(async ()=>{
         try{
           const list = await nominatimSuggest(q);
@@ -1007,18 +1528,20 @@
           box.innerHTML = list.map(it=>`<button type="button" data-lat="${it.lat}" data-lng="${it.lon}">${it.display_name}</button>`).join("");
           box.style.display="block";
           box.querySelectorAll("button").forEach(btn=>{
+            btn.onmousedown = ev => ev.preventDefault();
             btn.onclick=()=>{
               input.value = btn.textContent;
               input.dataset.lat = btn.dataset.lat;
               input.dataset.lng = btn.dataset.lng;
               input.dataset.label = btn.textContent;
-              box.style.display="none";
+              hideAllSuggests();
             };
           });
         }catch(e){ box.style.display="none"; }
-      }, 280);
+      }, 320);
     });
-    document.addEventListener("click", ev=>{ if (!box.contains(ev.target) && ev.target!==input) box.style.display="none"; });
+    input.addEventListener("blur", ()=> setTimeout(hideAllSuggests, 180));
+    input.addEventListener("keydown", ev => { if (ev.key==="Escape" || ev.key==="Enter") hideAllSuggests(); });
   }
   hookSuggest($("origin"), $("sug-origin"));
   hookSuggest($("dest"), $("sug-dest"));
@@ -1056,8 +1579,21 @@
   document.querySelector(".chips") || 0;
   const chipWrap = document.createElement("div");
   chipWrap.className="chips";
-  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on">${n}</span>`).join("");
-  $("dest").insertAdjacentElement("afterend", chipWrap);
+  chipWrap.id="netChips";
+  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on" data-net="${n}" style="border-color:${netColor(n)};background:${netColor(n)};color:#111">${n}</span>`).join("");
+  $("dest").closest(".field").insertAdjacentElement("afterend", chipWrap);
+  chipWrap.addEventListener("click", ev=>{
+    const c = ev.target.closest(".chip");
+    if (!c) return;
+    c.classList.toggle("on");
+    if (c.classList.contains("on")){
+      c.style.background = netColor(c.dataset.net);
+      c.style.color = "#111";
+    } else {
+      c.style.background = "#10151b";
+      c.style.color = "#9aa6b4";
+    }
+  });
   </script>
 </body>
 </html>
