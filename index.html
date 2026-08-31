@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.5.3</title>
+  <title>Model Y AWD 2026 — Route Planner v1.5.4</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -114,7 +114,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.5.3</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.5.4</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -215,7 +215,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.5.3 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.5.4 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
@@ -258,7 +258,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.5.3";
+  const APP_VERSION = "1.5.4";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -733,15 +733,58 @@
     return geocodeNominatim(q);
   }
 
+  function extractGoogleSteps(rt){
+    const steps=[]; let acc=0;
+    (rt.legs||[]).forEach(leg=>{
+      (leg.steps||[]).forEach(st=>{
+        const m=st.distance&&st.distance.value||0;
+        const s=st.duration&&st.duration.value||0;
+        const v=s>0?(m/s)*3.6:80;
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v});
+        acc+=m;
+      });
+    });
+    return steps;
+  }
+  function extractOsrmSteps(rt){
+    const steps=[]; let acc=0;
+    (rt.legs||[]).forEach(leg=>{
+      (leg.steps||[]).forEach(st=>{
+        const m=st.distance||0, s=st.duration||0;
+        const v=s>0?(m/s)*3.6:80;
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v});
+        acc+=m;
+      });
+    });
+    return steps;
+  }
+  function impliedSpeed(route, fromKm, toKm){
+    const steps=route.steps||[];
+    if (!steps.length){
+      return route.seconds&&route.meters ? (route.meters/route.seconds)*3.6 : 90;
+    }
+    let m=0,s=0;
+    for (const st of steps){
+      if (st.toKm < fromKm-0.2 || st.fromKm > toKm+0.2) continue;
+      m+=st.meters; s+=st.seconds;
+    }
+    return s>0 ? (m/s)*3.6 : (route.seconds&&route.meters?(route.meters/route.seconds)*3.6:90);
+  }
+  function roadCap(implied){
+    if (implied>=108) return {min:105, max:Math.min(135, Math.round(implied+8)), kind:"autostrada"};
+    if (implied>=78) return {min:70, max:90, kind:"extraurbana"};
+    if (implied>=55) return {min:50, max:70, kind:"extraurbana secondaria"};
+    return {min:30, max:50, kind:"urbana"};
+  }
   async function routeOsrm(points, extraVia, noMotorway){
     const pts = extraVia ? [points[0], extraVia, ...points.slice(1)] : points.slice();
     const coords = pts.map(p => `${p.lng},${p.lat}`).join(";");
     const alts = extraVia || pts.length>2 || noMotorway ? "false" : "true";
-    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=false`;
+    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=true`;
     if (noMotorway) url += "&exclude=motorway";
     let r = await fetch(url);
     if (!r.ok && noMotorway){
-      url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=false&steps=false`;
+      url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=false&steps=true`;
       r = await fetch(url);
     }
     if (!r.ok) throw new Error("OSRM HTTP "+r.status);
@@ -752,6 +795,7 @@
       meters: rt.distance,
       seconds: rt.duration,
       coords: rt.geometry.coordinates.map(([lng,lat])=>({lat,lng})),
+      steps: extractOsrmSteps(rt),
       panoramic: !!noMotorway
     }));
   }
@@ -789,7 +833,7 @@
           const path = rt.overview_path.map(p=>({lat:p.lat(), lng:p.lng()}));
           let meters=0, seconds=0;
           rt.legs.forEach(l=>{ meters+=l.distance.value; seconds+=l.duration.value; });
-          return { id:i, meters, seconds, coords:path, summary: rt.summary };
+          return { id:i, meters, seconds, coords:path, summary: rt.summary, steps: extractGoogleSteps(rt) };
         }));
       });
     });
@@ -1247,13 +1291,17 @@
   function smartSpeed(km, socStart, minSoc){
     return smartCombo(km, socStart, minSoc, null, null, 250, 0).leg;
   }
-  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm, priceEur){
+  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm, priceEur, road){
     const wxCap = (state.wx && state.wx.maxV) || 135;
-    const cap = Math.min(135, Math.max(105, wxCap));
-    const speeds = [105,110,115,120,125,130,135].filter(v=>v<=cap);
+    const rmin = (road && road.min) || 50;
+    const rmax = (road && road.max) || 135;
+    const cap = Math.min(135, rmax, wxCap);
+    const floor = Math.min(cap, rmin);
+    const speeds = [50,70,80,90,105,110,115,120,125,130,135].filter(v=>v>=floor && v<=cap);
+    const use = speeds.length ? speeds : [Math.round((floor+cap)/2)];
     const price = priceEur != null ? priceEur : ((state.prices && state.prices.SUPERCHARGER) || 0.39);
     let best=null;
-    for (const v of speeds){
+    for (const v of use){
       const energy = consAt(v)*km/100;
       const arrive = socStart - energy/CAR.kwh*100;
       if (arrive < minArrive + 1) continue;
@@ -1361,10 +1409,12 @@
       const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : toDest;
       let arrive, target, mins, kwhAdd, st;
       if (smart){
-        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter, state.prices[chosen.net]).leg;
+        const road = roadCap(impliedSpeed(route, fromKm, chosen.atKm));
+        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter, state.prices[chosen.net], road).leg;
+        combo.road = road.kind;
         st = combo;
         arrive = Math.max(1, combo.arrive);
-        target = combo.target != null ? combo.target : chargeMax;
+        target = Math.round(combo.target != null ? combo.target : chargeMax);
         mins = combo.chargeMin != null ? combo.chargeMin : chargeMinutes(arrive, target, chosen.kw);
         kwhAdd = combo.kwhAdd != null ? combo.kwhAdd : CAR.kwh * Math.max(0,target-arrive)/100 / 0.95;
       } else {
@@ -1374,7 +1424,7 @@
         if (((Math.max(arrive, chargeMin) - minForStop - 2)/100)*CAR.kwh / consAt(120) * 100 >= remainAfter - 1){
           target = Math.max(chargeMin, Math.min(chargeMax, arrive + 5));
         }
-        target = Math.max(chargeMin, Math.min(chargeMax, target));
+        target = Math.round(Math.max(chargeMin, Math.min(chargeMax, target)));
         mins = chargeMinutes(arrive, target, chosen.kw);
         kwhAdd = CAR.kwh * Math.max(0, target-arrive)/100 / 0.95;
       }
@@ -1385,7 +1435,8 @@
         driveMin: realisticDriveMin(dkm, st.v, route, km),
         reservedPct: backupOn ? backupPct : 0,
         cons: st.cons || consAt(st.v),
-        smartScore: st.score
+        smartScore: st.score,
+        roadKind: st.road
       };
       if (backupOn){
         const bu = nearestBackup(stopObj, (opts.backupPool||[]).concat(uniq, opts.chargers||[]));
@@ -1410,7 +1461,8 @@
         soc = last.targetSoc;
       }
     }
-    const st = smart && remain>1 ? smartSpeed(remain, soc, needDest) : {
+    const lastRoad = roadCap(impliedSpeed(route, fromKm, km));
+    const st = smart && remain>1 ? smartCombo(remain, soc, needDest, null, null, 250, 0, null, lastRoad).leg : {
       v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
       driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
     };
@@ -1695,9 +1747,9 @@
           <div class="meta">
             Tratta ${s.dkm.toFixed(0)} km · guida ${fmtMin(s.driveMin)}<br>
             ${state.smart
-              ? `<b>SMART</b> · velocità <b>${s.speed} km/h</b> · consumi <b>${(s.cons||consAt(s.speed)).toFixed(1)} kWh/100 km</b> (${s.kwh?"":""}${(consAt(s.speed)*s.dkm/100).toFixed(1)} kWh) · ricarica ottimizzata <b>${fmtMin(s.chargeMin)}</b> fino a ${s.targetSoc}%<br>`
+              ? `<b>SMART</b> · ${s.roadKind?s.roadKind+" · ":""}velocità <b>${s.speed} km/h</b> · consumi <b>${(s.cons||consAt(s.speed)).toFixed(1)} kWh/100 km</b> (${(consAt(s.speed)*s.dkm/100).toFixed(1)} kWh) · ricarica ottimizzata <b>${fmtMin(s.chargeMin)}</b> fino a ${Math.round(s.targetSoc)}%<br>`
               : `${s.speed} km/h<br>`}
-            SoC all'arrivo colonnina <b class="socpill">${s.arriveSoc.toFixed(0)}%</b> → ricarica a <b>${s.targetSoc}%</b><br>
+            SoC all'arrivo colonnina <b class="socpill">${s.arriveSoc.toFixed(0)}%</b> → ricarica a <b>${Math.round(s.targetSoc)}%</b><br>
             ${s.kw} kW · ${s.kwh.toFixed(1)} kWh · ${(s.livePrice||state.prices[s.net]).toFixed(2)} €/kWh${s.livePrice?` <span class="net">live SuC</span>`:""} · <b>${s.cost.toFixed(2)} €</b>
             ${s.livePrice?`<br>Tariffa dinamica ${s.liveName||""} · fascia ${String(Math.floor(s.liveFrom/60)).padStart(2,"0")}:${String(s.liveFrom%60).padStart(2,"0")}–${String(Math.floor(s.liveTo/60)).padStart(2,"0")}:${String(s.liveTo%60).padStart(2,"0")} · <a href="https://suc-tracker.eu/" target="_blank">suc-tracker.eu</a>`:""}<br>
             Tempo ricarica stimato <b>${fmtMin(s.chargeMin)}</b>
