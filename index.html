@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Model Y AWD 2026 — Route Planner</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #14181e;
+      --panel2: #1c222b;
+      --line: #2a3340;
+      --txt: #eef2f6;
+      --muted: #9aa6b4;
+      --red: #e31937;
+      --red2: #ff4d63;
+      --ok: #3dd68c;
+      --warn: #f5c542;
+      --blue: #6ea8ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt);
+      font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .app { display: grid; grid-template-columns: 400px 1fr; height: 100%; }
+    aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 18px; }
+    header.appbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+    .brand { display: flex; gap: 10px; align-items: center; }
+    .logo { width: 36px; height: 36px; border-radius: 9px; background: var(--red); display: grid; place-items: center; font-weight: 800; }
+    h1 { font-size: 15px; margin: 0; letter-spacing: .2px; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    button, .btn { font: inherit; cursor: pointer; border: 0; }
+    .iconbtn { background: var(--panel2); color: var(--txt); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin: 10px 0 5px; text-transform: uppercase; letter-spacing: .08em; }
+    input, select { width: 100%; background: #0f1318; color: var(--txt); border: 1px solid var(--line);
+      border-radius: 10px; padding: 10px 11px; font: inherit; }
+    input:focus, select:focus { outline: 1px solid #5a1a24; border-color: var(--red); }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); }
+    .chip.on { color: #fff; border-color: #6b1c28; background: #2a1014; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .mode { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: left; color: var(--txt); }
+    .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+    .mode b { display: block; font-size: 13px; }
+    .mode span { color: var(--muted); font-size: 11px; }
+    .toggles { display: flex; gap: 8px; margin: 8px 0 12px; }
+    .tog { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--txt); }
+    .tog.on { border-color: var(--ok); background: #10231a; }
+    .tog b { display: block; font-size: 13px; }
+    .tog span { color: var(--muted); font-size: 11px; }
+    .go { width: 100%; background: var(--red); color: #fff; border-radius: 12px; padding: 12px; font-weight: 700; margin-top: 6px; }
+    .go:disabled { opacity: .5; cursor: wait; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 10px; line-height: 1.45; }
+    .err { background: #3a1218; color: #ffb3bd; border: 1px solid #6b2430; padding: 10px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
+    .okbox { background: #10231a; color: #b6f0d0; border: 1px solid #1e5a3c; padding: 10px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
+    #map { height: 100%; background: #0a0c0f; }
+    .mapwrap { position: relative; }
+    .legend { position: absolute; z-index: 500; right: 12px; top: 12px; background: rgba(20,24,30,.92);
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 12px; }
+    .legend i { display: inline-block; width: 18px; height: 3px; margin-right: 6px; vertical-align: middle; }
+    .results { margin-top: 16px; }
+    .alt { background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 10px 0; cursor: pointer; }
+    .alt.sel { border-color: var(--red); }
+    .alt h3 { margin: 0 0 6px; font-size: 14px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; color: var(--muted); }
+    .stats b { color: var(--txt); }
+    .stop { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; font-size: 13px; }
+    .stop .name { font-weight: 650; }
+    .net { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 999px; background: #2a1014; color: #ff8a98; margin-left: 6px; }
+    .meta { color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.45; }
+    .backup { margin-top: 8px; background: #10151b; color: var(--txt); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: 12px; }
+    .backup-box { margin-top: 8px; background: #1a1610; border: 1px solid #5a4a20; border-radius: 10px; padding: 8px; font-size: 12px; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; place-items: center; }
+    .modal.show { display: grid; }
+    .sheet { width: min(520px, calc(100% - 24px)); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+    .prices { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; font-size: 13px; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 55vh; }
+      aside { height: auto; max-height: 45vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <header class="appbar">
+        <div class="brand">
+          <div class="logo">Y</div>
+          <div>
+            <h1>Model Y AWD 2026</h1>
+            <div class="sub">Planner HPC · Supercharger / Ionity / Electra / EVDC / EnBW / GreenWay</div>
+          </div>
+        </div>
+        <button class="iconbtn" id="btnSettings" title="Impostazioni">⚙</button>
+      </header>
+
+      <label>Partenza</label>
+      <input id="origin" placeholder="Città, indirizzo o coordinate" value="Milano" />
+      <label>Destinazione</label>
+      <input id="dest" placeholder="Città, indirizzo o coordinate" value="Roma" />
+
+      <div class="row">
+        <div>
+          <label>SoC attuale %</label>
+          <input id="soc" type="number" min="1" max="100" value="80" />
+        </div>
+        <div>
+          <label>SoC minimo %</label>
+          <input id="socMin" type="number" min="5" max="40" value="10" />
+        </div>
+        <div>
+          <label>Ricarica max %</label>
+          <input id="socMax" type="number" min="50" max="100" value="80" />
+        </div>
+      </div>
+
+      <div class="modes">
+        <button class="mode active" data-mode="fast" id="modeFast"><b>Più veloce</b><span>3 alternative autostradali</span></button>
+        <button class="mode" data-mode="pano" id="modePano"><b>Veloce panoramico</b><span>3 alternative extraurbane</span></button>
+      </div>
+      <div class="toggles">
+        <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità e consumi</span></button>
+        <button class="tog on" id="togBackup" type="button"><b>BACKUP</b><span>colonnina di riserva</span></button>
+      </div>
+
+      <button class="go" id="btnGo">Calcola percorsi</button>
+      <div class="hint">La chiave Google Maps non è nel codice: va inserita solo sul tuo Mac (Impostazioni). Senza chiave l’app usa OpenStreetMap + OSRM e il dataset HPC integrato.</div>
+      <div id="status"></div>
+      <div class="results" id="results"></div>
+    </aside>
+    <div class="mapwrap">
+      <div id="map"></div>
+      <div class="legend">
+        <div><i style="background:#e31937"></i> percorso selezionato</div>
+        <div><i style="background:#6ea8ff"></i> alternative</div>
+        <div><i style="background:#3dd68c"></i> colonnina HPC</div>
+        <div><i style="background:#f5c542"></i> backup</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h2 style="margin:0 0 8px;font-size:18px">Impostazioni locali</h2>
+      <p class="hint" style="margin-top:0">Le chiavi restano in localStorage di questo browser. Non vengono scritte nel file da caricare su GitHub.</p>
+      <label>Google Maps JavaScript API key</label>
+      <input id="gkey" type="password" autocomplete="off" placeholder="AIza..." />
+      <label>Open Charge Map key (opzionale)</label>
+      <input id="ocmkey" type="password" autocomplete="off" placeholder="chiave gratuita openchargemap.org" />
+      <p class="hint">Prezzi default €/kWh (modifica se hai un’offerta diversa)</p>
+      <div class="prices" id="priceGrid"></div>
+      <div class="row2" style="margin-top:14px">
+        <button class="iconbtn" id="btnClose">Chiudi</button>
+        <button class="go" id="btnSave" style="margin:0">Salva sul Mac</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.local.js"></script>
+  <script>
+  /* ===== Vehicle Model Y AWD 2026 ===== */
+  const CAR = {
+    name: "Tesla Model Y AWD 2026",
+    kwh: 79,
+    peakKw: 250,
+    curve: [ /* [soc, kW] */
+      [5,240],[10,235],[15,220],[20,205],[25,190],[30,175],[35,155],
+      [40,140],[50,115],[60,92],[70,72],[80,48],[90,28],[100,12]
+    ]
+  };
+  const NETS = {
+    SUPERCHARGER: { color: "#e31937", price: 0.39, power: 250 },
+    IONITY:       { color: "#0b6e4f", price: 0.69, power: 350 },
+    ELECTRA:      { color: "#6ea8ff", price: 0.54, power: 300 },
+    EVDC:         { color: "#b07cff", price: 0.55, power: 150 },
+    ENBW:         { color: "#f5c542", price: 0.61, power: 300 },
+    GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 }
+  };
+  const NET_KEYS = Object.keys(NETS);
+
+  /* Dataset HPC di riserva (Europa, focus IT + corridoi). Non esaustivo, serve offline. */
+  const HPC = [
+    ["SUPERCHARGER","Milano Nord",45.6175,9.2580,250],
+    ["SUPERCHARGER","Milano",45.4522,9.2764,250],
+    ["SUPERCHARGER","Bergamo Orio",45.6736,9.7047,250],
+    ["SUPERCHARGER","Brescia",45.5206,10.2118,250],
+    ["SUPERCHARGER","Verona Sud",45.3810,10.9900,250],
+    ["SUPERCHARGER","Padova",45.3900,11.8700,250],
+    ["SUPERCHARGER","Venezia Mestre",45.4820,12.2130,250],
+    ["SUPERCHARGER","Bologna Fiera",44.5105,11.3720,250],
+    ["SUPERCHARGER","Firenze Nord",43.8320,11.2000,250],
+    ["SUPERCHARGER","Arezzo",43.4450,11.8470,250],
+    ["SUPERCHARGER","Orte",42.4600,12.3860,250],
+    ["SUPERCHARGER","Roma Nord",42.0660,12.5980,250],
+    ["SUPERCHARGER","Roma Est",41.9160,12.6590,250],
+    ["SUPERCHARGER","Fiano Romano",42.1710,12.6060,250],
+    ["SUPERCHARGER","Napoli",40.8650,14.2770,250],
+    ["SUPERCHARGER","Torino",45.0670,7.6820,250],
+    ["SUPERCHARGER","Genova",44.4056,8.9463,250],
+    ["SUPERCHARGER","Parma",44.8015,10.3279,250],
+    ["SUPERCHARGER","Modena",44.6471,10.9252,250],
+    ["SUPERCHARGER","Bolzano",46.4983,11.3548,250],
+    ["SUPERCHARGER","Trento",46.0679,11.1211,250],
+    ["SUPERCHARGER","Ancona",43.6158,13.5189,250],
+    ["SUPERCHARGER","Pescara",42.4618,14.2160,250],
+    ["SUPERCHARGER","Bari",41.1171,16.8719,250],
+    ["SUPERCHARGER","Bari Sud",40.9560,17.2960,250],
+    ["IONITY","Brembate",45.6040,9.5470,350],
+    ["IONITY","Peschiera del Garda",45.4386,10.6886,350],
+    ["IONITY","Sommacampagna",45.4070,10.8440,350],
+    ["IONITY","Arda",44.9830,9.9170,350],
+    ["IONITY","Toscana A1",43.7200,11.1800,350],
+    ["IONITY","Orte A1",42.4608,12.3869,350],
+    ["IONITY","Roma Pontina",41.7450,12.5730,350],
+    ["IONITY","Floren",47.4140,11.3770,350],
+    ["ELECTRA","Milano Certosa",45.5060,9.1300,300],
+    ["ELECTRA","Bologna",44.4949,11.3426,300],
+    ["ELECTRA","Roma",41.8919,12.5113,300],
+    ["ENBW","Kiefersfelden",47.6100,12.1900,300],
+    ["ENBW","Holzkirchen",47.8760,11.7010,300],
+    ["ENBW","Ulm Ost",48.4010,10.0450,300],
+    ["ENBW","Stuttgart",48.7758,9.1829,300],
+    ["ENBW","München Nord",48.2760,11.5680,300],
+    ["GREENWAY","Villach",46.6110,13.8558,175],
+    ["GREENWAY","Ljubljana",46.0569,14.5058,175],
+    ["GREENWAY","Zagreb",45.8150,15.9819,175],
+    ["GREENWAY","Bratislava",48.1486,17.1077,175],
+    ["GREENWAY","Kraków",50.0647,19.9450,175],
+    ["GREENWAY","Warszawa",52.2297,21.0122,175],
+    ["EVDC","Milano Est",45.4800,9.2600,150],
+    ["EVDC","Verona",45.4384,10.9916,150],
+    ["SUPERCHARGER","Innsbruck",47.2692,11.4041,250],
+    ["SUPERCHARGER","München",48.1351,11.5820,250],
+    ["SUPERCHARGER","Salzburg",47.8095,13.0550,250],
+    ["SUPERCHARGER","Wien",48.2082,16.3738,250],
+    ["SUPERCHARGER","Nice",43.7102,7.2620,250],
+    ["SUPERCHARGER","Lyon",45.7640,4.8357,250],
+    ["SUPERCHARGER","Zurich",47.3769,8.5417,250],
+    ["IONITY","Brennero",46.9700,11.5070,350],
+    ["IONITY","Rosenheim",47.8560,12.1280,350],
+    ["ELECTRA","Torino Sud",45.0020,7.6750,300],
+    ["ENBW","Karlsruhe",49.0069,8.4037,300],
+    ["GREENWAY","Katowice",50.2649,19.0238,175],
+    ["SUPERCHARGER","Reggio Emilia",44.6983,10.6300,250],
+    ["SUPERCHARGER","Rimini",44.0678,12.5695,250],
+    ["SUPERCHARGER","Perugia",43.1107,12.3908,250],
+    ["IONITY","Capua A1",41.1050,14.2130,350],
+    ["SUPERCHARGER","Salerno",40.6824,14.7681,250]
+  ].map(([net,name,lat,lng,kw]) => ({id: net+"-"+name, net, name, lat, lng, kw}));
+
+  const state = {
+    mode: "fast",
+    smart: false,
+    backup: true,
+    map: null,
+    layers: [],
+    alts: [],
+    selected: 0,
+    prices: Object.fromEntries(NET_KEYS.map(k => [k, NETS[k].price]))
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function setStatus(html, kind){
+    $("status").innerHTML = html ? `<div class="${kind==="err"?"err":"okbox"}">${html}</div>` : "";
+  }
+  function loadKeys(){
+    const cfg = window.LOCAL_CONFIG || {};
+    const g = localStorage.getItem("my_gmaps_key") || cfg.googleMapsApiKey || "";
+    const o = localStorage.getItem("my_ocm_key") || cfg.ocmApiKey || "";
+    const p = localStorage.getItem("my_prices");
+    if (p) { try { Object.assign(state.prices, JSON.parse(p)); } catch(e){} }
+    return { g: g && !g.includes("INCOLLA") ? g : "", o };
+  }
+  function consAt(speed){
+    const table = [[90,15.4],[100,16.6],[110,18.0],[120,19.8],[130,22.2],[140,25.0]];
+    if (speed <= table[0][0]) return table[0][1];
+    for (let i=1;i<table.length;i++){
+      if (speed <= table[i][0]){
+        const [s0,c0]=table[i-1], [s1,c1]=table[i];
+        return c0 + (c1-c0)*(speed-s0)/(s1-s0);
+      }
+    }
+    return 25 + (speed-140)*0.35;
+  }
+  function kwAt(soc){
+    const c = CAR.curve;
+    if (soc <= c[0][0]) return c[0][1];
+    for (let i=1;i<c.length;i++){
+      if (soc <= c[i][0]){
+        const [s0,k0]=c[i-1], [s1,k1]=c[i];
+        return k0 + (k1-k0)*(soc-s0)/(s1-s0);
+      }
+    }
+    return 12;
+  }
+  function chargeMinutes(from, to, stallKw){
+    if (to <= from) return 0;
+    let t = 0, soc = from;
+    const step = 1;
+    while (soc < to){
+      const p = Math.min(stallKw, kwAt(soc)) * 0.94;
+      t += (CAR.kwh * (step/100) / Math.max(8, p)) * 60;
+      soc += step;
+    }
+    return t;
+  }
+  function haversine(a,b){
+    const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+    const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+    return 2*R*Math.asin(Math.sqrt(s));
+  }
+  function fmtMin(m){
+    m = Math.round(m);
+    const h=Math.floor(m/60), mm=m%60;
+    return h ? `${h}h ${mm}min` : `${mm} min`;
+  }
+  function classifyNet(text){
+    const t = (text||"").toUpperCase();
+    if (t.includes("SUPERCHARGER") || t.includes("TESLA")) return "SUPERCHARGER";
+    if (t.includes("IONITY")) return "IONITY";
+    if (t.includes("ELECTRA")) return "ELECTRA";
+    if (t.includes("ENBW") || t.includes("HYPERNETZ")) return "ENBW";
+    if (t.includes("GREENWAY") || t.includes("GREEN WAY")) return "GREENWAY";
+    if (t.includes("EVDC")) return "EVDC";
+    return null;
+  }
+
+  /* Map */
+  state.map = L.map("map").setView([45.46, 9.19], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap"
+  }).addTo(state.map);
+
+  function clearLayers(){
+    state.layers.forEach(l => state.map.removeLayer(l));
+    state.layers = [];
+  }
+
+  async function geocode(q){
+    const m = String(q).trim().match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+    if (m) return { lat:+m[1], lng:+m[3], label:q };
+    const keys = loadKeys();
+    if (keys.g && window.google && google.maps && google.maps.Geocoder){
+      return new Promise((resolve,reject)=>{
+        new google.maps.Geocoder().geocode({address:q}, (res,stt)=>{
+          if (stt==="OK" && res[0]){
+            const loc = res[0].geometry.location;
+            resolve({lat:loc.lat(), lng:loc.lng(), label:res[0].formatted_address});
+          } else reject(new Error("Geocoding Google: "+stt));
+        });
+      });
+    }
+    const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q);
+    const r = await fetch(url, { headers: { "Accept":"application/json" } });
+    const j = await r.json();
+    if (!j.length) throw new Error("Luogo non trovato: "+q);
+    return { lat:+j[0].lat, lng:+j[0].lon, label:j[0].display_name };
+  }
+
+  async function routeOsrm(a,b, extra){
+    const coords = `${a.lng},${a.lat};${b.lng},${b.lat}`;
+    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=true&steps=false`;
+    if (extra && extra.via){
+      url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${extra.via.lng},${extra.via.lat};${b.lng},${b.lat}?overview=full&geometries=geojson&alternatives=false&steps=false`;
+    }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("OSRM HTTP "+r.status);
+    const j = await r.json();
+    if (!j.routes || !j.routes.length) throw new Error("Nessun percorso");
+    return j.routes.map((rt,i)=>({
+      id: i,
+      meters: rt.distance,
+      seconds: rt.duration,
+      coords: rt.geometry.coordinates.map(([lng,lat])=>({lat,lng}))
+    }));
+  }
+
+  async function routeGoogle(a,b, opt){
+    return new Promise((resolve,reject)=>{
+      const svc = new google.maps.DirectionsService();
+      svc.route({
+        origin: {lat:a.lat,lng:a.lng},
+        destination: {lat:b.lat,lng:b.lng},
+        travelMode: google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true,
+        avoidHighways: !!(opt && opt.avoidHighways)
+      }, (res,stt)=>{
+        if (stt!=="OK") return reject(new Error("Directions: "+stt));
+        resolve(res.routes.slice(0,3).map((rt,i)=>{
+          const path = rt.overview_path.map(p=>({lat:p.lat(), lng:p.lng()}));
+          let meters=0, seconds=0;
+          rt.legs.forEach(l=>{ meters+=l.distance.value; seconds+=l.duration.value; });
+          return { id:i, meters, seconds, coords:path, summary: rt.summary };
+        }));
+      });
+    });
+  }
+
+  function midpointOffset(a,b, km, sign){
+    const lat = (a.lat+b.lat)/2;
+    const lng = (a.lng+b.lng)/2;
+    const dy = b.lat-a.lat, dx = b.lng-a.lng;
+    const len = Math.sqrt(dx*dx+dy*dy) || 1;
+    const nx = -dy/len, ny = dx/len;
+    const dLat = (km/111) * ny * sign;
+    const dLng = (km/(111*Math.cos(lat*Math.PI/180))) * nx * sign;
+    return { lat: lat+dLat, lng: lng+dLng };
+  }
+
+  async function getRoutes(a,b, mode){
+    const keys = loadKeys();
+    const useG = !!(keys.g && window.google && google.maps && google.maps.DirectionsService);
+    if (mode==="fast"){
+      if (useG) return routeGoogle(a,b,{});
+      return (await routeOsrm(a,b)).slice(0,3);
+    }
+    /* panoramico: no highway se Google, altrimenti 3 varianti con via decentrato */
+    if (useG){
+      const main = await routeGoogle(a,b,{avoidHighways:true});
+      if (main.length>=3) return main.slice(0,3);
+      const extra = [];
+      for (const s of [1,-1]){
+        try {
+          const via = midpointOffset(a,b,28,s);
+          extra.push(...await routeGoogle(via,b,{}).then(()=>[]) );
+        } catch(e){}
+      }
+      /* costruisci 3 varianti OSRM via */
+      const v1 = await routeOsrm(a,b,{via: midpointOffset(a,b,22,1)});
+      const v2 = await routeOsrm(a,b,{via: midpointOffset(a,b,22,-1)});
+      return [...main, ...v1, ...v2].slice(0,3);
+    }
+    const base = await routeOsrm(a,b);
+    const v1 = await routeOsrm(a,b,{via: midpointOffset(a,b,24,1)});
+    const v2 = await routeOsrm(a,b,{via: midpointOffset(a,b,24,-1)});
+    const all = [...base, ...v1, ...v2];
+    /* preferisci i più lunghi/lenti come "panoramici" */
+    all.sort((x,y)=> (y.meters/y.seconds) - (x.meters/x.seconds) || y.meters-x.meters);
+    const uniq=[];
+    for (const r of all){
+      if (uniq.every(u => Math.abs(u.meters-r.meters)>3000)) uniq.push(r);
+      if (uniq.length===3) break;
+    }
+    return uniq.length ? uniq : all.slice(0,3);
+  }
+
+  function samplePath(coords, everyKm){
+    const out=[{...coords[0], d:0}];
+    let acc=0, next=everyKm;
+    for (let i=1;i<coords.length;i++){
+      const seg = haversine(coords[i-1], coords[i]);
+      acc += seg;
+      if (acc>=next){ out.push({...coords[i], d:acc}); next += everyKm; }
+    }
+    out.push({...coords[coords.length-1], d:acc});
+    return { pts:out, km:acc };
+  }
+
+  function distPointToSeg(p, a, b){
+    /* approx km */
+    const ab = haversine(a,b) || 0.001;
+    const ap = haversine(a,p);
+    const bp = haversine(b,p);
+    const t = Math.max(0, Math.min(1, (ap**2 + ab**2 - bp**2)/(2*ab*ab)));
+    const proj = { lat:a.lat+(b.lat-a.lat)*t, lng:a.lng+(b.lng-a.lng)*t };
+    return haversine(p, proj);
+  }
+  function distToPath(p, coords){
+    let min=1e9;
+    const step = Math.max(1, Math.floor(coords.length/80));
+    for (let i=0;i<coords.length-1;i+=step){
+      min = Math.min(min, distPointToSeg(p, coords[i], coords[Math.min(coords.length-1,i+step)]));
+    }
+    return min;
+  }
+  function progressOnPath(p, coords){
+    let best=0, acc=0, min=1e9, tot=0;
+    for (let i=1;i<coords.length;i++) tot += haversine(coords[i-1],coords[i]);
+    acc=0;
+    for (let i=1;i<coords.length;i++){
+      const seg=haversine(coords[i-1],coords[i]);
+      const d=distPointToSeg(p,coords[i-1],coords[i]);
+      if (d<min){ min=d; best=acc+seg/2; }
+      acc+=seg;
+    }
+    return { km:best, total:tot };
+  }
+
+  async function extraChargers(pathCoords){
+    const keys = loadKeys();
+    let extra=[];
+    if (keys.o){
+      const mid = pathCoords[Math.floor(pathCoords.length/2)];
+      const url = `https://api.openchargemap.io/v3/poi/?output=json&maxresults=80&distance=250&distanceunit=KM&latitude=${mid.lat}&longitude=${mid.lng}&minpowerkw=100&key=${encodeURIComponent(keys.o)}`;
+      try {
+        const r = await fetch(url);
+        const j = await r.json();
+        for (const poi of j){
+          const op = (poi.OperatorInfo && poi.OperatorInfo.Title) || "";
+          const title = (poi.AddressInfo && poi.AddressInfo.Title) || op;
+          const net = classifyNet(op+" "+title);
+          if (!net) continue;
+          const conns = poi.Connections||[];
+          const kw = Math.max(...conns.map(c=>c.PowerKW||0), NETS[net].power);
+          extra.push({
+            id:"OCM-"+poi.ID, net, name: title, lat: poi.AddressInfo.Latitude,
+            lng: poi.AddressInfo.Longitude, kw
+          });
+        }
+      } catch(e){ console.warn("OCM", e); }
+    }
+    return extra;
+  }
+
+  function pickChargersAlong(coords){
+    const pool = HPC.slice();
+    /* already merged extras into HPC-like via argument? handled outside */
+    return pool.filter(c => distToPath(c, coords) <= 18);
+  }
+
+  function smartSpeed(km, socStart, minSoc){
+    const speeds = [95,100,105,110,115,120,125,130];
+    let best=null;
+    for (const v of speeds){
+      const used = consAt(v)*km/100;
+      const arrive = socStart - used/CAR.kwh*100;
+      if (arrive < minSoc + 2) continue;
+      const driveMin = km/v*60;
+      const energy = used;
+      const score = energy + driveMin*0.04; /* privilegia energia, non ferma il viaggio */
+      if (!best || score < best.score) best = { v, arrive, driveMin, energy, score };
+    }
+    if (best) return best;
+    /* se nessuno rispetta il minimo, prendi il più lento */
+    const v=95;
+    const used=consAt(v)*km/100;
+    return { v, arrive: socStart - used/CAR.kwh*100, driveMin: km/v*60, energy:used, score:999 };
+  }
+
+  function planTrip(route, opts){
+    const { soc0, minSoc, maxSoc, smart } = opts;
+    const { pts, km } = samplePath(route.coords, 8);
+    const along = opts.chargers
+      .map(c => {
+        const pr = progressOnPath(c, route.coords);
+        return { ...c, atKm: pr.km, off: distToPath(c, route.coords) };
+      })
+      .filter(c => c.off <= 16 && c.atKm > 8 && c.atKm < km - 6)
+      .sort((a,b)=> a.atKm-b.atKm);
+
+    /* dedup vicini stesso network */
+    const uniq=[];
+    for (const c of along){
+      if (uniq.some(u => haversine(u,c)<1.2)) continue;
+      uniq.push(c);
+    }
+
+    const stops=[];
+    let soc=soc0, fromKm=0, from = route.coords[0];
+    const cruiseDefault = smart ? null : 120;
+
+    function rangeKm(socNow, speed){
+      const usable = Math.max(0, socNow - minSoc - 3);
+      return (usable/100)*CAR.kwh / consAt(speed) * 100;
+    }
+
+    let guard=0;
+    while (guard++ < 12){
+      const remain = km - fromKm;
+      const speedGuess = cruiseDefault || 115;
+      if (rangeKm(soc, speedGuess) >= remain - 1){
+        const st = smart ? smartSpeed(remain, soc, minSoc) : {
+          v:120, arrive: soc - consAt(120)*remain/CAR.kwh, driveMin: remain/120*60, energy: consAt(120)*remain/100
+        };
+        if (!smart) st.arrive = soc - (consAt(120)*remain/100)/CAR.kwh*100;
+        return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
+      }
+      const reach = rangeKm(soc, speedGuess);
+      const windowFrom = fromKm + Math.max(15, reach*0.45);
+      const windowTo = fromKm + reach;
+      const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && !stops.some(s=>s.id===c.id));
+      let chosen = cand.sort((a,b)=>{
+        /* preferisci arrivare ~ min+12 e reti Tesla/Ionity */
+        const pref = {SUPERCHARGER:0, IONITY:1, ELECTRA:2, ENBW:3, GREENWAY:4, EVDC:5};
+        return (pref[a.net]-pref[b.net]) || (b.kw-a.kw) || (a.off-b.off);
+      })[0];
+      if (!chosen){
+        chosen = uniq.filter(c => c.atKm>fromKm+20 && c.atKm<=windowTo+40 && !stops.some(s=>s.id===c.id))
+          .sort((a,b)=>Math.abs((fromKm+reach*0.75)-a.atKm)-Math.abs((fromKm+reach*0.75)-b.atKm))[0];
+      }
+      if (!chosen) break;
+      const dkm = chosen.atKm - fromKm;
+      const st = smart ? smartSpeed(dkm, soc, minSoc) : {
+        v:120,
+        arrive: soc - (consAt(120)*dkm/100)/CAR.kwh*100,
+        driveMin: dkm/120*60,
+        energy: consAt(120)*dkm/100
+      };
+      const arrive = Math.max(1, st.arrive);
+      const target = maxSoc;
+      const mins = chargeMinutes(arrive, target, chosen.kw);
+      const kwhAdd = CAR.kwh * Math.max(0, target-arrive)/100 / 0.95;
+      const price = state.prices[chosen.net];
+      stops.push({
+        ...chosen, dkm, speed: st.v, arriveSoc: arrive, targetSoc: target,
+        chargeMin: mins, kwh: kwhAdd, cost: kwhAdd*price, driveMin: st.driveMin
+      });
+      soc = target;
+      fromKm = chosen.atKm;
+      from = chosen;
+    }
+    const remain = km - fromKm;
+    const st = smart && remain>1 ? smartSpeed(remain, soc, minSoc) : {
+      v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
+      driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
+    };
+    return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:st.driveMin, energy:st.energy }, km };
+  }
+
+  function nearestBackup(stop, others){
+    return others
+      .filter(c => c.id !== stop.id && haversine(c, stop) > 0.4 && haversine(c, stop) < 25)
+      .sort((a,b)=>haversine(a,stop)-haversine(b,stop))[0] || null;
+  }
+
+  function draw(alts, selected){
+    clearLayers();
+    const colors = ["#6ea8ff","#9aa6b4","#7a8898"];
+    alts.forEach((alt,i)=>{
+      const col = i===selected ? "#e31937" : colors[i%colors.length];
+      const w = i===selected ? 6 : 4;
+      const pl = L.polyline(alt.coords, {color:col, weight:w, opacity:i===selected?0.95:0.55}).addTo(state.map);
+      state.layers.push(pl);
+    });
+    const alt = alts[selected];
+    if (!alt) return;
+    alt.plan.stops.forEach((s,idx)=>{
+      const m = L.circleMarker([s.lat,s.lng], {radius:8, color:"#0b0d10", weight:2, fillColor:"#3dd68c", fillOpacity:1})
+        .bindPopup(`<b>${s.name}</b><br>${s.net} · ${s.kw} kW<br>Arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
+        .addTo(state.map);
+      state.layers.push(m);
+      if (s.backup){
+        const b = L.circleMarker([s.backup.lat,s.backup.lng], {radius:7, color:"#0b0d10", weight:2, fillColor:"#f5c542", fillOpacity:1})
+          .bindPopup(`<b>BACKUP</b><br>${s.backup.name}<br>${s.backup.net}`)
+          .addTo(state.map);
+        state.layers.push(b);
+        state.layers.push(L.polyline([[s.lat,s.lng],[s.backup.lat,s.backup.lng]], {color:"#f5c542", dashArray:"6 6", weight:2}).addTo(state.map));
+      }
+    });
+    if (alt.coords.length) state.map.fitBounds(L.latLngBounds(alt.coords).pad(0.12));
+  }
+
+  function renderResults(alts){
+    const box = $("results");
+    box.innerHTML = alts.map((alt,i)=>{
+      const p = alt.plan;
+      const drive = p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin;
+      const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
+      const cost = p.stops.reduce((s,x)=>s+x.cost,0);
+      const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
+      const title = state.mode==="fast" ? `Veloce #${i+1}` : `Panoramico #${i+1}`;
+      const stopsHtml = p.stops.map((s,si)=>{
+        const bu = s.backup ? `<div class="backup-box"><b>BACKUP</b> · ${s.backup.name} · ${s.backup.net}<br>${haversine(s,s.backup).toFixed(1)} km dalla principale · ${s.backup.kw} kW</div>` : "";
+        return `<div class="stop">
+          <div class="name">${si+1}. ${s.name}<span class="net">${s.net}</span></div>
+          <div class="meta">
+            Tratta ${s.dkm.toFixed(0)} km · ${state.smart?`SMART ${s.speed} km/h`:`${s.speed} km/h`} · guida ${fmtMin(s.driveMin)}<br>
+            SoC in arrivo <b>${s.arriveSoc.toFixed(0)}%</b> → ricarica a <b>${s.targetSoc}%</b><br>
+            ${s.kw} kW · ${s.kwh.toFixed(1)} kWh · ${state.prices[s.net].toFixed(2)} €/kWh · <b>${s.cost.toFixed(2)} €</b><br>
+            Tempo ricarica stimato <b>${fmtMin(s.chargeMin)}</b>
+          </div>
+          ${state.backup?`<button class="backup" data-alt="${i}" data-stop="${si}">BACKUP colonnina di riserva</button>`:""}
+          ${bu}
+        </div>`;
+      }).join("");
+      return `<article class="alt ${i===state.selected?"sel":""}" data-i="${i}">
+        <h3>${title}</h3>
+        <div class="stats">
+          <div>Distanza <b>${(p.km).toFixed(0)} km</b></div>
+          <div>Guida <b>${fmtMin(drive)}</b></div>
+          <div>Ricarica <b>${fmtMin(charge)}</b></div>
+          <div>Totale <b>${fmtMin(drive+charge)}</b></div>
+          <div>Energia HPC <b>${kwh.toFixed(0)} kWh</b></div>
+          <div>Costo <b>${cost.toFixed(2)} €</b></div>
+          <div>SoC arrivo destinazione <b>${p.final.arrive.toFixed(0)}%</b></div>
+          <div>${state.smart?`Ultima tratta <b>${p.final.speed} km/h</b>`:`Crociera 120 km/h`}</div>
+        </div>
+        ${stopsHtml || `<div class="meta" style="margin-top:8px">Nessuna ricarica necessaria con questi SoC.</div>`}
+      </article>`;
+    }).join("");
+    box.querySelectorAll(".alt").forEach(el=>{
+      el.addEventListener("click", ev=>{
+        if (ev.target.closest(".backup")) return;
+        state.selected = +el.dataset.i;
+        renderResults(state.alts);
+        draw(state.alts, state.selected);
+      });
+    });
+    box.querySelectorAll(".backup").forEach(btn=>{
+      btn.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        const ai=+btn.dataset.alt, si=+btn.dataset.stop;
+        const stop = state.alts[ai].plan.stops[si];
+        const pool = HPC.concat(state.alts[ai]._extra||[]);
+        const bu = nearestBackup(stop, pool);
+        if (!bu){ alert("Nessuna colonnina di riserva entro 25 km tra le reti ammesse."); return; }
+        stop.backup = bu;
+        renderResults(state.alts);
+        draw(state.alts, state.selected);
+      });
+    });
+  }
+
+  async function calculate(){
+    const btn=$("btnGo"); btn.disabled=true;
+    setStatus("Calcolo geocoding e percorsi…");
+    try{
+      const soc0=+$("soc").value, minSoc=+$("socMin").value, maxSoc=+$("socMax").value;
+      if (minSoc>=maxSoc) throw new Error("SoC minimo deve essere < ricarica max");
+      const a = await geocode($("origin").value);
+      const b = await geocode($("dest").value);
+      setStatus("Percorsi in calcolo…");
+      const routes = await getRoutes(a,b,state.mode);
+      if (!routes.length) throw new Error("Nessun itinerario");
+      const extra = await extraChargers(routes[0].coords);
+      const chargers = HPC.concat(extra);
+      const alts = routes.slice(0,3).map((r,i)=>{
+        const plan = planTrip(r, {soc0,minSoc,maxSoc,smart:state.smart,chargers});
+        return { ...r, id:i, plan, _extra:extra };
+      });
+      state.alts=alts; state.selected=0;
+      renderResults(alts);
+      draw(alts,0);
+      setStatus(`Trovati ${alts.length} percorsi · ${a.label.split(",")[0]} → ${b.label.split(",")[0]}`,"ok");
+    }catch(e){
+      console.error(e);
+      setStatus(e.message||String(e), "err");
+    }finally{
+      btn.disabled=false;
+    }
+  }
+
+  /* UI bindings */
+  $("modeFast").onclick = ()=>{ state.mode="fast"; $("modeFast").classList.add("active"); $("modePano").classList.remove("active"); };
+  $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
+  $("togSmart").onclick = ()=>{ state.smart=!state.smart; $("togSmart").classList.toggle("on", state.smart); };
+  $("togBackup").onclick = ()=>{ state.backup=!state.backup; $("togBackup").classList.toggle("on", state.backup); };
+  $("btnGo").onclick = calculate;
+  $("btnSettings").onclick = ()=>{
+    const k=loadKeys();
+    $("gkey").value=k.g; $("ocmkey").value=k.o;
+    $("priceGrid").innerHTML = NET_KEYS.map(n=>`<div>${n}</div><input data-n="${n}" type="number" step="0.01" min="0" value="${state.prices[n]}" />`).join("");
+    $("modal").classList.add("show");
+  };
+  $("btnClose").onclick = ()=> $("modal").classList.remove("show");
+  $("btnSave").onclick = ()=>{
+    localStorage.setItem("my_gmaps_key", $("gkey").value.trim());
+    localStorage.setItem("my_ocm_key", $("ocmkey").value.trim());
+    $("priceGrid").querySelectorAll("input").forEach(inp=> state.prices[inp.dataset.n]=+inp.value);
+    localStorage.setItem("my_prices", JSON.stringify(state.prices));
+    $("modal").classList.remove("show");
+    maybeLoadGoogle();
+    setStatus("Impostazioni salvate solo su questo Mac / browser.","ok");
+  };
+
+  function maybeLoadGoogle(){
+    const k=loadKeys();
+    if (!k.g || window.google) return;
+    const s=document.createElement("script");
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(k.g)}&libraries=places,geometry`;
+    s.async=true;
+    document.head.appendChild(s);
+  }
+  maybeLoadGoogle();
+
+  /* chips */
+  document.querySelector(".chips") || 0;
+  const chipWrap = document.createElement("div");
+  chipWrap.className="chips";
+  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on">${n}</span>`).join("");
+  $("dest").insertAdjacentElement("afterend", chipWrap);
+  </script>
+</body>
+</html>
