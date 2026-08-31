@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.7.1</title>
+  <title>Model Y AWD 2026 — Route Planner v1.7.3</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -108,6 +108,8 @@
     @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
     .wx-pin { width:44px;height:44px;border-radius:50%;background:#111c16;border:2px solid #3dd68c;
       display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,.5); }
+    .wx-pin.fog { width:78px;height:34px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.5px;
+      color:#eef2f6; background:#5b6570; border:2px solid #d7dee6; }
     .smart-flag { background:#111c16; color:#e8fff3; border:1px solid #3dd68c; border-radius:8px;
       padding:3px 7px; font-size:11px; font-weight:700; line-height:1.25; white-space:nowrap;
       text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
@@ -124,7 +126,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.7.1</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.7.3</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -133,7 +135,7 @@
 
       <label>Partenza</label>
       <div class="field">
-        <input id="origin" placeholder="Inizia a scrivere: città o indirizzo" value="Milano" autocomplete="off" />
+        <input id="origin" placeholder="Partenza" value="" autocomplete="off" />
         <div class="suggest" id="sug-origin"></div>
       </div>
       <label>Fermate intermedie</label>
@@ -141,7 +143,7 @@
       <button class="iconbtn" id="btnAddVia" type="button" style="margin-top:6px;width:100%">+ Aggiungi fermata intermedia</button>
       <label>Destinazione</label>
       <div class="field">
-        <input id="dest" placeholder="Inizia a scrivere: città o indirizzo" value="Roma" autocomplete="off" />
+        <input id="dest" placeholder="Destinazione" value="" autocomplete="off" />
         <div class="suggest" id="sug-dest"></div>
       </div>
 
@@ -221,7 +223,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.7.1 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.7.3 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -263,7 +265,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.7.1";
+  const APP_VERSION = "1.7.3";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -522,7 +524,7 @@
     if ([71,73,75,85,86].includes(c)) return "❄️";
     if ([65,82].includes(c)) return "🌧️";
     if ([61,63,80,81,51,53,55].includes(c)) return "🌦️";
-    if ([45,48].includes(c)) return "🌫️";
+    if ([45,48].includes(c)) return "NEBBIA";
     if ([2,3].includes(c)) return "☁️";
     if (c===1) return "🌤️";
     return "☀️";
@@ -866,7 +868,10 @@
         v = cap;
       }
       v = Math.max(30, Math.min(v, cap, 135));
-      t += d/Math.max(30,v)*60;
+      const spanKm = Math.max(0.01, st.toKm-st.fromKm);
+      const frac = d / spanKm;
+      const sec = st.seconds > 0 ? st.seconds * frac : (d/Math.max(30,v))*3600;
+      t += sec/60;
       e += consAt(v)*d/100;
       km += d;
       lim += cap*d;
@@ -1656,7 +1661,7 @@
       const n = si+1;
       const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
       const html = `<div style="position:relative;width:168px;height:54px;overflow:visible">
-        <div class="charge-flag"><b>Ricarica ${n}</b> · ${shortNet}<br>${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%</div>
+        <div class="charge-flag"><b>R${n}</b> ${shortNet}<br>arrivo ${s.arriveSoc.toFixed(0)}% · ${fmtMin(s.chargeMin)} → ${Math.round(s.targetSoc)}%</div>
       </div>`;
       const icon = L.divIcon({
         className: "",
@@ -1685,7 +1690,7 @@
       const dm = L.marker([end.lat,end.lng], {
         icon: L.divIcon({
           className:"",
-          html:`<div class="smart-flag">destinazione · ${f.speed||"—"} km/h<br>arrivo ${Number(f.arrive||0).toFixed(0)}%</div>`,
+          html:`<div class="smart-flag">Arrivo ${Number(f.arrive||0).toFixed(0)}%</div>`,
           iconSize:[130,36], iconAnchor:[65,18]
         }),
         zIndexOffset: 500
@@ -1698,8 +1703,9 @@
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
+      const fog = em==="NEBBIA";
       const m = L.marker([s.olat||s.lat, s.olng||s.lng], {
-        icon: L.divIcon({ className:"", html:`<div class="wx-pin">${em}</div>`, iconSize:[44,44], iconAnchor:[22,22] }),
+        icon: L.divIcon({ className:"", html:`<div class="wx-pin${fog?" fog":""}">${em}</div>`, iconSize: fog?[72,36]:[44,44], iconAnchor: fog?[36,18]:[22,22] }),
         zIndexOffset: 350
       }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
       state.layers.push(m);
@@ -1768,12 +1774,13 @@
       state.gOverlays.push(m);
     });
     state.stopMarkers = [];
-    function smartSvg(n, speed, soc, net){
+    function smartSvg(n, chargeMin, soc, target, net){
       const short = net==="SUPERCHARGER"?"Tesla":net==="IONITY"?"Ionity":(net||"HPC");
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="188" height="56">
-        <rect x="2" y="2" width="184" height="52" rx="10" fill="#ffffff" stroke="#e31937" stroke-width="3"/>
-        <text x="94" y="22" text-anchor="middle" fill="#e31937" font-size="13" font-family="Arial" font-weight="800">Ricarica ${n} · ${short}</text>
-        <text x="94" y="42" text-anchor="middle" fill="#111111" font-size="12" font-family="Arial" font-weight="700">${speed} km/h · arrivo ${soc}%</text>
+      const tchg = (typeof fmtMin==="function") ? fmtMin(chargeMin) : Math.round(chargeMin||0)+" min";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="56">
+        <rect x="2" y="2" width="196" height="52" rx="10" fill="#ffffff" stroke="#e31937" stroke-width="3"/>
+        <text x="100" y="22" text-anchor="middle" fill="#e31937" font-size="13" font-family="Arial" font-weight="800">R${n} ${short}</text>
+        <text x="100" y="42" text-anchor="middle" fill="#111111" font-size="12" font-family="Arial" font-weight="700">arrivo ${soc}% · ${tchg} → ${target}%</text>
       </svg>`;
       return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
     }
@@ -1785,7 +1792,7 @@
       }));
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        icon: { url: smartSvg(n, s.speed||0, Math.round(s.arriveSoc), s.net||""), scaledSize: new google.maps.Size(188,56), anchor: new google.maps.Point(94,62) },
+        icon: { url: smartSvg(n, s.chargeMin, Math.round(s.arriveSoc), Math.round(s.targetSoc), s.net||""), scaledSize: new google.maps.Size(200,56), anchor: new google.maps.Point(100,62) },
         title: `RICARICA #${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
         zIndex: 220+si
       });
@@ -1818,8 +1825,8 @@
       const f = alt.plan.final||{};
       const dm = new google.maps.Marker({
         position:{lat:end.lat,lng:end.lng}, map:state.gmap,
-        icon: { url: smartSvg("D", f.speed||0, Math.round(f.arrive||0), "#3dd68c"), scaledSize: new google.maps.Size(118,40), anchor: new google.maps.Point(59,20) },
-        title: `Destinazione · ${f.speed||"—"} km/h · arrivo ${Number(f.arrive||0).toFixed(0)}%`,
+        icon: { url: smartSvg("D", 0, Math.round(f.arrive||0), Math.round(f.arrive||0), "Arrivo"), scaledSize: new google.maps.Size(200,56), anchor: new google.maps.Point(100,62) },
+        title: `Arrivo ${Number(f.arrive||0).toFixed(0)}%`,
         zIndex: 250
       });
       state.gOverlays.push(dm);
@@ -1830,10 +1837,14 @@
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
+      const fog = em==="NEBBIA";
+      const fogUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="86" height="36"><rect x="1" y="1" width="84" height="34" rx="8" fill="#5b6570" stroke="#d7dee6" stroke-width="2"/><text x="43" y="24" text-anchor="middle" fill="#eef2f6" font-size="12" font-family="Arial" font-weight="800">NEBBIA</text></svg>`);
       const m = new google.maps.Marker({
         position:{lat:s.olat||s.lat,lng:s.olng||s.lng}, map:state.gmap,
-        label:{text:em, fontSize:"22px"},
-        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
+        label: fog ? undefined : {text:em, fontSize:"22px"},
+        icon: fog
+          ? { url:fogUrl, scaledSize:new google.maps.Size(86,36), anchor:new google.maps.Point(43,18) }
+          : { path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
         title: `Meteo ${lab}`,
         zIndex: 180
       });
@@ -1873,7 +1884,8 @@
     const box = $("results");
     box.innerHTML = alts.map((alt,i)=>{
       const p = alt.plan;
-      const drive = p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin;
+      const driveSum = p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin;
+      const drive = (p.navMin && Math.abs(p.navMin-driveSum)/p.navMin < 0.35) ? p.navMin : (p.navMin || driveSum);
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
