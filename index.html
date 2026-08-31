@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.6.4</title>
+  <title>Model Y AWD 2026 — Route Planner v1.6.5</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -123,7 +123,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.6.4</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.6.5</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -220,7 +220,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.6.4 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.6.5 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -262,7 +262,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.6.4";
+  const APP_VERSION = "1.6.5";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -755,7 +755,8 @@
         const m=st.distance&&st.distance.value||0;
         const s=st.duration&&st.duration.value||0;
         const v=s>0?(m/s)*3.6:80;
-        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v});
+        const limit = legalSnap(v);
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit});
         acc+=m;
       });
     });
@@ -767,37 +768,61 @@
       (leg.steps||[]).forEach(st=>{
         const m=st.distance||0, s=st.duration||0;
         const v=s>0?(m/s)*3.6:80;
-        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v});
+        const posted = parseFloat(st.maxspeed || (st.intersections&&st.intersections[0]&&st.intersections[0].maxspeed));
+        const limit = (posted>0 ? posted : legalSnap(v));
+        steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit});
         acc+=m;
       });
     });
     return steps;
   }
+  function legalSnap(v){
+    if (v>=118) return 130;
+    if (v>=100) return 130;
+    if (v>=88) return 90;
+    if (v>=68) return 90;
+    if (v>=55) return 70;
+    return 50;
+  }
   function impliedSpeed(route, fromKm, toKm){
+    const pr = spanDrive(route, fromKm, toKm, 999);
+    return pr.limitAvg || 90;
+  }
+  function stepsInSpan(route, fromKm, toKm){
     const steps=route.steps||[];
     if (!steps.length){
-      return route.seconds&&route.meters ? (route.meters/route.seconds)*3.6 : 90;
+      const v = route.seconds&&route.meters ? (route.meters/route.seconds)*3.6 : 90;
+      return [{fromKm:fromKm||0, toKm:toKm||((route.meters||0)/1000), meters:Math.max(0,toKm-fromKm)*1000, v, limit:legalSnap(v)}];
     }
-    let m=0,s=0;
-    for (const st of steps){
-      if (st.toKm < fromKm-0.2 || st.fromKm > toKm+0.2) continue;
-      m+=st.meters; s+=st.seconds;
+    return steps.filter(st => st.toKm >= fromKm-0.2 && st.fromKm <= toKm+0.2);
+  }
+  function spanDrive(route, fromKm, toKm, cruise){
+    const sts = stepsInSpan(route, fromKm, toKm);
+    let t=0,e=0,km=0,lim=0;
+    for (const st of sts){
+      const d = Math.max(0, Math.min(st.toKm,toKm)-Math.max(st.fromKm,fromKm));
+      if (d < 0.01) continue;
+      const cap = st.limit || legalSnap(st.v||90);
+      const v = Math.max(30, Math.min(cruise==null?cap:cruise, cap, 135));
+      t += d/Math.max(30,v)*60;
+      e += consAt(v)*d/100;
+      km += d;
+      lim += cap*d;
     }
-    return s>0 ? (m/s)*3.6 : (route.seconds&&route.meters?(route.meters/route.seconds)*3.6:90);
+    return { driveMin:t, energy:e, km, limitAvg: km?lim/km:90, vAvg: t>0? km/(t/60):90 };
   }
   function roadCap(implied){
-    const fast = state.mode==="fast";
-    if (fast && implied>=92) return {min:110, max:135, kind:"autostrada"};
-    if (implied>=108) return {min:105, max:Math.min(135, Math.round(implied+8)), kind:"autostrada"};
-    if (implied>=78) return {min:fast?90:70, max:fast?110:90, kind:"extraurbana"};
-    if (implied>=55) return {min:50, max:fast?80:70, kind:"extraurbana secondaria"};
-    return {min:30, max:50, kind:"urbana"};
+    const lim = implied||90;
+    if (lim>=110) return {min:110, max:Math.min(130, Math.round(lim)), kind:"autostrada (limite "+Math.round(lim)+")"};
+    if (lim>=88) return {min:80, max:90, kind:"extraurbana (limite 90)"};
+    if (lim>=65) return {min:60, max:70, kind:"extraurbana (limite 70)"};
+    return {min:30, max:50, kind:"urbana (limite 50)"};
   }
   async function routeOsrm(points, extraVia, noMotorway){
     const pts = extraVia ? [points[0], extraVia, ...points.slice(1)] : points.slice();
     const coords = pts.map(p => `${p.lng},${p.lat}`).join(";");
     const alts = extraVia || pts.length>2 || noMotorway ? "false" : "true";
-    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=true`;
+    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=true&annotations=maxspeed`;
     if (noMotorway) url += "&exclude=motorway";
     let r = await fetch(url);
     if (!r.ok && noMotorway){
@@ -1320,7 +1345,7 @@
   function smartSpeed(km, socStart, minSoc){
     return smartCombo(km, socStart, minSoc, null, null, 250, 0).leg;
   }
-  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm, priceEur, road){
+  function smartCombo(km, socStart, minArrive, chargeMin, chargeMax, stallKw, remainAfterKm, priceEur, road, ctx){
     const wxCap = (state.wx && state.wx.maxV) || 135;
     const rmin = (road && road.min) || 50;
     const rmax = (road && road.max) || 135;
@@ -1331,10 +1356,11 @@
     const price = priceEur != null ? priceEur : ((state.prices && state.prices.SUPERCHARGER) || 0.39);
     let best=null;
     for (const v of use){
-      const energy = consAt(v)*km/100;
+      const phys = (ctx && ctx.route) ? spanDrive(ctx.route, ctx.fromKm, ctx.toKm, v) : {energy:consAt(v)*km/100, driveMin:km/v*60};
+      const energy = phys.energy;
       const arrive = socStart - energy/CAR.kwh*100;
       if (arrive < minArrive + 1) continue;
-      const driveMin = km/v*60;
+      const driveMin = phys.driveMin;
       if (chargeMin == null || chargeMax == null){
         const score = state.mode==="fast" ? driveMin + energy * price * 0.6 : driveMin + energy * price * 8;
         if (!best || score < best.score) best = { v, arrive, driveMin, energy, score, cons:consAt(v) };
@@ -1360,15 +1386,9 @@
     return { leg:{ v, arrive:socStart-energy/CAR.kwh*100, driveMin:km/v*60, energy, score:999, cons:consAt(v), target:chargeMax, chargeMin:0, kwhAdd:0 } };
   }
 
-  function realisticDriveMin(dkm, v, route, totalKm){
-    const tot = totalKm || (route.meters ? route.meters/1000 : 0) || (route.km||0);
-    const cruise = Math.max(105, Math.min(135, v||120));
-    if (route.seconds && tot>1 && dkm>0){
-      const share = dkm / tot;
-      const scale = Math.min(1.15, Math.max(0.88, 112 / cruise));
-      return (route.seconds/60) * share * scale;
-    }
-    return dkm / (cruise * 0.72) * 60;
+  function realisticDriveMin(dkm, v, route, totalKm, fromKm){
+    const start = fromKm||0;
+    return spanDrive(route, start, start+dkm, v).driveMin;
   }
   function planTrip(route, opts){
     const { soc0, minSoc, chargeMin, chargeMax, smart, backupOn, backupPct, destArrive } = opts;
@@ -1398,7 +1418,9 @@
 
     function rangeKm(socNow, speed){
       const usable = Math.max(0, socNow - minForStop - 2);
-      return (usable/100)*CAR.kwh / consAt(speed) * 100;
+      const lim = impliedSpeed(route, fromKm, km);
+      const v = Math.min(speed||120, lim||120);
+      return (usable/100)*CAR.kwh / consAt(v) * 100;
     }
 
     let guard=0;
@@ -1441,7 +1463,7 @@
       let arrive, target, mins, kwhAdd, st;
       if (smart || state.mode==="fast"){
         const road = roadCap(impliedSpeed(route, fromKm, chosen.atKm));
-        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter, state.prices[chosen.net], road).leg;
+        const combo = smartCombo(dkm, soc, minForStop, chargeMin, chargeMax, chosen.kw, remainAfter, state.prices[chosen.net], road, {route, fromKm, toKm:chosen.atKm}).leg;
         combo.road = road.kind;
         st = combo;
         arrive = Math.max(1, combo.arrive);
@@ -1463,7 +1485,7 @@
       const stopObj = {
         ...chosen, dkm, speed: st.v, arriveSoc: arrive, targetSoc: target,
         chargeMin: mins, kwh: kwhAdd, cost: kwhAdd*price,
-        driveMin: realisticDriveMin(dkm, st.v, route, km),
+        driveMin: realisticDriveMin(dkm, st.v, route, km, fromKm),
         reservedPct: backupOn ? backupPct : 0,
         cons: st.cons || consAt(st.v),
         smartScore: st.score,
@@ -1493,11 +1515,11 @@
       }
     }
     const lastRoad = roadCap(impliedSpeed(route, fromKm, km));
-    const st = (smart || state.mode==="fast") && remain>1 ? smartCombo(remain, soc, needDest, null, null, 250, 0, null, lastRoad).leg : {
+    const st = (smart || state.mode==="fast") && remain>1 ? smartCombo(remain, soc, needDest, null, null, 250, 0, null, lastRoad, {route, fromKm, toKm:km}).leg : {
       v:120, arrive: soc - (consAt(120)*Math.max(remain,0)/100)/CAR.kwh*100,
       driveMin: Math.max(remain,0)/120*60, energy: consAt(120)*Math.max(remain,0)/100
     };
-    const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km);
+    const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km, fromKm);
     return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:driveLast, energy:st.energy }, km, navMin: route.seconds? route.seconds/60 : null };
   }
 
