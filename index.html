@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.17</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.19</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,7 +137,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.17</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.19</span></h1>
             <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
           </div>
         </div>
@@ -179,10 +179,6 @@
         </div>
       </div>
 
-      <div class="modes">
-        <button class="mode active" data-mode="fast" id="modeFast"><b>VELOCE</b><span>5 alternative</span></button>
-        <button class="mode" data-mode="pano" id="modePano"><b>PANORAMICO</b><span>paesaggio + velocità</span></button>
-      </div>
       <div class="row2">
         <div>
           <label>% ricarica a destinazione</label>
@@ -194,6 +190,16 @@
         </div>
       </div>
 
+      <div class="row2">
+        <div>
+          <label>Orario partenza</label>
+          <input id="departAt" type="datetime-local" />
+        </div>
+        <div>
+          <label>Traffico</label>
+          <div class="hint" style="margin:0;padding-top:10px">Google usa il traffico tipico di quell’ora</div>
+        </div>
+      </div>
       <div class="toggles">
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
@@ -233,8 +239,8 @@
         </div>
       </div>
 
-      <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.17 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <button class="go" id="btnGo">Calcola tragitto</button>
+      <div class="hint">v1.8.19 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -276,7 +282,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.17";
+  const APP_VERSION = "1.8.19";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1071,6 +1077,25 @@
     return map[stt] || ("Directions: "+stt);
   }
 
+  function departAt(){
+    const el = $("departAt");
+    let d = el && el.value ? new Date(el.value) : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    if (d.getTime() < Date.now() - 60000){
+      const now = new Date();
+      d.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+      if (d.getTime() < Date.now() - 60000) d.setDate(d.getDate()+1);
+    }
+    return d;
+  }
+  function initDepartField(){
+    const el = $("departAt");
+    if (!el) return;
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + (5 - d.getMinutes()%5)%5, 0, 0);
+    const pad = n => String(n).padStart(2,"0");
+    el.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
   async function routeGoogle(points, opt){
     return new Promise((resolve,reject)=>{
       const svc = new google.maps.DirectionsService();
@@ -1085,7 +1110,7 @@
         optimizeWaypoints: false,
         travelMode: google.maps.TravelMode.DRIVING,
         provideRouteAlternatives: true,
-        drivingOptions: { departureTime: new Date(), trafficModel: "bestguess" },
+        drivingOptions: { departureTime: departAt(), trafficModel: "bestguess" },
         avoidHighways: !!(opt && opt.avoidHighways)
       }, (res,stt)=>{
         if (stt!=="OK") return reject(new Error(explainGoogleStatus(stt)));
@@ -2238,7 +2263,7 @@
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
-      const title = (state.mode==="fast" ? `VELOCE #${i+1}` : `PANORAMICO #${i+1}`) + (p.algo==="FRVCP" ? " · FRVCP" : "");
+      const title = `TRAGITTO #${i+1}` + (p.algo==="FRVCP" ? " · FRVCP" : "");
       const stopsHtml = p.stops.map((s,si)=>{
         const bu = s.backup ? `<div class="backup-box">
             <b>BACKUP</b> · ${s.backup.name} · ${s.backup.net} · ${s.backup.kw} kW<br>
@@ -2385,7 +2410,7 @@
       });
       alts.sort((a,b)=> altTotalMin(a)-altTotalMin(b));
       const bestT = altTotalMin(alts[0]);
-      const kept = alts.filter(x => altTotalMin(x) <= bestT * 1.25);
+      const kept = alts.filter(x => altTotalMin(x) <= bestT * 1.30);
       const shown = kept.length ? kept : alts.slice(0,1);
       shown.forEach((x,i)=> x.id=i);
       state.alts=shown; state.selected=0;
@@ -2396,7 +2421,7 @@
       const nChg = (state.routeChargers||[]).length;
       const low = shown[0].plan.final.arrive < destArrive;
       setStatus(
-        `Trovati ${shown.length} percorsi (max +25% sul più veloce) · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
+        `Trovati ${shown.length} percorsi (max +30% sul più veloce) · ${a.label.split(",")[0]}${viaTxt} → ${b.label.split(",")[0]}. Colonnine sul tracciato: ${nChg}. Soste HPC pianificate: ${nStop}.` +
         (low ? " Attenzione: SoC all'arrivo sotto il minimo voluto, servono più soste o una % dedicata minore." : "") +
         (state.smart && state.wx && state.wx.worst && state.wx.worst.lvl>=3
           ? ` Meteo: evito il peggio, resta ${state.wx.text}${state.wx.headOn?` · vento contrario ${state.wx.avgWind.toFixed(0)} km/h`:""}.`
@@ -2412,8 +2437,6 @@
   }
 
   /* UI bindings */
-  $("modeFast").onclick = ()=>{ state.mode="fast"; $("modeFast").classList.add("active"); $("modePano").classList.remove("active"); };
-  $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
   /* SMART è sempre attivo */
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
@@ -2553,6 +2576,7 @@
     s.onerror=()=>setStatus("Impossibile caricare Google Maps. Controlla la chiave e la connessione.","err");
     document.head.appendChild(s);
   }
+  initDepartField();
   maybeLoadGoogle();
 
   function hideAllSuggests(){
