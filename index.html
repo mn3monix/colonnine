@@ -36,7 +36,9 @@
     }
     h1 { margin: 0; font-size: 20px; }
     .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .pad { padding: 8px 16px 14px; display: grid; gap: 9px; }
+    .pad { padding: 8px 16px 14px; display: grid; gap: 9px; overflow: auto; max-height: 58%; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .warn { color: var(--rose); }
     label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
     input, select, button {
       width: 100%; border-radius: 12px; border: 1px solid var(--line);
@@ -92,7 +94,7 @@
         <div class="brand">
           <div class="logo">V</div>
           <div>
-            <h1>VoltVia</h1>
+            <h1>VoltVia <span id="appVer" style="font-size:12px;color:#8fa3c0;font-weight:600">v0.7.0</span></h1>
             <div class="sub">Percorso · colonnine · dintorni</div>
           </div>
         </div>
@@ -107,6 +109,25 @@
           <input id="to" placeholder="Destinazione" />
         </div>
         <div>
+          <label>Veicolo</label>
+          <select id="vehicle"></select>
+        </div>
+        <div class="row3" id="customVeh" style="display:none">
+          <div><label>Batteria kWh</label><input id="batKwh" type="number" min="20" max="200" step="0.5" value="70" /></div>
+          <div><label>kWh/100 km</label><input id="cons" type="number" min="8" max="40" step="0.1" value="17" /></div>
+          <div><label>kW max auto</label><input id="peakKw" type="number" min="40" max="400" step="10" value="150" /></div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Carica ora %</label>
+            <input id="soc" type="number" min="1" max="100" value="70" />
+          </div>
+          <div>
+            <label>€ / kWh (vuoto = tariffa rete)</label>
+            <input id="eurKwh" type="number" min="0" max="2" step="0.01" placeholder="auto" />
+          </div>
+        </div>
+        <div>
           <label>Profilo percorso</label>
           <div class="modes">
             <button class="mode on" data-mode="fast" type="button">Veloce</button>
@@ -117,6 +138,16 @@
         <div>
           <label>Reti di ricarica</label>
           <div class="nets" id="nets"></div>
+        </div>
+        <div>
+          <label>Potenza minima</label>
+          <select id="minKw">
+            <option value="0">Qualsiasi</option>
+            <option value="50">≥ 50 kW (rapida)</option>
+            <option value="150" selected>≥ 150 kW (HPC)</option>
+            <option value="250">≥ 250 kW</option>
+            <option value="350">≥ 350 kW</option>
+          </select>
         </div>
         <div class="range-wrap">
           <div class="range-top">
@@ -134,6 +165,7 @@
           <button class="ghost" id="btnSwap" type="button">Inverti</button>
           <button class="ghost" id="btnMe" type="button">La mia posizione</button>
         </div>
+        <button class="mode on" id="btnTraffic" type="button">Traffico live: ON</button>
         <button class="primary" id="btnGo" type="button">Calcola percorso e colonnine</button>
         <button class="ghost" id="btnForgetKey" type="button">Rimuovi la mia chiave da questo browser</button>
       </div>
@@ -166,15 +198,31 @@
     let lastSearchKm = 0;
     let selectedId = null;
     const NETWORKS = [
-      { id: "tesla", label: "Tesla", color: "#e31937", re: /tesla|supercharger/i, queries: ["Tesla Supercharger", "Tesla Destination Charger"] },
-      { id: "ionity", label: "Ionity", color: "#0b0b0b", re: /ionity/i, queries: ["Ionity"] },
-      { id: "electra", label: "Electra", color: "#6c5ce7", re: /electra/i, queries: ["Electra charging", "Electra colonnina"] },
-      { id: "enbw", label: "EnBW", color: "#ff6a00", re: /enbw|hypernetz/i, queries: ["EnBW Ladestation", "EnBW HyperNetz"] }
+      { id: "tesla", label: "Tesla", color: "#e31937", re: /tesla|supercharger/i, queries: ["Tesla Supercharger", "Tesla Destination Charger"], kw: 150 },
+      { id: "ionity", label: "Ionity", color: "#7ad7ff", re: /ionity/i, queries: ["Ionity"], kw: 350 },
+      { id: "electra", label: "Electra", color: "#b794ff", re: /electra/i, queries: ["Electra charging", "Electra colonnina"], kw: 300 },
+      { id: "enbw", label: "EnBW", color: "#ff6a00", re: /enbw|hypernetz/i, queries: ["EnBW Ladestation", "EnBW HyperNetz"], kw: 300 }
     ];
     const activeNets = new Set(NETWORKS.map((n) => n.id));
     const info = new WeakMap();
 
+    const APP_VERSION = "0.7.0";
+    const VEHICLES = [
+      { id: "m3", label: "Tesla Model 3", bat: 57.5, kwh100: 14.5, peak: 170 },
+      { id: "my", label: "Tesla Model Y", bat: 75, kwh100: 16.5, peak: 250 },
+      { id: "compact", label: "Compatta EV (50-55 kWh)", bat: 52, kwh100: 15.5, peak: 130 },
+      { id: "id4", label: "VW ID.4 / simile", bat: 77, kwh100: 17.5, peak: 175 },
+      { id: "suv", label: "SUV EV grande", bat: 96, kwh100: 20.5, peak: 200 },
+      { id: "custom", label: "Personalizzato", bat: 70, kwh100: 17, peak: 150 }
+    ];
+    const NET_PRICE = { tesla: 0.52, ionity: 0.69, electra: 0.44, enbw: 0.59 };
+    document.getElementById("vehicle").innerHTML = VEHICLES.map((v) =>
+      `<option value="${v.id}">${v.label}</option>`
+    ).join("");
+    let trafficLayer = null;
+    let trafficOn = true;
     const KEY_STORE = "voltvia_maps_key";
+    document.getElementById("appVer").textContent = "v" + APP_VERSION;
 
     function key() {
       const stored = (localStorage.getItem(KEY_STORE) || "").trim();
@@ -212,8 +260,7 @@
           { elementType: "labels.text.fill", stylers: [{ color: "#c5d4ea" }] },
           { elementType: "labels.text.stroke", stylers: [{ color: "#1b2738" }] },
           { featureType: "water", stylers: [{ color: "#0d1a2b" }] },
-          { featureType: "poi", stylers: [{ visibility: "off" }] },
-          { featureType: "road", stylers: [{ color: "#2a3b55" }] }
+          { featureType: "poi", stylers: [{ visibility: "off" }] }
         ]
       });
       directionsService = new google.maps.DirectionsService();
@@ -224,6 +271,8 @@
       });
       elevationService = new google.maps.ElevationService();
       places = new google.maps.places.PlacesService(map);
+      trafficLayer = new google.maps.TrafficLayer();
+      trafficLayer.setMap(map);
 
       const fromInput = document.getElementById("from");
       const toInput = document.getElementById("to");
@@ -275,12 +324,9 @@
       const n = clampKm(v);
       document.getElementById("offroad").value = n;
       document.getElementById("offKm").value = n;
-      if (lastChargers.length) {
-        const filtered = lastChargers.filter((x) => x.detour <= n * 1000);
-        renderChargers(filtered);
-        let msg = filtered.length + " colonnine entro " + n + " km dal percorso";
-        if (lastSearchKm && n > lastSearchKm) msg += " · premi Calcola per cercarne altre più lontane";
-        status(msg);
+      refreshVisible();
+      if (lastSearchKm && n > lastSearchKm) {
+        status((visibleChargers().length) + " colonnine visibili · premi Calcola per cercarne altre oltre " + lastSearchKm + " km");
       }
     }
 
@@ -296,6 +342,24 @@
       const tmp = a.value; a.value = b.value; b.value = tmp;
       const t = fromPlace; fromPlace = toPlace; toPlace = t;
     };
+
+    document.getElementById("btnTraffic").onclick = () => {
+      trafficOn = !trafficOn;
+      if (trafficLayer) trafficLayer.setMap(trafficOn ? map : null);
+      const b = document.getElementById("btnTraffic");
+      b.textContent = trafficOn ? "Traffico live: ON" : "Traffico live: OFF";
+      b.classList.toggle("on", trafficOn);
+    };
+
+    document.getElementById("minKw").onchange = () => refreshVisible();
+    document.getElementById("vehicle").onchange = () => {
+      document.getElementById("customVeh").style.display =
+        document.getElementById("vehicle").value === "custom" ? "grid" : "none";
+      refreshVisible();
+    };
+    ["soc", "eurKwh", "batKwh", "cons", "peakKw"].forEach((id) => {
+      document.getElementById(id).oninput = () => refreshVisible();
+    });
 
     document.getElementById("btnMe").onclick = () => {
       navigator.geolocation.getCurrentPosition((pos) => {
@@ -348,6 +412,10 @@
           destination: toPlace,
           travelMode: google.maps.TravelMode.DRIVING,
           provideRouteAlternatives: true,
+          drivingOptions: {
+            departureTime: new Date(),
+            trafficModel: "bestguess"
+          },
           ...opts
         }, (res, st) => {
           if (st === "OK") resolve(res);
@@ -390,9 +458,10 @@
           const gain = cumulativeAscent(elev);
           const leg = route.legs.reduce((a, l) => ({
             dist: a.dist + l.distance.value,
-            time: a.time + l.duration.value
-          }), { dist: 0, time: 0 });
-          candidates.push({ route, path, gain, dist: leg.dist, time: leg.time, raw: res });
+            time: a.time + (l.duration_in_traffic ? l.duration_in_traffic.value : l.duration.value),
+            timeFree: a.timeFree + l.duration.value
+          }), { dist: 0, time: 0, timeFree: 0 });
+          candidates.push({ route, path, gain, dist: leg.dist, time: leg.time, timeFree: leg.timeFree, raw: res });
         }
       }
       if (!candidates.length) throw new Error("Nessun percorso trovato");
@@ -447,6 +516,96 @@
     function classifyNet(place) {
       const blob = ((place.name || "") + " " + (place.vicinity || "")).toLowerCase();
       return NETWORKS.find((n) => n.re.test(blob)) || null;
+    }
+
+    function estimateKw(place, net) {
+      const blob = ((place.name || "") + " " + (place.vicinity || "")).toLowerCase();
+      const m = blob.match(/(\d{2,3})\s*kw/);
+      if (m) return +m[1];
+      if (/destination/.test(blob)) return 22;
+      if (/v4|250/.test(blob) && /tesla|supercharger/.test(blob)) return 250;
+      if (net && net.kw) return net.kw;
+      if (/hpc|hypernetz|supercharger|fast|rapida/.test(blob)) return 150;
+      return 50;
+    }
+
+    function getMinKw() {
+      return +document.getElementById("minKw").value || 0;
+    }
+
+    function getVehicle() {
+      const id = document.getElementById("vehicle").value;
+      const base = VEHICLES.find((v) => v.id === id) || VEHICLES[0];
+      if (id === "custom") {
+        return {
+          ...base,
+          bat: +document.getElementById("batKwh").value || base.bat,
+          kwh100: +document.getElementById("cons").value || base.kwh100,
+          peak: +document.getElementById("peakKw").value || base.peak
+        };
+      }
+      return base;
+    }
+
+    function userPrice(netId) {
+      const raw = document.getElementById("eurKwh").value;
+      if (raw !== "" && Number.isFinite(+raw)) return +raw;
+      return NET_PRICE[netId] || 0.55;
+    }
+
+    function alongRouteKm(loc) {
+      if (!routePath.length) return 0;
+      let best = Infinity, bestI = 0, bestT = 0;
+      for (let i = 1; i < routePath.length; i++) {
+        const proj = closestOnSegment(loc, routePath[i - 1], routePath[i]);
+        const d = google.maps.geometry.spherical.computeDistanceBetween(loc, proj);
+        if (d < best) {
+          best = d;
+          bestI = i;
+          const a = routePath[i - 1], b = routePath[i];
+          const len = google.maps.geometry.spherical.computeDistanceBetween(a, b) || 1;
+          bestT = google.maps.geometry.spherical.computeDistanceBetween(a, proj) / len;
+        }
+      }
+      let acc = 0;
+      for (let i = 1; i < bestI; i++) {
+        acc += google.maps.geometry.spherical.computeDistanceBetween(routePath[i - 1], routePath[i]);
+      }
+      if (bestI > 0) {
+        acc += google.maps.geometry.spherical.computeDistanceBetween(routePath[bestI - 1], routePath[bestI]) * bestT;
+      }
+      return acc / 1000;
+    }
+
+    function enrich(item) {
+      const v = getVehicle();
+      const soc0 = Math.min(100, Math.max(1, +document.getElementById("soc").value || 70));
+      const along = alongRouteKm(item.place.geometry.location);
+      const used = along * v.kwh100 / 100;
+      const arrival = soc0 - (used / v.bat) * 100;
+      const target = 80;
+      const kwhNeed = v.bat * Math.max(0, (target - arrival) / 100);
+      const pwr = Math.min(item.kw || 50, v.peak) * 0.72;
+      const minutes = pwr > 0 ? (kwhNeed / pwr) * 60 : 0;
+      const price = userPrice(item.net && item.net.id);
+      const cost = kwhNeed * price;
+      return { ...item, along, arrival, kwhNeed, minutes, price, cost, reach: arrival };
+    }
+
+    function visibleChargers() {
+      const maxM = getMaxM();
+      const minKw = getMinKw();
+      return lastChargers
+        .filter((x) => x.detour <= maxM && (x.kw || 0) >= minKw)
+        .map(enrich)
+        .sort((a, b) => a.along - b.along);
+    }
+
+    function refreshVisible() {
+      if (!lastChargers.length) return;
+      const list = visibleChargers();
+      renderChargers(list);
+      status(list.length + " colonnine · max " + (getMaxM() / 1000) + " km dalla rotta · ≥ " + getMinKw() + " kW");
     }
 
     function selectedNetworks() {
@@ -506,7 +665,8 @@
         const d = minDistToPath(p.geometry.location, path);
         if (d > maxM) return;
         const prev = found.get(p.place_id);
-        if (!prev || prev.detour > d) found.set(p.place_id, { place: p, detour: d, net });
+        const kw = estimateKw(p, net);
+        if (!prev || prev.detour > d) found.set(p.place_id, { place: p, detour: d, net, kw });
       }
 
       for (const pt of samples) {
@@ -549,10 +709,10 @@
     function pinColor(hex) {
       return {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
+        scale: 9,
         fillColor: hex,
         fillOpacity: 1,
-        strokeColor: "#fff",
+        strokeColor: "#041018",
         strokeWeight: 2
       };
     }
@@ -574,9 +734,17 @@
         const badge = item.net ? `<span class="chip" style="background:${item.net.color}22;color:${item.net.color}">${item.net.label}</span>` : "";
         const card = document.createElement("div");
         card.className = "card";
+        const low = item.arrival < 10;
+        const already = item.arrival >= 80;
+        const chargeLine = already
+          ? "All’arrivo già ≥ 80%, ricarica non necessaria"
+          : `Ricarica a 80%: ${Math.round(item.minutes)} min · ${item.kwhNeed.toFixed(1)} kWh · ${item.cost.toFixed(2)} € (${item.price.toFixed(2)} €/kWh)`;
         card.innerHTML = `<h3>${p.name}</h3>
-          <div class="meta">${badge} ${(item.detour / 1000).toFixed(1)} km dalla rotta
-          ${p.rating ? " · ★ " + p.rating : ""}<br>${p.vicinity || ""}</div>
+          <div class="meta ${low ? "warn" : ""}">${badge} ~${item.kw || "?"} kW
+          <br>${item.along.toFixed(1)} km dal punto di partenza · ${(item.detour / 1000).toFixed(1)} km fuori rotta
+          <br>SOC all’arrivo: <b>${Math.round(item.arrival)}%</b>${low ? " — rischio di non arrivarci" : ""}
+          <br>${chargeLine}
+          ${p.rating ? "<br>★ " + p.rating : ""} · ${p.vicinity || ""}</div>
           <div class="poi" data-poi></div>`;
         card.onclick = async () => {
           document.querySelectorAll(".card").forEach((c) => c.classList.remove("active"));
@@ -610,14 +778,16 @@
       routePath = picked.path;
       const km = (picked.dist / 1000).toFixed(1);
       const min = Math.round(picked.time / 60);
+      const minFree = Math.round((picked.timeFree || picked.time) / 60);
       const gain = Math.round(picked.gain);
+      const trafficNote = min !== minFree ? ` (${minFree} min senza coda)` : "";
       const maxM = getMaxM();
-      status(`${km} km · ${min} min · dislivello +${gain} m. Cerco colonnine…`);
+      status(`${km} km · ${min} min con traffico${trafficNote} · +${gain} m. Cerco colonnine…`);
       const chargers = await searchChargers(routePath, maxM);
       lastChargers = chargers;
       lastSearchKm = maxM / 1000;
       renderChargers(chargers);
-      status(`${km} km · ${min} min · +${gain} m · ${chargers.length} colonnine entro ${lastSearchKm} km`);
+      status(`${km} km · ${min} min con traffico${trafficNote} · +${gain} m · ${chargers.length} colonnine entro ${lastSearchKm} km`);
     }
 
     loadMaps();
