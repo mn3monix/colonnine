@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.24</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.26</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -138,7 +140,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.24</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.26</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -207,6 +209,7 @@
       <div class="toggles">
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togMoreStops" type="button"><b>PIÙ SOSTE</b><span>ricariche corte</span></button>
+        <button class="tog" id="togChargers" type="button"><b>COLONNINE</b><span>solo tratta attiva</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
       </div>
       </div>
@@ -249,7 +252,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.8.24 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.26 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -292,7 +295,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.24";
+  const APP_VERSION = "1.8.26";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -463,6 +466,7 @@
     focusStop: -1,
     pois: [],
     routeChargers: [],
+    showChargers: false,
     gmap: null,
     traffic: null,
     trafficOn: true,
@@ -2038,7 +2042,8 @@
     const alt = alts[selected];
     if (!alt) return;
     const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
-    (state.routeChargers||[]).forEach(c=>{
+    const chgPool = (state.showChargers ? (state.backupPool||state.routeChargers||[]) : []).filter(c => distToPath(c, alt.coords) <= 12);
+    chgPool.forEach(c=>{
       if (plannedIds.has(c.id)) return;
       const m = L.circleMarker([c.lat,c.lng], {radius:7, color:"#fff", weight:1.5, fillColor:netColor(c.net), fillOpacity:0.9})
         .bindPopup(`<b>${c.name||"Colonnina"}</b><br>${c.net||"HPC"} · ${c.kw||"—"} kW<br><i>Sul percorso, non nel piano</i>`)
@@ -2156,7 +2161,8 @@
     const alt = alts[selected];
     if (!alt) return;
     const plannedIds = new Set(alt.plan.stops.map(s=>s.id));
-    (state.routeChargers||[]).forEach(c=>{
+    const chgPool = (state.showChargers ? (state.backupPool||state.routeChargers||[]) : []).filter(c => distToPath(c, alt.coords) <= 12);
+    chgPool.forEach(c=>{
       if (plannedIds.has(c.id)) return;
       bounds.extend({lat:c.lat,lng:c.lng});
       const m = new google.maps.Marker({
@@ -2483,6 +2489,11 @@
   /* UI bindings */
   /* SMART è sempre attivo */
   $("togMoreStops").onclick = ()=>{ state.moreStops=!state.moreStops; $("togMoreStops").classList.toggle("on", state.moreStops); };
+  $("togChargers").onclick = ()=>{
+    state.showChargers=!state.showChargers;
+    $("togChargers").classList.toggle("on", state.showChargers);
+    if (state.alts && state.alts.length) draw(state.alts, state.selected);
+  };
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
     $("togTraffic").classList.toggle("on", state.trafficOn);
