@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.1</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.5</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -133,7 +133,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.1</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.5</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -230,7 +230,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.1 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
+      <div class="hint">v1.8.5 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -272,7 +272,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.1";
+  const APP_VERSION = "1.8.5";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -603,7 +603,7 @@
     for (let i=0;i<pts.length;i++){
       const p = pts[i];
       const sign = i%2===0 ? 1 : -1;
-      const off = offsetBeside(coords, p, 6, sign);
+      const off = offsetBeside(coords, p, 11, -1);
       try { samples.push({...p, olat:off.lat, olng:off.lng, cur: await fetchWxPoint(p.lat,p.lng)}); }
       catch(e){ samples.push({...p, olat:off.lat, olng:off.lng, cur:null}); }
     }
@@ -715,7 +715,7 @@
   state.map = L.map("map").setView([45.46, 9.19], 6);
   if (!state.map.getPane("weather")){
     state.map.createPane("weather");
-    state.map.getPane("weather").style.zIndex = 650;
+    state.map.getPane("weather").style.zIndex = 420;
   }
   state.osmLight = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19, attribution: "&copy; OpenStreetMap"
@@ -762,8 +762,33 @@
     $("gmap").style.display = "block";
   }
   function clearG(){
-    (state.gOverlays||[]).forEach(o => { if (o.setMap) o.setMap(null); });
+    (state.gOverlays||[]).forEach(o => {
+      if (o.setMap) o.setMap(null);
+      if (o._el && o._el.parentNode) o._el.parentNode.removeChild(o._el);
+    });
+    document.querySelectorAll("#gmap .gpin").forEach(el => el.remove());
     state.gOverlays = [];
+  }
+  function htmlPin(lat, lng, html, className){
+    const el = document.createElement("div");
+    el.className = "gpin " + (className||"");
+    el.innerHTML = html;
+    el.style.position = "absolute";
+    el.style.transform = "translate(-50%, calc(-100% - 10px))";
+    el.style.pointerEvents = "auto";
+    el.style.zIndex = "5";
+    const ov = new google.maps.OverlayView();
+    ov.onAdd = function(){ this.getPanes().floatPane.appendChild(el); };
+    ov.draw = function(){
+      const p = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(lat,lng));
+      if (!p) return;
+      el.style.left = p.x + "px";
+      el.style.top = p.y + "px";
+    };
+    ov.onRemove = function(){ if (el.parentNode) el.parentNode.removeChild(el); };
+    ov._el = el;
+    ov.setMap(state.gmap);
+    return ov;
   }
 
   function clearLayers(){
@@ -910,6 +935,24 @@
       lim += cap*d;
     }
     return { driveMin:t, energy:e, km, limitAvg: km?lim/km:90, vAvg: t>0? km/(t/60):90 };
+  }
+  function floorDriveMin(route){
+    const km = (route.meters ? route.meters/1000 : 0) || (route.km||0);
+    if (km < 1) return 0;
+    let hwy=0, tot=0;
+    for (const st of route.steps||[]){
+      const d = Math.max(0, (st.toKm||0)-(st.fromKm||0));
+      tot += d;
+      if (st.hwy) hwy += d;
+    }
+    const share = tot>5 ? hwy/tot : 0.4;
+    const avg = 56 + share * 50;
+    return km / Math.max(52, avg) * 60;
+  }
+  function honestDriveMin(route, computed){
+    const nav = route.seconds ? route.seconds/60 : 0;
+    const floor = floorDriveMin(route);
+    return Math.max(computed||0, nav||0, floor||0);
   }
   function roadCap(implied){
     return {min:105, max:135, kind:"autostrada 105–135 · altre strade al limite"};
@@ -1852,15 +1895,17 @@
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
       const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
+      const offL = offsetBeside(alt.coords, s, 8, si%2 ? -1 : 1);
       const html = `<div class="charge-flag"><div class="k">${shortNet} ${n}</div><div class="v">${s.arriveSoc.toFixed(0)}% → ${Math.round(s.targetSoc)}% · ${fmtMin(s.chargeMin)}</div></div>`;
       const icon = L.divIcon({
         className: "",
         html,
         iconSize: [170,48],
-        iconAnchor: [85,54]
+        iconAnchor: [85,24]
       });
+      state.layers.push(L.polyline([[s.lat,s.lng],[offL.lat,offL.lng]], {color:"#e8edf4", weight:2, opacity:0.9}).addTo(state.map));
       state.layers.push(L.circle([s.lat,s.lng], {radius:450, color:"#e31937", weight:2, fillColor:"#e31937", fillOpacity:0.18}).addTo(state.map));
-      const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
+      const m = L.marker([offL.lat,offL.lng], {icon, zIndexOffset: 900})
         .bindPopup(`<b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SMART ${s.speed||"—"} km/h<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
         .addTo(state.map);
       m.on("click", ()=> focusStop(si, false));
@@ -1895,9 +1940,12 @@
       const lab = wxLabel(code) || "sereno";
       const fog = em==="FOG";
       const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}</div>`;
-      const m = L.marker([s.olat||s.lat, s.olng||s.lng], {
+      const pos = offsetBeside(alt.coords, s, 11, -1);
+      if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
+      if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
+      const m = L.marker([pos.lat, pos.lng], {
         icon: L.divIcon({ className:"", html: fog?fogHtml:`<div class="wx-pin">${em}</div>`, iconSize:[44,44], iconAnchor:[22,22] }),
-        zIndexOffset: 1200,
+        zIndexOffset: 180,
         pane: "weather"
       }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
       state.layers.push(m);
@@ -1909,7 +1957,7 @@
         html:`<div class="poi-pin" style="background:${poiMarkerColor(p.cat)}">${voto}</div>`,
         iconSize:[28,28], iconAnchor:[14,14]
       });
-      const m = L.marker([p.lat,p.lng], {icon, zIndexOffset:300, title:`${p.name} · ${voto}`})
+      const m = L.marker([p.lat,p.lng], {icon, zIndexOffset:850, title:`${p.name} · ${voto}`})
         .bindPopup("Carico dettagli…")
         .addTo(state.map);
       m.on("click", async ()=>{
@@ -1989,17 +2037,20 @@
         map:state.gmap, center:{lat:s.lat,lng:s.lng}, radius:450,
         fillColor:"#e31937", fillOpacity:0.22, strokeColor:"#e31937", strokeWeight:2, zIndex:199
       }));
-      const m = new google.maps.Marker({
-        position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        icon: { url: smartSvg(n, s.chargeMin, Math.round(s.arriveSoc), Math.round(s.targetSoc), s.net||""), scaledSize: new google.maps.Size(200,56), anchor: new google.maps.Point(100,62) },
-        title: `RICARICA #${n} ${s.name} · ${s.speed||"—"} km/h · arrivo ${s.arriveSoc.toFixed(0)}%`,
-        zIndex: 220+si
-      });
+      const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
+      const off = offsetBeside(alt.coords, s, 8, si%2 ? -1 : 1);
+      state.gOverlays.push(new google.maps.Polyline({
+        path:[{lat:s.lat,lng:s.lng},{lat:off.lat,lng:off.lng}],
+        map:state.gmap, strokeColor:"#e8edf4", strokeOpacity:0.95, strokeWeight:2, zIndex:8
+      }));
+      const m = htmlPin(off.lat, off.lng,
+        `<div class="charge-flag"><div class="k">${shortNet} ${n}</div><div class="v">${s.arriveSoc.toFixed(0)}% → ${Math.round(s.targetSoc)}% · ${fmtMin(s.chargeMin)}</div></div>`
+      );
       const info = new google.maps.InfoWindow({
         content: `<div style="color:#111"><b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>Velocità SMART: <b>${s.speed||"—"} km/h</b><br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
       });
       m._info = info;
-      m.addListener("click", ()=> focusStop(si, false));
+      if (m._el) m._el.onclick = ()=> focusStop(si, false);
       state.gOverlays.push(m);
       state.stopMarkers.push(m);
       if (s.backup){
@@ -2022,12 +2073,7 @@
     if (state.smart && alt.coords.length){
       const end = alt.coords[alt.coords.length-1];
       const f = alt.plan.final||{};
-      const dm = new google.maps.Marker({
-        position:{lat:end.lat,lng:end.lng}, map:state.gmap,
-        icon: { url: destSvg(Math.round(f.arrive||0)), scaledSize: new google.maps.Size(72,36), anchor: new google.maps.Point(36,40) },
-        title: `Arrivo ${Number(f.arrive||0).toFixed(0)}%`,
-        zIndex: 250
-      });
+      const dm = htmlPin(end.lat, end.lng, `<div class="dest-flag">${Number(f.arrive||0).toFixed(0)}%</div>`);
       state.gOverlays.push(dm);
     }
     const wxs = (alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || [];
@@ -2038,14 +2084,17 @@
       const lab = wxLabel(code) || "sereno";
       const fog = em==="FOG";
       const fogUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"><circle cx="22" cy="22" r="20" fill="#8a93a0" stroke="#dfe6ee" stroke-width="2"/><circle cx="22" cy="16" r="7" fill="#f2f4f7" fill-opacity=".6"/><rect x="8" y="24" width="28" height="3" rx="1.5" fill="#e8edf3"/><rect x="10" y="29" width="24" height="3" rx="1.5" fill="#d5dce6"/><rect x="12" y="34" width="20" height="2.5" rx="1.2" fill="#c5ced8"/></svg>`);
+      const pos = offsetBeside(alt.coords, s, 11, -1);
+      if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
+      if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
       const m = new google.maps.Marker({
-        position:{lat:s.olat||s.lat,lng:s.olng||s.lng}, map:state.gmap,
+        position:{lat:pos.lat,lng:pos.lng}, map:state.gmap,
         label: fog ? undefined : {text:em, fontSize:"22px"},
         icon: fog
           ? { url:fogUrl, scaledSize:new google.maps.Size(44,44), anchor:new google.maps.Point(22,22) }
           : { path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
         title: `Meteo ${lab}`,
-        zIndex: 1200,
+        zIndex: 60,
         optimized: false
       });
       const info = new google.maps.InfoWindow({
@@ -2084,8 +2133,11 @@
     const box = $("results");
     box.innerHTML = alts.map((alt,i)=>{
       const p = alt.plan;
-      const driveSum = p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin;
-      const drive = p.navMin ? Math.max(p.navMin, driveSum) : driveSum;
+      const driveSum = Math.max(1, p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin);
+      const drive = honestDriveMin(alt, driveSum);
+      const scaleT = drive / driveSum;
+      p.stops.forEach(s => { s._showDrive = s.driveMin * scaleT; });
+      if (p.final) p.final._showDrive = (p.final.driveMin||0) * scaleT;
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
@@ -2103,7 +2155,7 @@
         return `<div class="stop${state.focusStop===si && i===state.selected ? " on":""}" data-stop="${si}">
           <div class="name">${si+1}. ${s.name}<span class="net" style="background:${netColor(s.net)};color:#111">${s.net}</span></div>
           <div class="meta">
-            Tratta ${s.dkm.toFixed(0)} km · guida ${fmtMin(s.driveMin)}<br>
+            Tratta ${s.dkm.toFixed(0)} km · guida ${fmtMin(s._showDrive != null ? s._showDrive : s.driveMin)}<br>
             ${state.smart
               ? `<b>SMART</b> · ${s.roadKind?s.roadKind+" · ":""}velocità <b>${s.speed} km/h</b> · consumi <b>${(s.cons||consAt(s.speed)).toFixed(1)} kWh/100 km</b> (${(consAt(s.speed)*s.dkm/100).toFixed(1)} kWh) · ricarica ottimizzata <b>${fmtMin(s.chargeMin)}</b> fino a ${Math.round(s.targetSoc)}%<br>`
               : `${s.speed} km/h<br>`}
