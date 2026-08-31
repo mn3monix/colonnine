@@ -72,7 +72,9 @@
     .alt h3 { margin: 0 0 6px; font-size: 14px; }
     .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; color: var(--muted); }
     .stats b { color: var(--txt); }
-    .stop { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; font-size: 13px; }
+    .stop { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; font-size: 13px; cursor: pointer; border-radius: 10px; }
+    .stop:hover { background: #141a21; }
+    .stop.on { background: #241016; outline: 1px solid #6b1c28; padding: 8px; }
     .stop .name { font-weight: 650; }
     .net { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 999px; background: #2a1014; color: #ff8a98; margin-left: 6px; }
     .meta { color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.45; }
@@ -104,7 +106,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.4.0</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.4.2</span></h1>
             <div class="sub">Planner HPC · Google Maps · Supercharger / Ionity / Electra / EVDC / EnBW / GreenWay</div>
           </div>
         </div>
@@ -165,6 +167,7 @@
         <button class="tog" id="togSmart" type="button"><b>SMART</b><span>velocità · tempo ricarica · consumi</span></button>
         <button class="tog on" id="togBackup" type="button"><b>BACKUP</b><span>colonnina di riserva</span></button>
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
+        <button class="tog" id="togDarkMap" type="button"><b>MAPPA SCURA</b><span>chiara / scura</span></button>
       </div>
 
       <label>Attrazioni lungo il percorso</label>
@@ -242,7 +245,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.4.0";
+  const APP_VERSION = "1.4.2";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -381,11 +384,14 @@
     map: null,
     layers: [],
     gOverlays: [],
+    stopMarkers: [],
+    focusStop: -1,
     pois: [],
     routeChargers: [],
     gmap: null,
     traffic: null,
     trafficOn: true,
+    darkMap: false,
     sucWho: "tesla",
     sucStations: [],
     sucUpdated: null,
@@ -535,11 +541,41 @@
     return null;
   }
 
+  const DARK_GSTYLES = [
+    {elementType:"geometry", stylers:[{color:"#1c222b"}]},
+    {elementType:"labels.text.stroke", stylers:[{color:"#1c222b"}]},
+    {elementType:"labels.text.fill", stylers:[{color:"#9aa6b4"}]},
+    {featureType:"road", elementType:"geometry", stylers:[{color:"#2a3340"}]},
+    {featureType:"road", elementType:"geometry.stroke", stylers:[{color:"#1a1f26"}]},
+    {featureType:"water", elementType:"geometry", stylers:[{color:"#0b0d10"}]},
+    {featureType:"poi", stylers:[{visibility:"off"}]},
+    {featureType:"transit", stylers:[{visibility:"off"}]}
+  ];
   /* Map */
   state.map = L.map("map").setView([45.46, 9.19], 6);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  state.osmLight = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19, attribution: "&copy; OpenStreetMap"
-  }).addTo(state.map);
+  });
+  state.osmDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap, CARTO"
+  });
+  state.osmLight.addTo(state.map);
+  function applyMapTheme(){
+    const dark = !!state.darkMap;
+    if (state.map){
+      if (dark){
+        if (state.map.hasLayer(state.osmLight)) state.map.removeLayer(state.osmLight);
+        if (!state.map.hasLayer(state.osmDark)) state.osmDark.addTo(state.map);
+      } else {
+        if (state.map.hasLayer(state.osmDark)) state.map.removeLayer(state.osmDark);
+        if (!state.map.hasLayer(state.osmLight)) state.osmLight.addTo(state.map);
+      }
+    }
+    if (state.gmap){
+      state.gmap.setOptions({ styles: dark ? DARK_GSTYLES : [] });
+    }
+    localStorage.setItem("my_dark_map", dark ? "1" : "0");
+  }
 
   function googleReady(){
     return !!(window.google && google.maps && google.maps.Map);
@@ -556,6 +592,7 @@
     });
     state.traffic = new google.maps.TrafficLayer();
     if (state.trafficOn) state.traffic.setMap(state.gmap);
+    applyMapTheme();
     $("map").style.display = "none";
     $("gmap").classList.add("show");
     $("gmap").style.display = "block";
@@ -1134,11 +1171,20 @@
         .addTo(state.map);
       state.layers.push(m);
     });
-    alt.plan.stops.forEach((s)=>{
-      const m = L.circleMarker([s.lat,s.lng], {radius:9, color:"#0b0d10", weight:2, fillColor:netColor(s.net), fillOpacity:1})
-        .bindPopup(`<b>${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
+    state.stopMarkers = [];
+    alt.plan.stops.forEach((s, si)=>{
+      const n = si+1;
+      const icon = L.divIcon({
+        className: "num-pin",
+        html: `<div style="width:26px;height:26px;border-radius:50%;background:${netColor(s.net)};color:#111;border:2px solid #0b0d10;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">${n}</div>`,
+        iconSize: [26,26], iconAnchor: [13,13]
+      });
+      const m = L.marker([s.lat,s.lng], {icon, zIndexOffset: 600})
+        .bindPopup(`<b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo ${s.arriveSoc.toFixed(0)}% → ${s.targetSoc}%`)
         .addTo(state.map);
+      m.on("click", ()=> focusStop(si, false));
       state.layers.push(m);
+      state.stopMarkers.push(m);
       if (s.backup){
         const b = L.circleMarker([s.backup.lat,s.backup.lng], {radius:7, color:"#0b0d10", weight:2, fillColor:netColor(s.backup.net), fillOpacity:1})
           .bindPopup(`<b>BACKUP</b><br>${s.backup.name}<br>${s.backup.net}<br>Servono ${s.backup.needPct.toFixed(1)}% · dedicati ${s.backup.reservedPct}%`)
@@ -1188,18 +1234,23 @@
       });
       state.gOverlays.push(m);
     });
-    alt.plan.stops.forEach(s=>{
+    state.stopMarkers = [];
+    alt.plan.stops.forEach((s, si)=>{
+      const n = String(si+1);
       const m = new google.maps.Marker({
         position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        label:{text:String(Math.round(s.arriveSoc)), color:"#fff", fontWeight:"700"},
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale:12, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
-        title: s.name+" · "+s.net+" · arrivo "+s.arriveSoc.toFixed(0)+"%"
+        label:{text:n, color:"#111", fontWeight:"800"},
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:14, fillColor:netColor(s.net), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
+        title: "#"+n+" "+s.name+" · arrivo "+s.arriveSoc.toFixed(0)+"%",
+        zIndex: 200+si
       });
       const info = new google.maps.InfoWindow({
-        content: `<div style="color:#111"><b>${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
+        content: `<div style="color:#111"><b>#${n} ${s.name}</b><br>${s.net} · ${s.kw} kW<br>SoC all'arrivo: <b>${s.arriveSoc.toFixed(0)}%</b> → ${s.targetSoc}%</div>`
       });
-      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
+      m._info = info;
+      m.addListener("click", ()=> focusStop(si, false));
       state.gOverlays.push(m);
+      state.stopMarkers.push(m);
       if (s.backup){
         const bm = new google.maps.Marker({
           position:{lat:s.backup.lat,lng:s.backup.lng}, map:state.gmap,
@@ -1258,7 +1309,7 @@
             SoC stimato all'arrivo al BACKUP (partendo dalla principale senza ricaricare): <b>${s.backup.arriveFromMain.toFixed(0)}%</b><br>
             Se ricarichi prima e poi vai al backup: <b>${s.backup.arriveAfterCharge.toFixed(0)}%</b>
           </div>` : "";
-        return `<div class="stop">
+        return `<div class="stop${state.focusStop===si && i===state.selected ? " on":""}" data-stop="${si}">
           <div class="name">${si+1}. ${s.name}<span class="net" style="background:${netColor(s.net)};color:#111">${s.net}</span></div>
           <div class="meta">
             Tratta ${s.dkm.toFixed(0)} km · guida ${fmtMin(s.driveMin)}<br>
@@ -1292,10 +1343,17 @@
         ${i===state.selected ? renderPoiList() : ""}
       </article>`;
     }).join("");
+    box.querySelectorAll(".stop").forEach(el=>{
+      el.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        focusStop(+el.dataset.stop, true);
+      });
+    });
     box.querySelectorAll(".alt").forEach(el=>{
       el.addEventListener("click", ev=>{
-        if (ev.target.closest(".backup") || ev.target.closest("button")) return;
+        if (ev.target.closest(".backup") || ev.target.closest("button") || ev.target.closest(".stop")) return;
         state.selected = +el.dataset.i;
+        state.focusStop = -1;
         renderResults(state.alts);
         draw(state.alts, state.selected);
       });
@@ -1403,6 +1461,38 @@
     if (state.traffic) state.traffic.setMap(state.trafficOn ? state.gmap : null);
     else if (state.trafficOn && useGoogle()) initGoogleMap();
   };
+  $("togDarkMap").onclick = ()=>{
+    state.darkMap = !state.darkMap;
+    $("togDarkMap").classList.toggle("on", state.darkMap);
+    applyMapTheme();
+  };
+  if (localStorage.getItem("my_dark_map")==="1"){
+    state.darkMap = true;
+    $("togDarkMap").classList.add("on");
+    applyMapTheme();
+  }
+  function focusStop(idx, fromList){
+    state.focusStop = idx;
+    document.querySelectorAll(".stop").forEach(el => el.classList.toggle("on", +el.dataset.stop===idx));
+    const alt = state.alts[state.selected];
+    if (!alt || !alt.plan.stops[idx]) return;
+    const s = alt.plan.stops[idx];
+    if (useGoogle() && state.gmap){
+      state.gmap.panTo({lat:s.lat, lng:s.lng});
+      state.gmap.setZoom(Math.max(state.gmap.getZoom(), 10));
+      const mk = state.stopMarkers[idx];
+      if (mk && mk._info){
+        state.stopMarkers.forEach(m => { if (m._info) m._info.close(); });
+        mk._info.open({map:state.gmap, anchor:mk});
+      }
+    } else if (state.map){
+      state.map.setView([s.lat,s.lng], Math.max(state.map.getZoom(), 10));
+      const mk = state.stopMarkers[idx];
+      if (mk && mk.openPopup) mk.openPopup();
+    }
+    const card = document.querySelector(`.stop[data-stop="${idx}"]`);
+    if (fromList && card) card.scrollIntoView({block:"nearest"});
+  }
   function renderPoiList(){
     const list = state.pois||[];
     if (!list.length) return `<div class="meta" style="margin-top:10px">Nessuna attrazione con i filtri scelti.</div>`;
