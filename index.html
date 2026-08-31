@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.6.5</title>
+  <title>Model Y AWD 2026 — Route Planner v1.6.9</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -105,8 +105,8 @@
       padding:4px 8px; font-size:11px; font-weight:800; line-height:1.2; white-space:nowrap;
       text-align:center; box-shadow:0 3px 10px rgba(227,25,55,.55); position:relative; z-index:2; }
     @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
-    .wx-pin { width:28px;height:28px;border-radius:50%;background:#111c16;border:1px solid #3dd68c;
-      display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.4); }
+    .wx-pin { width:44px;height:44px;border-radius:50%;background:#111c16;border:2px solid #3dd68c;
+      display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,.5); }
     .smart-flag { background:#111c16; color:#e8fff3; border:1px solid #3dd68c; border-radius:8px;
       padding:3px 7px; font-size:11px; font-weight:700; line-height:1.25; white-space:nowrap;
       text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
@@ -123,7 +123,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.6.5</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.6.9</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -166,7 +166,7 @@
       </div>
 
       <div class="modes">
-        <button class="mode active" data-mode="fast" id="modeFast"><b>Più veloce</b><span>3 alternative autostradali</span></button>
+        <button class="mode active" data-mode="fast" id="modeFast"><b>Più veloce</b><span>5 alternative autostradali</span></button>
         <button class="mode" data-mode="pano" id="modePano"><b>Veloce panoramico</b><span>veloce + tratti di paesaggio</span></button>
       </div>
       <div class="row2">
@@ -187,11 +187,11 @@
 
       <label>Attrazioni lungo il percorso</label>
       <div class="chips" id="poiCats">
-        <span class="chip on" data-cat="hotel">Hotel</span>
-        <span class="chip on" data-cat="ristorante">Ristoranti e Osteria</span>
-        <span class="chip on" data-cat="pizzeria">Pizzeria</span>
-        <span class="chip on" data-cat="piadineria">Piadineria</span>
-        <span class="chip on" data-cat="bar">Bar</span>
+        <span class="chip" data-cat="hotel">Hotel</span>
+        <span class="chip" data-cat="ristorante">Ristoranti e Osteria</span>
+        <span class="chip" data-cat="pizzeria">Pizzeria</span>
+        <span class="chip" data-cat="piadineria">Piadineria</span>
+        <span class="chip" data-cat="bar">Bar</span>
       </div>
       <div class="row" style="align-items:end">
         <div>
@@ -220,7 +220,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.6.5 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.6.9 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -262,7 +262,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.6.5";
+  const APP_VERSION = "1.6.9";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -554,6 +554,22 @@
     const j = await r.json();
     return j.current || {};
   }
+  function offsetBeside(coords, p, km, sign){
+    if (!coords || coords.length<2) return {lat:p.lat, lng:p.lng};
+    let best=1, bd=1e9;
+    for (let i=1;i<coords.length;i++){
+      const d=haversine(coords[i], p);
+      if (d<bd){ bd=d; best=i; }
+    }
+    const a=coords[Math.max(0,best-1)], b=coords[best];
+    const dy=b.lat-a.lat, dx=b.lng-a.lng;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=-dy/len, ny=dx/len;
+    return {
+      lat: p.lat + (km/111)*ny*sign,
+      lng: p.lng + (km/(111*Math.cos(p.lat*Math.PI/180)))*nx*sign
+    };
+  }
   function sampleCoords(coords, n){
     if (!coords.length) return [];
     const out=[];
@@ -564,11 +580,14 @@
     return out;
   }
   async function weatherForRoute(coords){
-    const pts = sampleCoords(coords, 5);
+    const pts = sampleCoords(coords, 10);
     const samples=[];
-    for (const p of pts){
-      try { samples.push({...p, cur: await fetchWxPoint(p.lat,p.lng)}); }
-      catch(e){ samples.push({...p, cur:null}); }
+    for (let i=0;i<pts.length;i++){
+      const p = pts[i];
+      const sign = i%2===0 ? 1 : -1;
+      const off = offsetBeside(coords, p, 2.4, sign);
+      try { samples.push({...p, olat:off.lat, olng:off.lng, cur: await fetchWxPoint(p.lat,p.lng)}); }
+      catch(e){ samples.push({...p, olat:off.lat, olng:off.lng, cur:null}); }
     }
     const hazards = samples.map(s => s.cur ? wxSeverity(s.cur) : {lvl:0,name:"n/d"}).filter(h=>h.lvl>0);
     const worst = hazards.reduce((a,b)=>b.lvl>a.lvl?b:a, {lvl:0,name:"ok"});
@@ -762,14 +781,41 @@
     });
     return steps;
   }
+  function parsePosted(x){
+    if (x==null || x==="" || x==="none" || x==="null") return null;
+    const n=parseFloat(x);
+    return (isFinite(n) && n>=20 && n<=140) ? n : null;
+  }
   function extractOsrmSteps(rt){
-    const steps=[]; let acc=0;
+    const fine=[]; let acc=0; let hasAnn=false;
+    (rt.legs||[]).forEach(leg=>{
+      const ann=leg.annotation||{};
+      const maxs=ann.maxspeed||[];
+      const dists=ann.distance||[];
+      const durs=ann.duration||[];
+      if (maxs.length && dists.length){
+        hasAnn=true;
+        const n=Math.min(maxs.length, dists.length);
+        for (let i=0;i<n;i++){
+          const m=+dists[i]||0;
+          if (m<=0) continue;
+          const posted=parsePosted(maxs[i]);
+          const s=+(durs[i]||0);
+          const v=s>0?(m/s)*3.6:(posted||90);
+          const limit=posted || legalSnap(v);
+          fine.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s||m/(limit/3.6),v,limit});
+          acc+=m;
+        }
+      }
+    });
+    if (hasAnn && fine.length>3) return fine;
+    const steps=[]; acc=0;
     (rt.legs||[]).forEach(leg=>{
       (leg.steps||[]).forEach(st=>{
         const m=st.distance||0, s=st.duration||0;
         const v=s>0?(m/s)*3.6:80;
-        const posted = parseFloat(st.maxspeed || (st.intersections&&st.intersections[0]&&st.intersections[0].maxspeed));
-        const limit = (posted>0 ? posted : legalSnap(v));
+        const posted = parsePosted(st.maxspeed);
+        const limit = posted || legalSnap(v);
         steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit});
         acc+=m;
       });
@@ -777,11 +823,14 @@
     return steps;
   }
   function legalSnap(v){
-    if (v>=118) return 130;
-    if (v>=100) return 130;
-    if (v>=88) return 90;
-    if (v>=68) return 90;
-    if (v>=55) return 70;
+    const x=+v||90;
+    if (x>=124) return 130;
+    if (x>=116) return 130;
+    if (x>=107) return 110;
+    if (x>=97) return 100;
+    if (x>=85) return 90;
+    if (x>=76) return 80;
+    if (x>=62) return 70;
     return 50;
   }
   function impliedSpeed(route, fromKm, toKm){
@@ -813,8 +862,11 @@
   }
   function roadCap(implied){
     const lim = implied||90;
-    if (lim>=110) return {min:110, max:Math.min(130, Math.round(lim)), kind:"autostrada (limite "+Math.round(lim)+")"};
+    if (lim>=124) return {min:110, max:130, kind:"autostrada (limite 130)"};
+    if (lim>=112) return {min:100, max:110, kind:"autostrada (limite 110)"};
+    if (lim>=97) return {min:90, max:100, kind:"autostrada (limite 100)"};
     if (lim>=88) return {min:80, max:90, kind:"extraurbana (limite 90)"};
+    if (lim>=76) return {min:70, max:80, kind:"extraurbana (limite 80)"};
     if (lim>=65) return {min:60, max:70, kind:"extraurbana (limite 70)"};
     return {min:30, max:50, kind:"urbana (limite 50)"};
   }
@@ -822,7 +874,7 @@
     const pts = extraVia ? [points[0], extraVia, ...points.slice(1)] : points.slice();
     const coords = pts.map(p => `${p.lng},${p.lat}`).join(";");
     const alts = extraVia || pts.length>2 || noMotorway ? "false" : "true";
-    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=true&annotations=maxspeed`;
+    let url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&alternatives=${alts}&steps=true&annotations=maxspeed,distance,duration`;
     if (noMotorway) url += "&exclude=motorway";
     let r = await fetch(url);
     if (!r.ok && noMotorway){
@@ -896,8 +948,8 @@
     const c=r.coords; return c[Math.floor(c.length/2)];
   }
   function routesAlike(a,b){
-    if (Math.abs((a.meters||0)-(b.meters||0)) < 22000) return true;
-    if (a.coords && b.coords) return haversine(midCoord(a), midCoord(b)) < 18;
+    if (Math.abs((a.meters||0)-(b.meters||0)) < 12000) return true;
+    if (a.coords && b.coords) return haversine(midCoord(a), midCoord(b)) < 12;
     return false;
   }
   function uniqRoutes(list, minDiffKm){
@@ -905,7 +957,7 @@
     for (const r of list){
       if (!r || !r.coords || r.coords.length<2) continue;
       if (uniq.every(u => !routesAlike(u,r) && Math.abs(u.meters-r.meters) > (minDiffKm||22)*1000)) uniq.push(r);
-      if (uniq.length===3) break;
+      if (uniq.length===5) break;
     }
     return uniq;
   }
@@ -916,19 +968,21 @@
       midpointOffset(a,b,18,-1),
       midpointOffset(a,b,38,1),
       midpointOffset(a,b,38,-1),
+      midpointOffset(a,b,55,1),
+      midpointOffset(a,b,55,-1),
       midpointOffset(a,b,12,1)
     ];
     for (const via of tries){
-      if (out.length>=3) break;
+      if (out.length>=5) break;
       try {
         const extra = await routeOsrm(points, via, !!noMotorway);
         out = uniqRoutes(out.concat(extra), 8);
       } catch(e){}
     }
-    if (out.length<3){
+    if (out.length<5){
       try { out = uniqRoutes(out.concat(await routeOsrm(points, null, false)), 6); } catch(e){}
     }
-    return out.slice(0,3);
+    return out.slice(0,5);
   }
   async function getRoutes(a,b, mode, vias){
     const points = [a, ...(vias||[]), b];
@@ -942,10 +996,14 @@
         const hubs = [
           {lat:45.4642,lng:9.1900},
           {lat:45.5416,lng:10.2118},
-          {lat:44.8015,lng:10.3279}
+          {lat:44.8015,lng:10.3279},
+          {lat:44.4949,lng:11.3426},
+          {lat:45.4384,lng:10.9916},
+          {lat:45.0526,lng:9.6930},
+          {lat:44.6471,lng:10.9252}
         ];
         for (const h of hubs){
-          if (seed.length>=3) break;
+          if (seed.length>=5) break;
           if (haversine(h,a)<25 || haversine(h,b)<25) continue;
           if ((vias||[]).some(v=>haversine(h,v)<25)) continue;
           try { seed = seed.concat(await routeGoogle(points,{via:h})); } catch(e){}
@@ -956,15 +1014,15 @@
       }
       seed.sort((x,y)=>(x.seconds||0)-(y.seconds||0));
       let three = uniqRoutes(seed, 22);
-      if (three.length<3) three = await fillToThree(points, a, b, seed, false);
+      if (three.length<5) three = await fillToThree(points, a, b, seed, false);
       if (!three.length) throw new Error("Nessun percorso trovato");
-      while (three.length<3){
+      while (three.length<5){
         try {
-          const more = await routeOsrm(points, midpointOffset(a,b, 25+three.length*20, three.length%2?1:-1), false);
-          three = uniqRoutes(three.concat(more), 18);
+          const more = await routeOsrm(points, midpointOffset(a,b, 20+three.length*16, three.length%2?1:-1), false);
+          three = uniqRoutes(three.concat(more), 14);
         } catch(e){ break; }
       }
-      return three.slice(0,3);
+      return three.slice(0,5);
     }
     const scenicHubs = [
       {lat:44.472, lng:9.928, name:"Passo della Cisa"},
@@ -1625,8 +1683,8 @@
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
-      const m = L.marker([s.lat,s.lng], {
-        icon: L.divIcon({ className:"", html:`<div class="wx-pin">${em}</div>`, iconSize:[28,28], iconAnchor:[14,14] }),
+      const m = L.marker([s.olat||s.lat, s.olng||s.lng], {
+        icon: L.divIcon({ className:"", html:`<div class="wx-pin">${em}</div>`, iconSize:[44,44], iconAnchor:[22,22] }),
         zIndexOffset: 350
       }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
       state.layers.push(m);
@@ -1758,9 +1816,9 @@
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
       const m = new google.maps.Marker({
-        position:{lat:s.lat,lng:s.lng}, map:state.gmap,
-        label:{text:em, fontSize:"16px"},
-        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:12, fillColor:"#111c16", fillOpacity:0.9, strokeColor:"#3dd68c", strokeWeight:1 },
+        position:{lat:s.olat||s.lat,lng:s.olng||s.lng}, map:state.gmap,
+        label:{text:em, fontSize:"22px"},
+        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
         title: `Meteo ${lab}`,
         zIndex: 180
       });
@@ -1944,7 +2002,7 @@
       setStatus("Cerco attrazioni lungo il percorso…");
       const pois = await loadPoisForRoute(routes[0].coords);
       state.pois = pois;
-      const alts = routes.slice(0,3).map((r,i)=>{
+      const alts = routes.slice(0,5).map((r,i)=>{
         const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:true,chargers, backupPool:allChargers, backupOn:true, backupPct, destArrive});
         plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
