@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.3.1</title>
+  <title>Model Y AWD 2026 — Route Planner v1.4.6</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -93,6 +93,11 @@
     .suggest button:hover { background: #1c222b; }
     .via-row { display: grid; grid-template-columns: 1fr 36px; gap: 6px; margin-top: 6px; align-items: start; }
     .via-row .field { width: 100%; }
+    .poi-pin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #0b0d10; color:#111; font-weight:800; font-size:10px;
+      display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.45); }
+    .poi-card img { width:100%; max-height:140px; object-fit:cover; border-radius:8px; display:block; margin:6px 0; }
+    .openyes { color:#0a7a3c; font-weight:700; }
+    .openno { color:#b42318; font-weight:700; }
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; grid-template-rows: auto 55vh; }
       aside { height: auto; max-height: 45vh; }
@@ -106,8 +111,8 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.4.4</span></h1>
-            <div class="sub">Planner HPC · Google Maps · Supercharger / Ionity / Electra / EVDC / EnBW / GreenWay</div>
+            <h1>Model Y AWD 2026 <span class="ver">v1.4.7</span></h1>
+            <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
         <button class="iconbtn" id="btnSettings" title="Impostazioni">⚙</button>
@@ -191,6 +196,12 @@
           </select>
         </div>
         <div>
+          <label>Km max fuori percorso (attrazioni)</label>
+          <input id="poiMaxKm" type="number" min="1" max="40" step="1" value="8" title="Distanza massima dalla linea del viaggio per ristoranti, hotel, ecc." />
+        </div>
+      </div>
+      <div class="row2">
+        <div>
           <label>Voto minimo (tutte le categorie)</label>
           <select id="minRating">
             <option value="0">Qualsiasi</option>
@@ -203,7 +214,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.4.4 · Soste solo sul tracciato. 3 alternative. Tariffe Supercharger da suc-tracker.eu.</div>
+      <div class="hint">v1.4.7 · Solo Supercharger Tesla e Ionity. Imposta i km max fuori percorso per ristoranti e attrazioni.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -245,7 +256,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.4.4";
+  const APP_VERSION = "1.4.7";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -258,11 +269,7 @@
   };
   const NETS = {
     SUPERCHARGER: { color: "#e31937", price: 0.39, power: 250 },
-    IONITY:       { color: "#0b6e4f", price: 0.69, power: 350 },
-    ELECTRA:      { color: "#6ea8ff", price: 0.54, power: 300 },
-    EVDC:         { color: "#b07cff", price: 0.55, power: 150 },
-    ENBW:         { color: "#f5c542", price: 0.61, power: 300 },
-    GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 }
+    IONITY:       { color: "#0b6e4f", price: 0.69, power: 350 }
   };
   const NET_KEYS = Object.keys(NETS);
   function selectedNets(){
@@ -534,10 +541,6 @@
     const t = (text||"").toUpperCase();
     if (t.includes("SUPERCHARGER") || t.includes("TESLA")) return "SUPERCHARGER";
     if (t.includes("IONITY")) return "IONITY";
-    if (t.includes("ELECTRA")) return "ELECTRA";
-    if (t.includes("ENBW") || t.includes("HYPERNETZ")) return "ENBW";
-    if (t.includes("GREENWAY") || t.includes("GREEN WAY")) return "GREENWAY";
-    if (t.includes("EVDC")) return "EVDC";
     return null;
   }
 
@@ -678,10 +681,13 @@
       svc.route({
         origin: {lat:points[0].lat,lng:points[0].lng},
         destination: {lat:points[points.length-1].lat,lng:points[points.length-1].lng},
-        waypoints: vias,
+        waypoints: [
+          ...vias,
+          ...((opt && opt.via) ? [{location:{lat:opt.via.lat,lng:opt.via.lng}, stopover:false}] : [])
+        ],
         optimizeWaypoints: false,
         travelMode: google.maps.TravelMode.DRIVING,
-        provideRouteAlternatives: vias.length===0,
+        provideRouteAlternatives: true,
         avoidHighways: !!(opt && opt.avoidHighways)
       }, (res,stt)=>{
         if (stt!=="OK") return reject(new Error(explainGoogleStatus(stt)));
@@ -743,15 +749,27 @@
     if (mode==="fast"){
       let seed=[];
       if (useG) {
-        try { seed = await routeGoogle(points,{}); }
-        catch(e){ setStatus(e.message+" Integro con alternative di riserva.","err"); }
+        try { seed = seed.concat(await routeGoogle(points,{})); }
+        catch(e){ setStatus(e.message+" Integro alternative autostradali.","err"); }
+        const hubs = [
+          {lat:45.4642,lng:9.1900},
+          {lat:45.5416,lng:10.2118},
+          {lat:44.8015,lng:10.3279}
+        ];
+        for (const h of hubs){
+          if (seed.length>=3) break;
+          if (haversine(h,a)<25 || haversine(h,b)<25) continue;
+          if ((vias||[]).some(v=>haversine(h,v)<25)) continue;
+          try { seed = seed.concat(await routeGoogle(points,{via:h})); } catch(e){}
+        }
       }
       if (!seed.length){
-        try { seed = await routeOsrm(points); } catch(e){}
+        try { seed = await routeOsrm(points, null, false); } catch(e){}
       }
-      const three = await fillToThree(points, a, b, seed, false);
+      seed.sort((x,y)=>(x.seconds||0)-(y.seconds||0));
+      const three = uniqRoutes(seed, 6);
       if (!three.length) throw new Error("Nessun percorso trovato");
-      return three;
+      return three.slice(0,3);
     }
     if (useG){
       try {
@@ -878,7 +896,13 @@
           id:"osm-"+el.type+el.id, cat, name, lat, lng,
           rating: tags.rating ? parseFloat(tags.rating) : null,
           stars: tags.stars ? parseInt(tags.stars,10) : null,
-          src:"OSM"
+          src:"OSM",
+          address: [tags["addr:street"], tags["addr:housenumber"], tags["addr:city"]].filter(Boolean).join(" "),
+          hoursRaw: tags.opening_hours || tags["opening_hours:covid19"] || "",
+          description: tags.description || tags["description:it"] || tags.note || "",
+          website: tags.website || tags["contact:website"] || "",
+          phone: tags.phone || tags["contact:phone"] || "",
+          photoUrl: tags.image || ""
         });
       }
       return out;
@@ -904,11 +928,17 @@
           const list = await placesNearby({lat:s.lat,lng:s.lng}, def.gtype, def.gkw);
           list.forEach(p=>{
             if (!p.geometry || !p.geometry.location) return;
+            const photoRef = p.photos && p.photos[0] && (p.photos[0].getUrl ? null : p.photos[0].photo_reference);
+            let photoUrl = "";
+            try { if (p.photos && p.photos[0] && p.photos[0].getUrl) photoUrl = p.photos[0].getUrl({maxWidth:480}); } catch(e){}
+            const openNow = p.opening_hours && typeof p.opening_hours.open_now==="boolean" ? p.opening_hours.open_now : null;
             out.push({
-              id:"g-"+p.place_id, cat, name:p.name,
+              id:"g-"+p.place_id, placeId:p.place_id, cat, name:p.name,
               lat:p.geometry.location.lat(), lng:p.geometry.location.lng(),
-              rating: p.rating || null, stars:null, src:"Google",
-              address: p.vicinity||""
+              rating: p.rating || null, ratingsN: p.user_ratings_total||0, stars:null, src:"Google",
+              address: p.vicinity||"",
+              openNow, photoUrl, photoRef,
+              business: p.business_status||""
             });
           });
         }catch(e){}
@@ -919,10 +949,87 @@
   function dedupPois(list){
     const out=[];
     for (const p of list){
-      if (out.some(u => u.cat===p.cat && haversine(u,p)<0.45)) continue;
-      out.push(p);
+      const i = out.findIndex(u => u.cat===p.cat && haversine(u,p)<0.45);
+      if (i<0){ out.push(p); continue; }
+      if (p.src==="Google" && out[i].src!=="Google") out[i]=p;
+      else if ((p.rating||0)>(out[i].rating||0)) out[i]=p;
     }
     return out;
+  }
+  function todayHoursLabel(weekdayText){
+    if (!weekdayText || !weekdayText.length) return "";
+    const days = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+    const name = days[new Date().getDay()];
+    const hit = weekdayText.find(t => t.toLowerCase().startsWith(name.slice(0,3)) || t.toLowerCase().includes(name));
+    return hit || weekdayText[new Date().getDay()] || weekdayText[0];
+  }
+  function parseOsmOpen(oh){
+    if (!oh) return {open:null, text:""};
+    if (/24\/7/.test(oh)) return {open:true, text:"Aperto 24/7"};
+    return {open:null, text:oh};
+  }
+  function poiPhotoSrc(p){
+    if (p.photoUrl) return p.photoUrl;
+    const key = loadKeys().g;
+    if (p.photoRef && key) return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=480&photo_reference=${encodeURIComponent(p.photoRef)}&key=${encodeURIComponent(key)}`;
+    return "";
+  }
+  function poiOpenBadge(p){
+    if (p.business==="CLOSED_PERMANENTLY") return `<span class="openno">Chiuso in modo permanente</span>`;
+    if (p.openNow===true) return `<span class="openyes">Aperto ora</span>`;
+    if (p.openNow===false) return `<span class="openno">Chiuso ora</span>`;
+    const osm = parseOsmOpen(p.hoursRaw);
+    if (osm.open===true) return `<span class="openyes">${osm.text}</span>`;
+    if (osm.text) return `Orari OSM: ${osm.text}`;
+    return "Orari non disponibili";
+  }
+  function poiCardHtml(p, extra){
+    const photo = poiPhotoSrc(p);
+    const voto = p.rating!=null ? `★ ${Number(p.rating).toFixed(1)}${p.ratingsN?` (${p.ratingsN})`:""}` : (p.stars?`${p.stars} stelle`: "voto n/d");
+    const hours = p.todayHours || todayHoursLabel(p.weekdayText) || (p.hoursRaw||"");
+    const desc = p.description || "";
+    return `<div class="poi-card" style="color:#111;max-width:280px;font-size:13px">
+      <b>${p.name}</b><br>
+      ${(POI_DEF[p.cat]||{}).label||""} · ${voto}<br>
+      ${p.address?`<span style="color:#444">${p.address}</span><br>`:""}
+      ${poiOpenBadge(p)}<br>
+      ${hours?`<div style="margin-top:4px">${hours}</div>`:""}
+      ${photo?`<img src="${photo}" alt="${p.name}">`:""}
+      ${desc?`<div style="margin-top:4px">${desc}</div>`:""}
+      ${p.phone?`<div>${p.phone}</div>`:""}
+      ${p.website?`<a href="${p.website}" target="_blank" rel="noopener">Sito</a> · `:""}
+      ${extra||""}
+    </div>`;
+  }
+  function enrichPoi(p){
+    return new Promise(resolve=>{
+      if (p._enriched || !p.placeId || !(window.google && google.maps && google.maps.places)) return resolve(p);
+      const svc = new google.maps.places.PlacesService(state.gmap || document.createElement("div"));
+      svc.getDetails({
+        placeId: p.placeId,
+        fields: ["name","rating","user_ratings_total","formatted_address","formatted_phone_number","website","opening_hours","current_opening_hours","editorial_summary","photos","business_status"]
+      }, (res, stt)=>{
+        p._enriched = true;
+        if (stt!=="OK" || !res) return resolve(p);
+        p.rating = res.rating || p.rating;
+        p.ratingsN = res.user_ratings_total || p.ratingsN;
+        p.address = res.formatted_address || p.address;
+        p.phone = res.formatted_phone_number || p.phone;
+        p.website = res.website || p.website;
+        p.business = res.business_status || p.business;
+        const oh = res.current_opening_hours || res.opening_hours;
+        if (oh){
+          if (typeof oh.open_now==="boolean") p.openNow = oh.open_now;
+          p.weekdayText = oh.weekday_text || [];
+          p.todayHours = todayHoursLabel(p.weekdayText);
+        }
+        if (res.editorial_summary && res.editorial_summary.overview) p.description = res.editorial_summary.overview;
+        try {
+          if (res.photos && res.photos[0] && res.photos[0].getUrl) p.photoUrl = res.photos[0].getUrl({maxWidth:640});
+        } catch(e){}
+        resolve(p);
+      });
+    });
   }
   async function loadPoisForRoute(coords){
     const cats = selectedPoiCats();
@@ -930,7 +1037,8 @@
     const samples = samplePath(coords, 60).pts;
     let list = await fetchPoisOverpass(samples, cats);
     const g = await fetchPoisGoogle(samples, cats);
-    list = dedupPois(list.concat(g)).filter(poiPasses).filter(p => distToPath(p, coords)<=12);
+    const maxOff = Math.max(1, +$("poiMaxKm").value || 8);
+    list = dedupPois(list.concat(g)).filter(poiPasses).filter(p => distToPath(p, coords)<=maxOff);
     list.sort((a,b)=>(b.rating||0)-(a.rating||0));
     return list.slice(0, 80);
   }
@@ -1244,12 +1352,23 @@
       }
     });
     (state.pois||[]).forEach(p=>{
-      const m = L.circleMarker([p.lat,p.lng], {radius:6, color:"#0b0d10", weight:1, fillColor:poiMarkerColor(p.cat), fillOpacity:0.95})
-        .bindPopup(`<b>${p.name}</b><br>${POI_DEF[p.cat].label}${p.stars?` · ${p.stars}★`:""}${p.rating?` · voto ${p.rating}`:""}<br><button data-plat="${p.lat}" data-plng="${p.lng}" data-pname="${p.name.replace(/"/g,"")}">Aggiungi fermata</button>`)
+      const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?p.stars+"★":"·");
+      const icon = L.divIcon({
+        className:"",
+        html:`<div class="poi-pin" style="background:${poiMarkerColor(p.cat)}">${voto}</div>`,
+        iconSize:[28,28], iconAnchor:[14,14]
+      });
+      const m = L.marker([p.lat,p.lng], {icon, zIndexOffset:300, title:`${p.name} · ${voto}`})
+        .bindPopup("Carico dettagli…")
         .addTo(state.map);
+      m.on("click", async ()=>{
+        await enrichPoi(p);
+        m.setPopupContent(poiCardHtml(p, `<button type="button" class="add-via-poi">Aggiungi fermata</button>`));
+        m.openPopup();
+      });
       m.on("popupopen", ev=>{
-        const btn = ev.popup.getElement().querySelector("button");
-        if (btn) btn.onclick = ()=> addViaFromPoi(+btn.dataset.plat, +btn.dataset.plng, btn.dataset.pname);
+        const btn = ev.popup.getElement().querySelector(".add-via-poi");
+        if (btn) btn.onclick = ()=> addViaFromPoi(p.lat,p.lng,p.name);
       });
       state.layers.push(m);
     });
@@ -1320,16 +1439,20 @@
     });
     (state.pois||[]).forEach(p=>{
       bounds.extend({lat:p.lat,lng:p.lng});
+      const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?String(p.stars):"·");
       const m = new google.maps.Marker({
         position:{lat:p.lat,lng:p.lng}, map:state.gmap,
-        title: p.name,
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale:6, fillColor:poiMarkerColor(p.cat), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:1 }
+        title: `${p.name} · ${voto}`,
+        label: { text:voto, color:"#111", fontSize:"10px", fontWeight:"800" },
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale:12, fillColor:poiMarkerColor(p.cat), fillOpacity:1, strokeColor:"#0b0d10", strokeWeight:2 },
+        zIndex: 80
       });
-      const info = new google.maps.InfoWindow({
-        content: `<div style="color:#111"><b>${p.name}</b><br>${POI_DEF[p.cat].label}${p.stars?` · ${p.stars} stelle`:""}${p.rating?` · voto ${p.rating}`:""}<br><button id="addpoi">Aggiungi come fermata</button></div>`
-      });
-      m.addListener("click", ()=>{
+      const info = new google.maps.InfoWindow({ content: poiCardHtml(p) });
+      m.addListener("click", async ()=>{
+        info.setContent("<div style='color:#111'>Carico foto e orari…</div>");
         info.open({map:state.gmap, anchor:m});
+        await enrichPoi(p);
+        info.setContent(poiCardHtml(p, `<button type="button" id="addpoi">Aggiungi come fermata</button>`));
         google.maps.event.addListenerOnce(info, "domready", ()=>{
           const b=document.getElementById("addpoi");
           if (b) b.onclick=()=>addViaFromPoi(p.lat,p.lng,p.name);
@@ -1548,7 +1671,7 @@
     if (!list.length) return `<div class="meta" style="margin-top:10px">Nessuna attrazione con i filtri scelti.</div>`;
     const rows = list.slice(0,25).map(p=>`<div class="stop">
       <div class="name">${p.name}<span class="net">${POI_DEF[p.cat].label}</span></div>
-      <div class="meta">${p.stars?`${p.stars} stelle · `:""}${p.rating!=null?`voto ${p.rating} · `:""}${p.src}
+      <div class="meta">${p.rating!=null?`★ ${Number(p.rating).toFixed(1)} · `:""}${p.stars?`${p.stars} stelle · `:""}${poiOpenBadge(p)} · ${p.src}
       <button class="backup addpoi" data-plat="${p.lat}" data-plng="${p.lng}" data-pname="${encodeURIComponent(p.name)}">Aggiungi fermata</button></div>
     </div>`).join("");
     return `<div class="meta" style="margin-top:10px"><b>Attrazioni (${list.length})</b></div>${rows}`;
