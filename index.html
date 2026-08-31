@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.0</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -133,7 +133,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.0</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.1</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -230,7 +230,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.0 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
+      <div class="hint">v1.8.1 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -272,7 +272,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.0";
+  const APP_VERSION = "1.8.1";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -812,7 +812,7 @@
         const v=s>0?(m/s)*3.6:80;
         const txt = String(st.instructions||"").replace(/<[^>]+>/g," ");
         const limit = legalSnap(v);
-        const hwy = limit>=125 || /autostrada|\bA[0-9]{1,3}\b/i.test(txt);
+        const hwy = /autostrada|\bA[0-9]{1,3}\b/i.test(txt) && limit>=110;
         steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit,hwy});
         acc+=m;
       });
@@ -841,7 +841,7 @@
           const s=+(durs[i]||0);
           const v=s>0?(m/s)*3.6:(posted||90);
           const limit=posted || legalSnap(v);
-          fine.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s||m/(limit/3.6),v,limit,hwy:limit>=125});
+          fine.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s||m/(Math.min(limit||90,90)/3.6),v,limit,hwy:limit>=130});
           acc+=m;
         }
       }
@@ -855,7 +855,7 @@
         const posted = parsePosted(st.maxspeed);
         const limit = posted || legalSnap(v);
         const ref = String(st.ref||st.name||"");
-        const hwy = limit>=125 || /autostrada|\bA[0-9]{1,3}\b/i.test(ref);
+        const hwy = /autostrada|\bA[0-9]{1,3}\b/i.test(ref) && limit>=110;
         steps.push({fromKm:acc/1000,toKm:(acc+m)/1000,meters:m,seconds:s,v,limit,hwy});
         acc+=m;
       });
@@ -892,7 +892,7 @@
       const d = Math.max(0, Math.min(st.toKm,toKm)-Math.max(st.fromKm,fromKm));
       if (d < 0.01) continue;
       const cap = st.limit || legalSnap(st.v||90);
-      const hwy = !!(st.hwy || cap>=125);
+      const hwy = !!st.hwy;
       let v;
       if (hwy){
         const cruiseUse = cruise==null ? cap : cruise;
@@ -919,7 +919,7 @@
     for (const st of stepsInSpan(route, fromKm, toKm)){
       const d = Math.max(0, Math.min(st.toKm,toKm)-Math.max(st.fromKm,fromKm));
       tot += d;
-      if (st.hwy || (st.limit||0)>=125) hwy += d;
+      if (st.hwy) hwy += d;
     }
     return hwy >= 8 || (tot>0 && hwy/tot>=0.25);
   }
@@ -2085,7 +2085,7 @@
     box.innerHTML = alts.map((alt,i)=>{
       const p = alt.plan;
       const driveSum = p.stops.reduce((s,x)=>s+x.driveMin,0) + p.final.driveMin;
-      const drive = (p.navMin && Math.abs(p.navMin-driveSum)/p.navMin < 0.35) ? p.navMin : (p.navMin || driveSum);
+      const drive = p.navMin ? Math.max(p.navMin, driveSum) : driveSum;
       const charge = p.stops.reduce((s,x)=>s+x.chargeMin,0);
       const cost = p.stops.reduce((s,x)=>s+x.cost,0);
       const kwh = p.stops.reduce((s,x)=>s+x.kwh,0);
