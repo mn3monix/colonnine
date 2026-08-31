@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.5</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.6</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -44,7 +44,10 @@
     #map.hidden, #gmap.hidden { display: none; }
     #gmap.show { display: block; }
     .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+    .row2 > div { display: flex; flex-direction: column; }
+    .row2 label { min-height: 28px; display: flex; align-items: flex-end; }
+    .row2 input { height: 42px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); cursor: pointer; user-select: none; }
     .chip.on { color: #fff; }
@@ -133,7 +136,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.5</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.6</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -185,7 +188,7 @@
           <input id="socArriveWant" type="number" min="5" max="80" value="50" />
         </div>
         <div>
-          <label>% max per raggiungere il backup</label>
+          <label>% max per backup</label>
           <input id="backupPct" type="number" min="1" max="20" value="5" title="Massimo % di batteria per andare dalla colonnina di tratta a quella di riserva" />
         </div>
       </div>
@@ -230,7 +233,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.8.5 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
+      <div class="hint">v1.8.6 · FRVCP: soste e % di ricarica ottime sul percorso fisso. Autostrada 105–135. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -272,7 +275,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.5";
+  const APP_VERSION = "1.8.6";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
