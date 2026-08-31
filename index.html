@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.21</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.23</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -137,8 +137,8 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.21</span></h1>
-            <div class="sub">Planner HPC · Supercharger · Ionity · Electra</div>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.23</span></h1>
+            <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
         <button class="iconbtn" id="btnSettings" title="Impostazioni">⚙</button>
@@ -202,6 +202,7 @@
       </div>
       <div class="toggles">
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
+        <button class="tog" id="togMoreStops" type="button"><b>PIÙ SOSTE</b><span>ricariche corte</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
       </div>
 
@@ -240,7 +241,7 @@
       </div>
 
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.8.21 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.23 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
     </aside>
@@ -282,7 +283,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.21";
+  const APP_VERSION = "1.8.23";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -300,9 +301,12 @@
     ELECTRA:      { color: "#6ea8ff", price: 0.54, power: 300 },
     EVDC:         { color: "#b07cff", price: 0.55, power: 150 },
     ENBW:         { color: "#f5c542", price: 0.61, power: 300 },
-    GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 }
+    GREENWAY:     { color: "#3dd68c", price: 0.59, power: 175 },
+    ATLANTE:      { color: "#ff8a3d", price: 0.69, power: 300 },
+    PLENITUDE:    { color: "#00b3a6", price: 0.64, power: 150 },
+    ENELX:        { color: "#1a4fd8", price: 0.69, power: 150 }
   };
-  const PLAN_NETS = ["SUPERCHARGER","IONITY","ELECTRA"];
+  const PLAN_NETS = ["SUPERCHARGER","IONITY","ELECTRA","ATLANTE","PLENITUDE","ENELX"];
   const NET_KEYS = PLAN_NETS.slice();
   function selectedNets(){
     const on = [...document.querySelectorAll("#netChips .chip.on")].map(c=>c.dataset.net);
@@ -310,6 +314,9 @@
   }
   function allOperatorNets(){ return Object.keys(NETS); }
   function netColor(net){ return (NETS[net] && NETS[net].color) || "#3dd68c"; }
+  function netLabel(net){
+    return ({ENELX:"ENEL X", ATLANTE:"ATLANTE", PLENITUDE:"PLENITUDE", SUPERCHARGER:"SUPERCHARGER", IONITY:"IONITY", ELECTRA:"ELECTRA"})[net] || net;
+  }
 
   /* Dataset HPC di riserva (Europa, focus IT + corridoi). Non esaustivo, serve offline. */
   const HPC = [
@@ -372,6 +379,24 @@
     ["IONITY","Brennero",46.9700,11.5070,350],
     ["IONITY","Rosenheim",47.8560,12.1280,350],
     ["ELECTRA","Torino Sud",45.0020,7.6750,300],
+    ["ATLANTE","Milano Linate",45.4610,9.2780,300],
+    ["ATLANTE","Bergamo",45.6950,9.6700,300],
+    ["ATLANTE","Verona Est",45.4380,11.0500,300],
+    ["ATLANTE","Bologna Interporto",44.5650,11.3800,300],
+    ["ATLANTE","Firenze Nord",43.8500,11.2000,300],
+    ["ATLANTE","Roma Est",41.9100,12.6400,300],
+    ["PLENITUDE","Milano Ovest",45.4900,9.0500,150],
+    ["PLENITUDE","Parma",44.8010,10.3280,150],
+    ["PLENITUDE","Modena",44.6470,10.9250,150],
+    ["PLENITUDE","Bologna",44.4949,11.3426,150],
+    ["PLENITUDE","Arezzo",43.4630,11.8790,150],
+    ["ENELX","Milano Nord",45.5800,9.2400,150],
+    ["ENELX","Brescia",45.5410,10.2120,150],
+    ["ENELX","Verona",45.4380,10.9920,150],
+    ["ENELX","Trento",46.0700,11.1210,150],
+    ["ENELX","Bolzano",46.4980,11.3550,150],
+    ["ENELX","Lucca",43.8430,10.5030,150],
+    ["ENELX","Livorno",43.5480,10.3100,150],
     ["ENBW","Karlsruhe",49.0069,8.4037,300],
     ["GREENWAY","Katowice",50.2649,19.0238,175],
     ["SUPERCHARGER","Reggio Emilia",44.6983,10.6300,250],
@@ -432,6 +457,7 @@
     gmap: null,
     traffic: null,
     trafficOn: true,
+    moreStops: false,
     darkMap: false,
     sucWho: "tesla",
     sucStations: [],
@@ -754,6 +780,9 @@
     if (t.includes("SUPERCHARGER") || (t.includes("TESLA") && !t.includes("DESTINATION"))) return "SUPERCHARGER";
     if (t.includes("IONITY")) return "IONITY";
     if (t.includes("ELECTRA")) return "ELECTRA";
+    if (t.includes("ATLANTE")) return "ATLANTE";
+    if (t.includes("PLENITUDE") || t.includes("ENI PLENITUDE")) return "PLENITUDE";
+    if (t.includes("ENEL X") || t.includes("ENELX") || t.includes("ENEL X WAY") || t.includes("BE CHARGE") || t.includes("BECHARGE")) return "ENELX";
     if (t.includes("ENBW") || t.includes("HYPERNETZ")) return "ENBW";
     if (t.includes("GREENWAY") || t.includes("GREEN WAY")) return "GREENWAY";
     if (t.includes("EVDC")) return "EVDC";
@@ -1745,7 +1774,7 @@
             continue;
           }
           const lo = Math.max(Math.ceil((leg.arrive + 4) / 5) * 5, chargeMin);
-          const hi = chargeMax;
+          const hi = state.moreStops ? Math.min(chargeMax, Math.max(chargeMin, 50)) : chargeMax;
           const targets = [];
           for (let t = lo; t <= hi; t += 5) targets.push(t);
           if (!targets.length && hi > leg.arrive + 2) targets.push(Math.min(hi, Math.round(leg.arrive + 10)));
@@ -1875,7 +1904,7 @@
         uniq.splice(uniq.findIndex(x=>x.id===chosen.id),1);
         continue;
       }
-      const nextCh = uniq.filter(c => c.atKm > chosen.atKm + 15).sort((a,b)=>a.atKm-b.atKm)[0];
+      const nextCh = uniq.filter(c => c.atKm > chosen.atKm + (state.moreStops?8:15)).sort((a,b)=>a.atKm-b.atKm)[0];
       const toDest = km - chosen.atKm;
       const remainAfter = nextCh ? (nextCh.atKm - chosen.atKm) : toDest;
       let arrive, target, mins, kwhAdd, st;
@@ -2407,7 +2436,10 @@
       const pois = await loadPoisForRoute(routes[0].coords);
       state.pois = pois;
       const alts = routes.slice(0,5).map((r,i)=>{
-        const plan = planTrip(r, {soc0,minSoc,chargeMin,chargeMax,smart:true,chargers, backupPool:allChargers, backupOn:true, backupPct, destArrive});
+        const cMax = state.moreStops ? Math.min(chargeMax, Math.max(chargeMin, 50)) : chargeMax;
+        const cMin = state.moreStops ? Math.min(chargeMin, 40) : chargeMin;
+        const minS = state.moreStops ? Math.max(minSoc, 22) : minSoc;
+        const plan = planTrip(r, {soc0,minSoc:minS,chargeMin:cMin,chargeMax:cMax,smart:true,chargers, backupPool:allChargers, backupOn:true, backupPct, destArrive});
         plan.stops.forEach(applySucPrice);
         return { ...r, id:i, plan, _extra:extra };
       });
@@ -2441,6 +2473,7 @@
 
   /* UI bindings */
   /* SMART è sempre attivo */
+  $("togMoreStops").onclick = ()=>{ state.moreStops=!state.moreStops; $("togMoreStops").classList.toggle("on", state.moreStops); };
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
     $("togTraffic").classList.toggle("on", state.trafficOn);
@@ -2662,7 +2695,7 @@
   const chipWrap = document.createElement("div");
   chipWrap.className="chips";
   chipWrap.id="netChips";
-  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on" data-net="${n}" style="border-color:${netColor(n)};background:${netColor(n)};color:#111">${n}</span>`).join("");
+  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on" data-net="${n}" style="border-color:${netColor(n)};background:${netColor(n)};color:#111">${netLabel(n)}</span>`).join("");
   $("dest").closest(".field").insertAdjacentElement("afterend", chipWrap);
   chipWrap.addEventListener("click", ev=>{
     const c = ev.target.closest(".chip");
