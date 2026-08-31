@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.5.8</title>
+  <title>Model Y AWD 2026 — Route Planner v1.6.0</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -114,7 +114,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.5.8</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.6.0</span></h1>
             <div class="sub">Planner HPC · Google Maps · solo Supercharger Tesla e Ionity</div>
           </div>
         </div>
@@ -172,7 +172,6 @@
       </div>
 
       <div class="toggles">
-        <button class="tog" id="togBackup" type="button"><b>PANICO RICARICA</b><span>colonnine più vicine · qualsiasi rete</span></button>
         <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
       </div>
@@ -182,10 +181,8 @@
         <span class="chip on" data-cat="hotel">Hotel</span>
         <span class="chip on" data-cat="ristorante">Ristoranti</span>
         <span class="chip on" data-cat="osteria">Osterie</span>
-        <span class="chip" data-cat="paesaggio">Paesaggi</span>
-        <span class="chip" data-cat="mostra">Mostre / musei</span>
-        <span class="chip on" data-cat="centro">Centri storici</span>
-        <span class="chip" data-cat="spa">Spa</span>
+        <span class="chip on" data-cat="pizzeria">Pizzerie</span>
+        <span class="chip on" data-cat="bar">Bar</span>
       </div>
       <div class="row" style="align-items:end">
         <div>
@@ -214,9 +211,8 @@
       </div>
 
       <button class="go" id="btnGo">Calcola percorsi</button>
-      <div class="hint">v1.5.8 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
+      <div class="hint">v1.6.0 · Alternative in evidenza sulla mappa. SMART 105–135 km/h. Solo Supercharger e Ionity.</div>
       <div id="status"></div>
-      <div class="results" id="panicBox"></div>
       <div class="results" id="results"></div>
     </aside>
     <div class="mapwrap">
@@ -257,7 +253,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.5.8";
+  const APP_VERSION = "1.6.0";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -396,7 +392,6 @@
     smart: true,
     backup: true,
     panicList: [],
-    panicOn: false,
     map: null,
     layers: [],
     gOverlays: [],
@@ -1016,10 +1011,8 @@
     hotel: { label:"Hotel", color:"#7ec8ff", osm:['["tourism"="hotel"]'], gtype:"lodging", gkw:"" },
     ristorante: { label:"Ristorante", color:"#ffb347", osm:['["amenity"="restaurant"]'], gtype:"restaurant", gkw:"" },
     osteria: { label:"Osteria", color:"#ff7a59", osm:['["amenity"="restaurant"]["cuisine"~"italian|regional",i]', '["name"~"osteria|trattoria|locanda",i]'], gtype:"restaurant", gkw:"osteria trattoria" },
-    paesaggio: { label:"Paesaggio", color:"#7dffb2", osm:['["tourism"="viewpoint"]','["natural"="peak"]','["leisure"="park"]'], gtype:"tourist_attraction", gkw:"panorama viewpoint" },
-    mostra: { label:"Mostra", color:"#c9a0ff", osm:['["tourism"="museum"]','["amenity"="arts_centre"]','["tourism"="gallery"]'], gtype:"museum", gkw:"mostra museo" },
-    centro: { label:"Centro storico", color:"#f0d27a", osm:['["historic"="yes"]','["place"="old_town"]','["historic"="centre"]'], gtype:"tourist_attraction", gkw:"centro storico" },
-    spa: { label:"Spa", color:"#8ad4ff", osm:['["leisure"="spa"]','["amenity"="public_bath"]','["wellness"="yes"]'], gtype:"spa", gkw:"spa terme wellness" }
+    pizzeria: { label:"Pizzeria", color:"#ff5c7a", osm:['["amenity"="restaurant"]["cuisine"~"pizza",i]', '["name"~"pizzeria|pizza",i]'], gtype:"restaurant", gkw:"pizzeria pizza" },
+    bar: { label:"Bar", color:"#c9a0ff", osm:['["amenity"="bar"]','["amenity"="cafe"]','["amenity"="pub"]'], gtype:"bar", gkw:"bar caffè" }
   };
   function selectedPoiCats(){
     return [...document.querySelectorAll("#poiCats .chip.on")].map(c=>c.dataset.cat);
@@ -1056,11 +1049,9 @@
         const blob = (tags.tourism||"")+" "+(tags.amenity||"")+" "+(tags.leisure||"")+" "+(tags.historic||"")+" "+(tags.place||"")+" "+name;
         if (/hotel|guest_house/i.test(blob)) cat="hotel";
         else if (/osteria|trattoria|locanda/i.test(blob)) cat="osteria";
+        else if (/pizza|pizzeria/i.test(blob)) cat="pizzeria";
         else if (/restaurant/i.test(blob)) cat="ristorante";
-        else if (/viewpoint|peak|park/i.test(blob)) cat="paesaggio";
-        else if (/museum|gallery|arts_centre|mostra/i.test(blob)) cat="mostra";
-        else if (/spa|bath|terme|wellness/i.test(blob)) cat="spa";
-        else if (/historic|old_town|centre/i.test(blob)) cat="centro";
+        else if (/bar|cafe|caff|pub/i.test(blob)) cat="bar";
         if (!cats.includes(cat)) continue;
         out.push({
           id:"osm-"+el.type+el.id, cat, name, lat, lng,
@@ -1583,12 +1574,6 @@
       }).addTo(state.map);
       state.layers.push(dm);
     }
-    (state.panicList||[]).forEach((c,i)=>{
-      const m = L.circleMarker([c.lat,c.lng], {radius:8, color:"#fff", weight:2, fillColor:netColor(c.net), fillOpacity:1})
-        .bindPopup(`<b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria <b>${c.needPct.toFixed(1)}%</b>`)
-        .addTo(state.map);
-      state.layers.push(m);
-    });
     (state.pois||[]).forEach(p=>{
       const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?p.stars+"★":"·");
       const icon = L.divIcon({
@@ -1709,20 +1694,6 @@
       });
       state.gOverlays.push(dm);
     }
-    (state.panicList||[]).forEach((c,i)=>{
-      const m = new google.maps.Marker({
-        position:{lat:c.lat,lng:c.lng}, map:state.gmap,
-        label:{text:"P"+String(i+1), color:"#111", fontSize:"10px", fontWeight:"800"},
-        icon:{ path: google.maps.SymbolPath.CIRCLE, scale:11, fillColor:netColor(c.net), fillOpacity:1, strokeColor:"#fff", strokeWeight:2 },
-        title:`PANICO ${c.name} · ${c.needPct.toFixed(1)}%`,
-        zIndex: 260
-      });
-      const info = new google.maps.InfoWindow({
-        content:`<div style="color:#111"><b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria: <b>${c.needPct.toFixed(1)}%</b><br>SoC all'arrivo: <b>${c.arrive.toFixed(0)}%</b></div>`
-      });
-      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
-      state.gOverlays.push(m);
-    });
     (state.pois||[]).forEach(p=>{
       bounds.extend({lat:p.lat,lng:p.lng});
       const voto = p.rating!=null ? Number(p.rating).toFixed(1) : (p.stars?String(p.stars):"·");
@@ -1929,95 +1900,6 @@
   $("modeFast").onclick = ()=>{ state.mode="fast"; $("modeFast").classList.add("active"); $("modePano").classList.remove("active"); };
   $("modePano").onclick = ()=>{ state.mode="pano"; $("modePano").classList.add("active"); $("modeFast").classList.remove("active"); };
   /* SMART è sempre attivo */
-  async function panicRicarica(){
-    $("togBackup").classList.add("on");
-    setStatus("PANICO RICARICA: cerco le colonnine più vicine di qualsiasi operatore…");
-    try{
-      const here = await resolvePlace($("origin"));
-      const soc = +$("soc").value || 50;
-      const minSoc = +$("socMin").value || 10;
-      let extra=[];
-      try { extra = await extraChargers([{lat:here.lat,lng:here.lng}, {lat:here.lat+0.3,lng:here.lng+0.3}]); } catch(e){}
-      const pool=[];
-      for (const c of HPC.concat(extra, state.backupPool||[], state.sucStations.map(s=>({id:"suc-"+s.id,net:"SUPERCHARGER",name:s.name,lat:s.lat,lng:s.lng,kw:s.kw||250})))){
-        if (!c || !c.lat) continue;
-        if (pool.some(u=>haversine(u,c)<0.6)) continue;
-        pool.push(c);
-      }
-      const speed = 90;
-      const list = pool.map(c=>{
-        const km = haversine(here, c);
-        const needPct = (consAt(speed)*km/100)/CAR.kwh*100;
-        return { ...c, km, needPct, arrive: soc-needPct, ok: soc-needPct >= minSoc };
-      }).filter(c=>c.km>0.2 && c.km<80).sort((a,b)=>a.km-b.km).slice(0,10);
-      state.panicList = list;
-      state.panicHere = here;
-      if (!list.length) throw new Error("Nessuna colonnina entro 80 km");
-      setStatus(`PANICO RICARICA: ${list.length} colonnine vicine. La più vicina è ${list[0].name} (${list[0].net}) a ${list[0].km.toFixed(1)} km · servono ${list[0].needPct.toFixed(1)}% di batteria.`,"ok");
-      if (state.alts && state.alts.length) draw(state.alts, state.selected);
-      else drawPanicOnly();
-      renderPanicBox();
-    }catch(e){
-      setStatus("PANICO RICARICA: "+(e.message||e),"err");
-    }
-  }
-  function renderPanicBox(){
-    const box = $("panicBox");
-    if (!box) return;
-    const list = state.panicList||[];
-    if (!list.length){ box.innerHTML=""; return; }
-    box.innerHTML = `<article class="alt sel" style="cursor:default">
-      <h3>PANICO RICARICA</h3>
-      ${list.map((c,i)=>`<div class="stop">
-        <div class="name">${i+1}. ${c.name}<span class="net" style="background:${netColor(c.net)};color:#111">${c.net||"HPC"}</span></div>
-        <div class="meta">${c.km.toFixed(1)} km · servono <b>${c.needPct.toFixed(1)}%</b> di batteria
-        · arrivo stimato <b class="socpill">${c.arrive.toFixed(0)}%</b>
-        ${c.ok?"":" · NON BASTA lo SoC attuale"}</div>
-      </div>`).join("")}
-    </article>`;
-  }
-  function drawPanicOnly(){
-    const list = state.panicList||[];
-    const here = state.panicHere;
-    if (useGoogle() && state.gmap && here){
-      list.forEach((c,i)=>{
-        const m = new google.maps.Marker({
-          position:{lat:c.lat,lng:c.lng}, map:state.gmap,
-          label:{text:String(i+1), color:"#111", fontWeight:"800"},
-          icon:{ path: google.maps.SymbolPath.CIRCLE, scale:11, fillColor:netColor(c.net), fillOpacity:1, strokeColor:"#fff", strokeWeight:2 },
-          title:`${c.name} · ${c.km.toFixed(1)} km · ${c.needPct.toFixed(1)}%`
-        });
-        const info = new google.maps.InfoWindow({
-          content:`<div style="color:#111"><b>PANICO ${i+1}. ${c.name}</b><br>${c.net||""} · ${c.km.toFixed(1)} km<br>Batteria necessaria: <b>${c.needPct.toFixed(1)}%</b><br>SoC all'arrivo: <b>${c.arrive.toFixed(0)}%</b></div>`
-        });
-        m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
-        state.gOverlays.push(m);
-      });
-      state.gmap.panTo({lat:here.lat,lng:here.lng});
-      state.gmap.setZoom(10);
-    }
-  }
-  function clearPanic(){
-    state.panicOn = false;
-    state.panicList = [];
-    state.panicHere = null;
-    $("togBackup").classList.remove("on");
-    renderPanicBox();
-    if (state.alts && state.alts.length) draw(state.alts, state.selected);
-    else {
-      if (typeof clearG==="function") try{ clearG(); }catch(e){}
-      if (typeof clearLayers==="function") try{ clearLayers(); }catch(e){}
-    }
-    setStatus("PANICO RICARICA disattivato.");
-  }
-  $("togBackup").onclick = ()=>{
-    if (state.panicOn || ($("togBackup").classList.contains("on") && (state.panicList||[]).length)) {
-      clearPanic();
-      return;
-    }
-    state.panicOn = true;
-    panicRicarica();
-  };
   $("togTraffic").onclick = ()=>{
     state.trafficOn = !state.trafficOn;
     $("togTraffic").classList.toggle("on", state.trafficOn);
