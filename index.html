@@ -44,6 +44,12 @@
     }
     input:focus, select:focus { outline: 2px solid #2c6d57; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .nets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .net {
+      border: 1px solid var(--line); background: #101b2c; border-radius: 12px;
+      padding: 8px 8px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left;
+    }
+    .net.on { border-color: currentColor; background: #18263c; }
     .modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
     .mode {
       border: 1px solid var(--line); background: #101b2c; border-radius: 12px;
@@ -108,12 +114,21 @@
             <button class="mode" data-mode="flat" type="button">Poche salite</button>
           </div>
         </div>
+        <div>
+          <label>Reti di ricarica</label>
+          <div class="nets" id="nets"></div>
+        </div>
         <div class="range-wrap">
           <div class="range-top">
-            <label style="margin:0">Distanza max dalla rotta</label>
-            <span id="offLabel">5 km</span>
+            <label style="margin:0">Quanto puoi uscire dal percorso</label>
           </div>
-          <input id="offroad" type="range" min="1" max="25" value="5" />
+          <div class="row2">
+            <input id="offroad" type="range" min="1" max="50" value="5" />
+            <div style="display:flex;align-items:center;gap:6px">
+              <input id="offKm" type="number" min="1" max="50" value="5" style="padding:8px 10px" />
+              <span class="meta">km</span>
+            </div>
+          </div>
         </div>
         <div class="row2">
           <button class="ghost" id="btnSwap" type="button">Inverti</button>
@@ -147,7 +162,16 @@
     let toPlace = null;
     let routePath = [];
     let chargerMarkers = [];
+    let lastChargers = [];
+    let lastSearchKm = 0;
     let selectedId = null;
+    const NETWORKS = [
+      { id: "tesla", label: "Tesla", color: "#e31937", re: /tesla|supercharger/i, queries: ["Tesla Supercharger", "Tesla Destination Charger"] },
+      { id: "ionity", label: "Ionity", color: "#0b0b0b", re: /ionity/i, queries: ["Ionity"] },
+      { id: "electra", label: "Electra", color: "#6c5ce7", re: /electra/i, queries: ["Electra charging", "Electra colonnina"] },
+      { id: "enbw", label: "EnBW", color: "#ff6a00", re: /enbw|hypernetz/i, queries: ["EnBW Ladestation", "EnBW HyperNetz"] }
+    ];
+    const activeNets = new Set(NETWORKS.map((n) => n.id));
     const info = new WeakMap();
 
     const KEY_STORE = "voltvia_maps_key";
@@ -237,8 +261,33 @@
       };
     });
 
-    document.getElementById("offroad").oninput = (e) => {
-      document.getElementById("offLabel").textContent = e.target.value + " km";
+    function clampKm(v) {
+      const n = Math.round(Number(v));
+      if (!Number.isFinite(n)) return 5;
+      return Math.min(50, Math.max(1, n));
+    }
+
+    function getMaxM() {
+      return clampKm(document.getElementById("offKm").value) * 1000;
+    }
+
+    function setKm(v) {
+      const n = clampKm(v);
+      document.getElementById("offroad").value = n;
+      document.getElementById("offKm").value = n;
+      if (lastChargers.length) {
+        const filtered = lastChargers.filter((x) => x.detour <= n * 1000);
+        renderChargers(filtered);
+        let msg = filtered.length + " colonnine entro " + n + " km dal percorso";
+        if (lastSearchKm && n > lastSearchKm) msg += " · premi Calcola per cercarne altre più lontane";
+        status(msg);
+      }
+    }
+
+    document.getElementById("offroad").oninput = (e) => setKm(e.target.value);
+    document.getElementById("offKm").onchange = (e) => setKm(e.target.value);
+    document.getElementById("offKm").oninput = (e) => {
+      if (e.target.value !== "") setKm(e.target.value);
     };
 
     document.getElementById("btnSwap").onclick = () => {
@@ -395,6 +444,45 @@
       return out;
     }
 
+    function classifyNet(place) {
+      const blob = ((place.name || "") + " " + (place.vicinity || "")).toLowerCase();
+      return NETWORKS.find((n) => n.re.test(blob)) || null;
+    }
+
+    function selectedNetworks() {
+      return NETWORKS.filter((n) => activeNets.has(n.id));
+    }
+
+    function renderNetButtons() {
+      const box = document.getElementById("nets");
+      box.innerHTML = NETWORKS.map((n) =>
+        `<button class="net on" type="button" data-net="${n.id}" style="color:${n.color}">${n.label}</button>`
+      ).join("");
+      box.querySelectorAll(".net").forEach((btn) => {
+        btn.onclick = () => {
+          const id = btn.dataset.net;
+          if (activeNets.has(id)) {
+            if (activeNets.size === 1) return;
+            activeNets.delete(id);
+            btn.classList.remove("on");
+          } else {
+            activeNets.add(id);
+            btn.classList.add("on");
+          }
+        };
+      });
+    }
+    renderNetButtons();
+
+    function textSearch(request) {
+      return new Promise((resolve) => {
+        places.textSearch(request, (results, st) => {
+          if (st === "OK" || st === "ZERO_RESULTS") resolve(results || []);
+          else resolve([]);
+        });
+      });
+    }
+
     function nearbySearch(request) {
       return new Promise((resolve) => {
         places.nearbySearch(request, (results, st) => {
@@ -405,21 +493,33 @@
     }
 
     async function searchChargers(path, maxM) {
-      const samples = samplePath(path, Math.max(6000, maxM));
+      const nets = selectedNetworks();
+      const samples = samplePath(path, Math.max(12000, maxM));
       const found = new Map();
+      const radius = Math.min(Math.max(maxM, 8000), 25000);
+
+      function addPlace(p) {
+        if (!p.geometry || !p.place_id) return;
+        const net = classifyNet(p);
+        if (nets.length && !net) return;
+        if (net && !activeNets.has(net.id)) return;
+        const d = minDistToPath(p.geometry.location, path);
+        if (d > maxM) return;
+        const prev = found.get(p.place_id);
+        if (!prev || prev.detour > d) found.set(p.place_id, { place: p, detour: d, net });
+      }
+
       for (const pt of samples) {
-        const list = await nearbySearch({
+        const generic = await nearbySearch({
           location: pt,
-          radius: Math.min(maxM, 25000),
-          keyword: "colonnina ricarica ev charging ionity enel x tesla supercharger",
+          radius,
+          keyword: "Tesla Supercharger Ionity Electra EnBW charging station colonnina"
         });
-        for (const p of list) {
-          if (!p.geometry || !p.place_id) continue;
-          const loc = p.geometry.location;
-          const d = minDistToPath(loc, path);
-          if (d > maxM) continue;
-          if (!found.has(p.place_id) || found.get(p.place_id).detour > d) {
-            found.set(p.place_id, { place: p, detour: d });
+        generic.forEach(addPlace);
+        for (const net of nets) {
+          for (const q of net.queries) {
+            const list = await textSearch({ query: q, location: pt, radius });
+            list.forEach(addPlace);
           }
         }
       }
@@ -463,17 +563,19 @@
       box.innerHTML = "";
       items.forEach((item, idx) => {
         const p = item.place;
+        const color = (item.net && item.net.color) || "#3ee0a2";
         const marker = new google.maps.Marker({
           map,
           position: p.geometry.location,
-          icon: pinColor("#3ee0a2"),
+          icon: pinColor(color),
           title: p.name
         });
         chargerMarkers.push(marker);
+        const badge = item.net ? `<span class="chip" style="background:${item.net.color}22;color:${item.net.color}">${item.net.label}</span>` : "";
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `<h3>${p.name}</h3>
-          <div class="meta">${(item.detour / 1000).toFixed(1)} km dalla rotta
+          <div class="meta">${badge} ${(item.detour / 1000).toFixed(1)} km dalla rotta
           ${p.rating ? " · ★ " + p.rating : ""}<br>${p.vicinity || ""}</div>
           <div class="poi" data-poi></div>`;
         card.onclick = async () => {
@@ -509,11 +611,13 @@
       const km = (picked.dist / 1000).toFixed(1);
       const min = Math.round(picked.time / 60);
       const gain = Math.round(picked.gain);
-      const maxM = (+document.getElementById("offroad").value) * 1000;
+      const maxM = getMaxM();
       status(`${km} km · ${min} min · dislivello +${gain} m. Cerco colonnine…`);
       const chargers = await searchChargers(routePath, maxM);
+      lastChargers = chargers;
+      lastSearchKm = maxM / 1000;
       renderChargers(chargers);
-      status(`${km} km · ${min} min · +${gain} m · ${chargers.length} colonnine entro ${document.getElementById("offroad").value} km`);
+      status(`${km} km · ${min} min · +${gain} m · ${chargers.length} colonnine entro ${lastSearchKm} km`);
     }
 
     loadMaps();
