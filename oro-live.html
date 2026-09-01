@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.58.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.60.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -203,7 +203,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.58.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.60.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -220,6 +220,7 @@
         <div class="pair-tabs">
           <button class="on" data-ccy="EUR">XAU / EUR</button>
           <button data-ccy="USD">XAU / USD</button>
+          <button data-ccy="CHF">XAU / CHF</button>
           <button data-ccy="PLN">XAU / PLN</button>
         </div>
         <div class="price-row">
@@ -364,7 +365,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.58.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.60.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -391,7 +392,7 @@
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
-    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05" };
+    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionHigh: null, sessionLow: null };
     const APART = [
       { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: APART_LIST_URL },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: APART_LIST_URL },
@@ -442,7 +443,7 @@
     }
     function spreadSign(n) { return (n >= 0 ? "+" : "") + pln(n); }
     function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
-    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : null; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
     function fmt(n, d = 2) {
       if (n == null || Number.isNaN(n)) return "—";
       return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
@@ -450,6 +451,7 @@
     function money(n, d = 2) {
       const num = fmt(n, d);
       if (state.ccy === "PLN") return num + " zł";
+      if (state.ccy === "CHF") return num + " CHF";
       if (state.ccy === "USD") return num + " $";
       return num + " €";
     }
@@ -483,11 +485,50 @@
       }
       throw last || new Error("nessuna fonte");
     }
+    function sessionDayKey(d) {
+      const x = d instanceof Date ? d : new Date(d || Date.now());
+      if (Number.isNaN(x.getTime())) return sessionDayKey(new Date());
+      return x.toLocaleDateString("en-CA", { timeZone: "Europe/Rome" });
+    }
+    function isGoldMarketOpen(q) {
+      const s = String(q?.marketState || "").toLowerCase();
+      if (s.includes("close")) return false;
+      const et = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+      const day = et.getDay();
+      const mins = et.getHours() * 60 + et.getMinutes();
+      if (day === 6) return false;
+      if (day === 5 && mins >= 17 * 60) return false;
+      if (day === 0 && mins < 18 * 60) return false;
+      if (s.includes("open") || s.includes("trade")) return true;
+      return true;
+    }
     function todayBar(daily, quote) {
-      const last = daily[daily.length - 1];
-      const high = Math.max(quote.high ?? 0, last?.high ?? 0, quote.mid);
-      const low = Math.min(quote.low ?? Infinity, last?.low ?? Infinity, quote.mid);
-      return { open: last?.open ?? quote.mid, high, low: Number.isFinite(low) ? low : quote.mid, price: quote.mid };
+      const day = sessionDayKey(new Date());
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionHigh = quote?.mid ?? null;
+        state.sessionLow = quote?.mid ?? null;
+      }
+      const bars = (daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      let high = quote?.mid, low = quote?.mid;
+      bars.forEach(b => {
+        if (b.high != null) high = Math.max(high, b.high);
+        if (b.low != null) low = Math.min(low, b.low);
+      });
+      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
+      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
+      if (quote?.mid != null) {
+        high = high == null ? quote.mid : Math.max(high, quote.mid);
+        low = low == null ? quote.mid : Math.min(low, quote.mid);
+      }
+      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
+      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
     }
     function monthRange(daily, today) {
       const cutoff = Date.now() - 31 * 24 * 60 * 60 * 1000;
@@ -583,7 +624,7 @@
       const g24 = mid / TROY_G;
       document.getElementById("price").textContent = money(mid);
       document.getElementById("priceUnit").textContent =
-        "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : state.ccy === "USD" ? "dollari USA" : "euro");
+        "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : state.ccy === "USD" ? "dollari USA" : state.ccy === "CHF" ? "franchi svizzeri" : "euro");
       const chgEl = document.getElementById("chg");
       const chg = q.dayDiffPercent;
       chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
@@ -598,8 +639,9 @@
       document.getElementById("eurusd").textContent = q.eurusd != null ? fmt(q.eurusd, 4) : "—";
       document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
       document.getElementById("upd").textContent = fmtDateTime(q.lastQuoteAt || q.timestamp);
-      document.getElementById("liveLabel").textContent = q.stale ? "Ritardo" : "Live";
-      document.getElementById("liveDot").classList.toggle("off", !!q.stale);
+      const open = isGoldMarketOpen(q);
+      document.getElementById("liveLabel").textContent = open ? (q.stale ? "Ritardo" : "Live") : "Closed";
+      document.getElementById("liveDot").classList.toggle("off", !open || !!q.stale);
       renderBuy(todayBar(state.daily, q));
       if (state.intraday?.length && q.mid) {
         const last = state.intraday[state.intraday.length - 1];
@@ -707,15 +749,21 @@
           eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid,
         };
       }
-      const closed = state.daily.filter(b => !b.isOpen);
+      const closed = (state.daily || []).filter(b => !b.isOpen);
       if (closed.length >= 1) {
         const prev = closed[closed.length - 1].close;
         q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
-        const today = state.daily[state.daily.length - 1];
-        if (today) {
-          q.high = Math.max(today.high || q.mid, q.mid);
-          q.low = Math.min(today.low || q.mid, q.mid);
-        }
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => sessionDayKey(new Date(b.openTime || b.time || 0)) === day);
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
       }
       return q;
     }
@@ -723,18 +771,18 @@
       const [eur, usd, fx] = await Promise.all([
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
-        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
       ]);
       const xauEur = Number(eur.symbols[0].price);
       const xauUsd = Number(usd.symbols[0].price);
       const eurpln = Number(fx.rates.PLN);
       const eurusd = Number(fx.rates.USD);
       const ts = eur.symbols[0].computed_at;
-      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : xauEur;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
       return {
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
-        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : "XAUEUR",
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
         dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, _xauUsd: xauUsd,
       };
     }
@@ -770,7 +818,7 @@
       }
     }
     function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
-    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : null; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
     function fmt(n, d = 2) {
       if (n == null || Number.isNaN(n)) return "—";
       return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
@@ -778,6 +826,7 @@
     function money(n, d = 2) {
       const num = fmt(n, d);
       if (state.ccy === "PLN") return num + " zł";
+      if (state.ccy === "CHF") return num + " CHF";
       if (state.ccy === "USD") return num + " $";
       return num + " €";
     }
@@ -808,10 +857,32 @@
       throw last || new Error("nessuna fonte");
     }
     function todayBar(daily, quote) {
-      const last = daily[daily.length - 1];
-      const high = Math.max(quote.high ?? 0, last?.high ?? 0, quote.mid);
-      const low = Math.min(quote.low ?? Infinity, last?.low ?? Infinity, quote.mid);
-      return { open: last?.open ?? quote.mid, high, low: Number.isFinite(low) ? low : quote.mid, price: quote.mid };
+      const day = sessionDayKey(new Date());
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionHigh = quote?.mid ?? null;
+        state.sessionLow = quote?.mid ?? null;
+      }
+      const bars = (daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      let high = quote?.mid, low = quote?.mid;
+      bars.forEach(b => {
+        if (b.high != null) high = Math.max(high, b.high);
+        if (b.low != null) low = Math.min(low, b.low);
+      });
+      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
+      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
+      if (quote?.mid != null) {
+        high = high == null ? quote.mid : Math.max(high, quote.mid);
+        low = low == null ? quote.mid : Math.min(low, quote.mid);
+      }
+      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
+      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -909,11 +980,20 @@
       if (closed.length >= 1) {
         const prev = closed[closed.length - 1].close;
         q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
-        const today = state.daily[state.daily.length - 1];
-        if (today) {
-          q.high = Math.max(today.high || q.mid, q.mid);
-          q.low = Math.min(today.low || q.mid, q.mid);
-        }
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
       }
       return q;
     }
@@ -921,18 +1001,18 @@
       const [eur, usd, fx] = await Promise.all([
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
-        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
       ]);
       const xauEur = Number(eur.symbols[0].price);
       const xauUsd = Number(usd.symbols[0].price);
       const eurpln = Number(fx.rates.PLN);
       const eurusd = Number(fx.rates.USD);
       const ts = eur.symbols[0].computed_at;
-      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : xauEur;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
       return {
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
-        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : "XAUEUR",
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
         dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd,
       };
     }
@@ -1029,11 +1109,20 @@
       if (closed.length >= 1) {
         const prev = closed[closed.length - 1].close;
         q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
-        const today = state.daily[state.daily.length - 1];
-        if (today) {
-          q.high = Math.max(today.high || q.mid, q.mid);
-          q.low = Math.min(today.low || q.mid, q.mid);
-        }
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
       }
       return q;
     }
@@ -1041,23 +1130,23 @@
       const [eur, usd, fx] = await Promise.all([
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
-        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
       ]);
       const xauEur = Number(eur.symbols[0].price);
       const xauUsd = Number(usd.symbols[0].price);
       const eurpln = Number(fx.rates.PLN);
       const eurusd = Number(fx.rates.USD);
       const ts = eur.symbols[0].computed_at;
-      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : xauEur;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
       return {
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
-        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : "XAUEUR",
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
         dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd,
       };
     }
     function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
-    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : null; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
     function fmt(n, d = 2) {
       if (n == null || Number.isNaN(n)) return "—";
       return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
@@ -1065,6 +1154,7 @@
     function money(n, d = 2) {
       const num = fmt(n, d);
       if (state.ccy === "PLN") return num + " zł";
+      if (state.ccy === "CHF") return num + " CHF";
       if (state.ccy === "USD") return num + " $";
       return num + " €";
     }
@@ -1095,10 +1185,32 @@
       throw last || new Error("nessuna fonte");
     }
     function todayBar(daily, quote) {
-      const last = daily[daily.length - 1];
-      const high = Math.max(quote.high ?? 0, last?.high ?? 0, quote.mid);
-      const low = Math.min(quote.low ?? Infinity, last?.low ?? Infinity, quote.mid);
-      return { open: last?.open ?? quote.mid, high, low: Number.isFinite(low) ? low : quote.mid, price: quote.mid };
+      const day = sessionDayKey(new Date());
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionHigh = quote?.mid ?? null;
+        state.sessionLow = quote?.mid ?? null;
+      }
+      const bars = (daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      let high = quote?.mid, low = quote?.mid;
+      bars.forEach(b => {
+        if (b.high != null) high = Math.max(high, b.high);
+        if (b.low != null) low = Math.min(low, b.low);
+      });
+      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
+      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
+      if (quote?.mid != null) {
+        high = high == null ? quote.mid : Math.max(high, quote.mid);
+        low = low == null ? quote.mid : Math.min(low, quote.mid);
+      }
+      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
+      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -1292,17 +1404,20 @@
       e.stopPropagation();
       refreshApart();
     });
-    document.getElementById("newsBtn").addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      loadNews();
-    loadWorldNews();
-    });
-    document.getElementById("worldBtn").addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      loadWorldNews();
-    });
+    function bindNewsBtn(id, fn, metaId) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const meta = document.getElementById(metaId);
+        if (meta) meta.textContent = "Aggiorno il feed…";
+        fn();
+      }, true);
+    }
+    bindNewsBtn("newsBtn", loadNews, "newsMeta");
+    bindNewsBtn("worldBtn", loadWorldNews, "worldMeta");
 
     document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
