@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.37.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.43.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -48,9 +48,16 @@
       padding: 10px 16px; cursor: pointer; font: inherit; font-size: .9rem;
       min-height: 44px; touch-action: manipulation;
     }
-    .pair-tabs button.on {
+    .pair-tabs button.on, .tf-row button.on {
       color: #1a1404; background: linear-gradient(180deg, var(--gold-2), var(--gold));
       border-color: transparent; font-weight: 600;
+    }
+    .tf-row { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: space-between; margin-bottom: 6px; }
+    .tf-row button {
+      flex: 1; background: transparent; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 6px 0; cursor: pointer; font: inherit; font-size: .72rem;
+      font-weight: 600; letter-spacing: .04em; min-height: 32px;
     }
     .price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center; }
     .px { font-size: 2.6rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -105,8 +112,10 @@
     details.fold > summary {
       list-style: none; cursor: pointer;
       display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; flex-wrap: wrap;
+      gap: 10px; flex-wrap: nowrap;
     }
+    .fold-title { flex: 1; min-width: 0; text-align: left; }
+    .fold-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto; }
     details.fold > summary::-webkit-details-marker { display: none; }
     .fold-btn {
       border: 1px solid var(--line); border-radius: 999px;
@@ -159,7 +168,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.37.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.43.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -174,9 +183,9 @@
     <div class="hero">
       <section class="card">
         <div class="pair-tabs">
-          <button data-ccy="PLN">XAU / PLN</button>
           <button class="on" data-ccy="EUR">XAU / EUR</button>
           <button data-ccy="USD">XAU / USD</button>
+          <button data-ccy="PLN">XAU / PLN</button>
         </div>
         <div class="price-row">
           <div class="px" id="price">—</div>
@@ -197,8 +206,14 @@
             <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
             <div class="stat upd"><label>Aggiornato</label><b id="upd">—</b></div>
             <div class="stat chart">
-              <label>Grafico giornata</label>
-              <svg class="spark" id="spark" viewBox="0 0 280 64" preserveAspectRatio="none" aria-label="Grafico giornata"></svg>
+              <div class="tf-row" id="tfRow">
+                <button data-tf="1D" class="on">1D</button>
+                <button data-tf="7D">7D</button>
+                <button data-tf="1M">1M</button>
+                <button data-tf="3M">3M</button>
+                <button data-tf="6M">6M</button>
+              </div>
+              <svg class="spark" id="spark" viewBox="0 0 280 64" preserveAspectRatio="none" aria-label="Grafico"></svg>
             </div>
           </div>
         </div>
@@ -208,16 +223,16 @@
         <strong style="color:var(--gold-2)">Statistiche</strong>
         <p class="hint" style="margin-top:6px">Minimi, massimi e distanze sul prezzo attuale.</p>
         <div class="buy-grid">
-          <div class="stat"><label>Massimo di giornata</label><b id="dayHigh">—</b></div>
           <div class="stat"><label>Minimo di giornata</label><b id="dayLow">—</b></div>
+          <div class="stat"><label>Massimo di giornata</label><b id="dayHigh">—</b></div>
           <div class="stat stack"><label>Distanza dal minimo giorno</label><b id="buyDist">—</b></div>
           <div class="stat stack"><label>Distanza dal massimo giorno</label><b id="dayHighDist">—</b></div>
-          <div class="stat"><label>Massimo ultimo mese</label><b id="monthHigh">—</b></div>
           <div class="stat"><label>Minimo ultimo mese</label><b id="monthLow">—</b></div>
-          <div class="stat"><label>Range di giornata</label><b id="dayRange">—</b></div>
-          <div class="stat"><label>Range ultimo mese</label><b id="monthRange">—</b></div>
+          <div class="stat"><label>Massimo ultimo mese</label><b id="monthHigh">—</b></div>
           <div class="stat stack"><label>Distanza dal minimo mese</label><b id="monthDist">—</b></div>
           <div class="stat stack"><label>Distanza dal massimo mese</label><b id="monthHighDist">—</b></div>
+          <div class="stat"><label>Range di giornata</label><b id="dayRange">—</b></div>
+          <div class="stat"><label>Range ultimo mese</label><b id="monthRange">—</b></div>
         </div>
       </section>
     </div>
@@ -225,8 +240,8 @@
     <section class="card apart">
       <details class="fold">
         <summary>
-          <strong style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
-          <span class="fold-btn"></span>
+          <strong class="fold-title" style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
+          <span class="fold-actions"><span class="fold-btn"></span></span>
         </summary>
         <p class="hint">Valore del contenuto d’oro alla quotazione attuale, senza premio numismatico o di rivendita.</p>
         <div class="apart-wrap">
@@ -249,9 +264,9 @@
     <section class="card apart">
       <details class="fold">
         <summary>
-          <strong style="color:var(--gold-2)"><a id="apartTitleLink" href="https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Mennica Apart — 1 oz, spedizione 24h</a></strong>
-          <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="refresh-btn" id="apartBtn" type="button">Aggiorna listino Apart</button>
+          <strong class="fold-title" style="color:var(--gold-2)"><a id="apartTitleLink" href="https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Mennica Apart — 1 oz, spedizione 24h</a></strong>
+          <span class="fold-actions">
+            <button class="refresh-btn" id="apartBtn" type="button">Aggiorna</button>
             <span class="fold-btn"></span>
           </span>
         </summary>
@@ -282,7 +297,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.37.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.43.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -309,7 +324,7 @@
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
-    const state = { ccy: "EUR", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05" };
+    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05" };
     const APART = [
       { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: APART_LIST_URL },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: APART_LIST_URL },
@@ -564,15 +579,42 @@
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      svg.innerHTML = `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
+      const gridH = [1,2,3].map(i => {
+        const y = (pad + i * (h - pad * 2) / 4).toFixed(1);
+        return `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" />`;
+      }).join("");
+      const gridV = [1,2,3,4].map(i => {
+        const x = (pad + i * (w - pad * 2) / 5).toFixed(1);
+        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h-pad}" />`;
+      }).join("");
+      svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
+        <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" fill="none" stroke="rgba(212,175,55,.28)" stroke-width="0.7" />
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
     }
-    async function loadIntraday() {
-      const gold = await loadOhlc(goldSymbol(), "15m", 48);
-      const fx = fxSymbol();
-      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "15m", 48)) : gold;
-      state.intraday = series.slice().reverse();
+    const TF = {
+      "1D": { interval: "15m", limit: 96 },
+      "7D": { interval: "1h", limit: 168 },
+      "1M": { interval: "1d", limit: 32 },
+      "3M": { interval: "1d", limit: 95 },
+      "6M": { interval: "1d", limit: 190 }
+    };
+    async function loadChart() {
+      const spec = TF[state.tf] || TF["1D"];
+      async function bars(interval, limit) {
+        const gold = await loadOhlc(goldSymbol(), interval, limit);
+        const fx = fxSymbol();
+        const series = fx ? multiplyBars(gold, await loadOhlc(fx, interval, limit)) : gold;
+        return series.slice().reverse();
+      }
+      try {
+        state.intraday = await bars(spec.interval, spec.limit);
+      } catch (e) {
+        if (spec.interval === "1h") state.intraday = await bars("15m", 200);
+        else throw e;
+      }
       drawSpark(state.intraday);
     }
+    async function loadIntraday() { return loadChart(); }
     async function loadDaily() {
       const gold = await loadOhlc(goldSymbol(), "1d", 80);
       const fx = fxSymbol();
@@ -846,15 +888,19 @@
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      svg.innerHTML = `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
+      const gridH = [1,2,3].map(i => {
+        const y = (pad + i * (h - pad * 2) / 4).toFixed(1);
+        return `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" />`;
+      }).join("");
+      const gridV = [1,2,3,4].map(i => {
+        const x = (pad + i * (w - pad * 2) / 5).toFixed(1);
+        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h-pad}" />`;
+      }).join("");
+      svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
+        <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" fill="none" stroke="rgba(212,175,55,.28)" stroke-width="0.7" />
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
     }
-    async function loadIntraday() {
-      const gold = await loadOhlc(goldSymbol(), "15m", 48);
-      const fx = fxSymbol();
-      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "15m", 48)) : gold;
-      state.intraday = series.slice().reverse();
-      drawSpark(state.intraday);
-    }
+    async function loadIntraday() { return loadChart(); }
     async function loadDaily() {
       const gold = await loadOhlc(goldSymbol(), "1d", 80);
       const fx = fxSymbol();
@@ -1045,6 +1091,14 @@
         btn.classList.add("on");
         state.ccy = btn.dataset.ccy;
         await boot(true);
+      });
+    });
+    document.getElementById("tfRow").querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll("#tfRow button").forEach(b => b.classList.remove("on"));
+        btn.classList.add("on");
+        state.tf = btn.dataset.tf;
+        try { await loadChart(); } catch (e) { console.warn("grafico", e); }
       });
     });
     document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
