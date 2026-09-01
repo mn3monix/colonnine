@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.12</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.14</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -143,7 +143,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.12</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.14</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -178,11 +178,11 @@
       <div class="row2">
         <div>
           <label>Ricarica % min</label>
-          <input id="socChargeMin" type="number" min="20" max="90" value="50" title="Fascia veloce 15–60%. Default uscita 50%." />
+          <input id="socChargeMin" type="number" min="20" max="90" value="60" title="Ricarica minima in colonnina" />
         </div>
         <div>
           <label>Ricarica % max</label>
-          <input id="socChargeMax" type="number" min="40" max="100" value="60" title="Oltre 60% la curva Tesla è lenta. Default 60%." />
+          <input id="socChargeMax" type="number" min="40" max="100" value="80" title="Ricarica massima in colonnina" />
         </div>
       </div>
 
@@ -254,7 +254,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.12 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.14 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -297,7 +297,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.12";
+  const APP_VERSION = "1.9.14";
   const MIN_CHARGE_MIN = 10;
   const MAX_CHARGE_MIN = 25;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
@@ -775,6 +775,22 @@
     const up = (climbM||0) * m * 9.81 / 3.6e6 / 0.80;
     const down = (descM||0) * m * 9.81 / 3.6e6 * 0.48;
     return Math.max(0, up - down);
+  }
+  function spanClimbM(fromKm, toKm){
+    const prof = state.wx && state.wx.elevProf;
+    if (!prof || prof.length<2) return {climb:0, desc:0, dkm:Math.max(0,(toKm||0)-(fromKm||0))};
+    let climb=0, desc=0;
+    for (let i=1;i<prof.length;i++){
+      const a=prof[i-1], b=prof[i];
+      if (b.km < fromKm || a.km > toKm) continue;
+      const dlt = (b.alt||0)-(a.alt||0);
+      if (dlt>0) climb += dlt; else desc += -dlt;
+    }
+    return {climb, desc, dkm:Math.max(0,(toKm||0)-(fromKm||0))};
+  }
+  function longMountainAhead(fromKm, toKm){
+    const s = spanClimbM(fromKm, toKm);
+    return s.climb >= 450 && s.dkm >= 35;
   }
   function gradeEnergySpan(fromKm, toKm){
     const prof = state.wx && state.wx.elevProf;
@@ -1870,13 +1886,18 @@
           if (!targets.length && hi > leg.arrive + 2) targets.push(Math.min(hi, Math.round(leg.arrive + 10)));
           for (const rawT of targets){
             if (rawT <= leg.arrive + 1) continue;
-            const fit = fitChargeTarget(leg.arrive, rawT, to.kw || 250, lo, hi);
-            if (!fit) continue;
-            const useT = fit.target;
-            const cmin = fit.minutes;
+            const alpine = longMountainAhead(to.atKm, km);
+            const fit = fitChargeTarget(leg.arrive, alpine ? 80 : rawT, to.kw || 250, lo, alpine ? 80 : hi);
+            if (!fit && !alpine) continue;
+            let useT = fit ? fit.target : rawT;
+            let cmin = fit ? fit.minutes : chargeMinutes(leg.arrive, useT, to.kw||250);
+            if (alpine){
+              useT = 80;
+              cmin = chargeMinutes(leg.arrive, 80, to.kw||250);
+            }
             const plug = (to.kw||250) >= 240 ? 6 : 9;
             const prefMin = netPriority(to.net) * 1.8;
-            const peakPen = useT > 60 ? (useT - 60) * 0.65 : 0;
+            const peakPen = (!alpine && useT > 60) ? (useT - 60) * 0.65 : 0;
             leave[j].push({
               soc: useT, time: tArr + cmin + plug + prefMin + peakPen, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
@@ -2077,6 +2098,12 @@
     const v = last.speed || 115;
     const phys = route ? spanDrive(route, last.atKm || 0, plan.km || 0, v) : {energy: consAt(v)*remain/100};
     const needLeave = Math.min(opts.chargeMax, Math.max(opts.chargeMin, want + (phys.energy/battKwh())*100 + 2));
+    const alpine = longMountainAhead(last.atKm || 0, plan.km || 0);
+    if (alpine){
+      last.targetSoc = 80;
+      last.chargeMin = chargeMinutes(last.arriveSoc, 80, last.kw || 250);
+      last.mountainPrep = true;
+    } else {
     const fitL = fitChargeTarget(last.arriveSoc, Math.max(last.targetSoc || opts.chargeMin, needLeave), last.kw || 250, opts.chargeMin, opts.chargeMax||80);
     if (fitL){
       last.targetSoc = fitL.target;
@@ -2084,6 +2111,7 @@
     } else {
       last.targetSoc = Math.round(Math.max(last.targetSoc || opts.chargeMin, needLeave));
       last.chargeMin = Math.min(MAX_CHARGE_MIN, Math.max(MIN_CHARGE_MIN, chargeMinutes(last.arriveSoc, last.targetSoc, last.kw || 250)));
+    }
     }
     last.kwh = battKwh() * Math.max(0, last.targetSoc - last.arriveSoc) / 100 / 0.95;
     last.cost = last.kwh * (last.livePrice || (state.prices && state.prices[last.net]) || 0.4);
