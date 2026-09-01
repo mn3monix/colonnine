@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.19.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.20.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -171,7 +171,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.19.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.20.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -276,7 +276,7 @@
     <section class="card apart">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
         <strong style="color:var(--gold-2)">Mennica Apart — 1 oz, spedizione 24h</strong>
-        <button class="refresh-btn" id="apartBtn" type="button">Ricalcola Apart</button>
+        <button class="refresh-btn" id="apartBtn" type="button">Aggiorna listino Apart</button>
       </div>
       <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
       <div class="stat" style="margin:12px 0">
@@ -289,7 +289,7 @@
             <tr>
               <th>#</th>
               <th>Moneta</th>
-              <th class="r">Prezzo stimato</th>
+              <th class="r">Prezzo Apart</th>
               <th class="r">Spread zł</th>
               <th class="r">Spread %</th>
             </tr>
@@ -297,14 +297,14 @@
           <tbody id="apartBody"></tbody>
         </table>
       </div>
-      <p class="hint">Apart blocca la lettura automatica del carrello. Uso il premio del listino (01/09/2026, 13:25) e lo applico allo spot live, così i prezzi si muovono con l’oro. Tocca una moneta per vedere il prezzo reale sul sito.</p>
+      <p class="hint">Prezzi del listino Apart (non stimati). Lo spread è listino meno spot live. Il tasto prova a rileggere il sito; se Apart blocca, restano gli ultimi prezzi veri letti dal catalogo.</p>
     </section>
 
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.19.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.20.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -330,10 +330,9 @@
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
-    const state = { ccy: "EUR", daily: [], quote: null, spotPln: null };
-    const APART_SPOT_REF = 16363.24;
+    const state = { ccy: "EUR", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino" };
     const APART = [
-      { name: "Krugerrand 1oz — annate miste (24h)", price: 16718, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-rozne-roczniki-24h/170" },
+      { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-rozne-roczniki-24h/170" },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/britannia-1oz-rozne-roczniki-24h/13" },
       { name: "Kangur australiano 1oz 2025/2026 (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/australijski-kangur-1oz-20252026r-24h/10" },
       { name: "Britannia 1oz 2025/2026 (24h)", price: 16796, url: "https://mennica.apart.pl/produkt/britannia-1oz-20252026r-24h/133" },
@@ -363,20 +362,20 @@
         day: "2-digit", month: "2-digit", year: "numeric",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
       });
+      const list = state.apartList || APART;
       document.getElementById("apartMeta").textContent =
-        "Prezzi ricalcolati " + now + " · premio fisso dal listino Apart";
+        "Listino Apart reale · " + (state.apartSource || "catalogo") + " · " + now;
       document.getElementById("spotPln").textContent = spot ? pln(spot) : "—";
-      const rows = APART.map(p => {
-        const premium = p.price - APART_SPOT_REF;
-        const livePrice = spot + premium;
-        const pct = spot ? (premium / spot) * 100 : 0;
-        return { ...p, livePrice, spread: premium, pct };
-      }).sort((a, b) => a.livePrice - b.livePrice);
+      const rows = list.map(p => {
+        const spread = p.price - spot;
+        const pct = spot ? (spread / spot) * 100 : 0;
+        return { ...p, spread, pct };
+      }).sort((a, b) => a.price - b.price).slice(0, 10);
       document.getElementById("apartBody").innerHTML = rows.map((p, i) => `
         <tr>
           <td>${i + 1}</td>
           <td><a href="${p.url}" target="_blank" rel="noopener">${p.name}</a></td>
-          <td class="r">${pln(p.livePrice, 0)}</td>
+          <td class="r">${pln(p.price, 0)}</td>
           <td class="r">${spreadSign(p.spread)}</td>
           <td class="r">${(p.pct >= 0 ? "+" : "") + fmt(p.pct, 2)}%</td>
         </tr>`).join("");
@@ -744,25 +743,74 @@
       });
     });
     document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
+    function parseApartCatalog(text) {
+      const rows = [];
+      const re = /\[([^\]]+1oz[^\]]*)\]\((https:\/\/mennica\.apart\.pl\/produkt\/[^)]+)\)[\s\S]{0,180}?(\d[\d\s]{3,6})\s*PLN/gi;
+      let m;
+      while ((m = re.exec(text))) {
+        const name = m[1].replace(/\s+/g, " ").trim();
+        const url = m[2];
+        const price = Number(String(m[3]).replace(/\s/g, ""));
+        if (price > 10000 && price < 40000) rows.push({ name, url, price });
+      }
+      const uniq = [];
+      const seen = new Set();
+      for (const r of rows) {
+        if (seen.has(r.url)) continue;
+        seen.add(r.url);
+        uniq.push(r);
+      }
+      return uniq.sort((a, b) => a.price - b.price);
+    }
+
+    async function fetchApartCatalog() {
+      const src = "https://mennica.apart.pl/zloto/monety?realizacja=24h&masa=1-oz&sortuj-wg-ceny=asc";
+      const proxies = [
+        "https://r.jina.ai/http://mennica.apart.pl/zloto/monety?realizacja=24h&masa=1-oz&sortuj-wg-ceny=asc",
+        "https://r.jina.ai/" + src,
+      ];
+      for (const url of proxies) {
+        try {
+          const text = await getJSONText(url);
+          const list = parseApartCatalog(text);
+          if (list.length >= 5) return list;
+        } catch (e) {}
+      }
+      return null;
+    }
+
+    async function getJSONText(url) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.text();
+      } finally { clearTimeout(t); }
+    }
+
     async function refreshApart() {
       const btn = document.getElementById("apartBtn");
       btn.disabled = true;
-      btn.textContent = "Aggiorno…";
+      btn.textContent = "Leggo Apart…";
       try {
-        const xau = await getJSON(`${API}/XAUUSD`);
-        const usdpln = await getJSON(`${API}/USDPLN`);
-        renderApart(xau.mid * usdpln.mid);
-      } catch (e) {
-        if (state.quote) {
-          const q = state.quote;
-          if (state.ccy === "PLN") renderApart(q.mid);
-          else if (q.eurpln) renderApart(q.mid * q.eurpln);
+        const list = await fetchApartCatalog();
+        if (list && list.length) {
+          state.apartList = list;
+          state.apartSource = "sito live " + new Date().toLocaleTimeString("it-IT");
+        } else {
+          state.apartSource = "ultimo listino vero (Apart ha bloccato la lettura)";
         }
-        document.getElementById("apartMeta").textContent =
-          "Spot non aggiornato (" + (e.message || "errore") + "). Spreads sul ultimo prezzo disponibile.";
+        let spot = state.spotPln;
+        try {
+          const xau = await getJSON(`${API}/XAUUSD`);
+          const usdpln = await getJSON(`${API}/USDPLN`);
+          spot = xau.mid * usdpln.mid;
+        } catch (e) {}
+        renderApart(spot);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Aggiorna Apart";
+        btn.textContent = "Aggiorna listino Apart";
       }
     }
     document.getElementById("apartBtn").addEventListener("click", refreshApart);
