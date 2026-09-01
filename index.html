@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.30</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.31</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -141,7 +141,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.30</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.31</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -208,7 +208,7 @@
         </div>
       </div>
       <div class="toggles">
-        <button class="tog on" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
+        <button class="tog" id="togTraffic" type="button"><b>TRAFFICO</b><span>Google Maps live</span></button>
         <button class="tog" id="togMoreStops" type="button"><b>PIÙ SOSTE</b><span>ricariche corte</span></button>
         <button class="tog" id="togChargers" type="button"><b>COLONNINE</b><span>solo tratta attiva</span></button>
         <button class="tog" id="togDarkMap" type="button"><b>COLORE MAPPA</b><span id="mapColorLbl">chiara</span></button>
@@ -253,7 +253,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.8.30 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.31 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -296,7 +296,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.30";
+  const APP_VERSION = "1.8.31";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -324,6 +324,11 @@
   function selectedNets(){
     const on = [...document.querySelectorAll("#netChips .chip.on")].map(c=>c.dataset.net);
     return on.length ? on : PLAN_NETS.slice();
+  }
+  function netPriority(net){
+    const chips = [...document.querySelectorAll("#netChips .chip")];
+    const i = chips.findIndex(c => c.dataset.net === net);
+    return i < 0 ? 9 : i;
   }
   function allOperatorNets(){ return Object.keys(NETS); }
   function netColor(net){ return (NETS[net] && NETS[net].color) || "#3dd68c"; }
@@ -470,7 +475,7 @@
     showChargers: false,
     gmap: null,
     traffic: null,
-    trafficOn: true,
+    trafficOn: false,
     moreStops: false,
     darkMap: false,
     sucWho: "tesla",
@@ -1796,8 +1801,9 @@
             if (tgt <= leg.arrive + 1) continue;
             const cmin = chargeMinutes(leg.arrive, tgt, to.kw || 250);
             const plug = (to.kw||250) >= 240 ? 6 : 9;
+            const prefMin = netPriority(to.net) * 1.8;
             leave[j].push({
-              soc: tgt, time: tArr + cmin + plug, prev: i, prevSt: st,
+              soc: tgt, time: tArr + cmin + plug + prefMin, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
               arrive: leg.arrive, target: tgt, cons: leg.cons, dkm,
               kwhAdd: battKwh() * (tgt - leg.arrive) / 100 / 0.95
@@ -1904,9 +1910,9 @@
       const used = new Set(stops.map(s=>s.id));
       const cand = uniq.filter(c => c.atKm>=windowFrom && c.atKm<=windowTo && c.off<=12 && !used.has(c.id));
       let chosen = cand.sort((a,b)=>{
-        const pref = {SUPERCHARGER:0, IONITY:1, ELECTRA:2};
+        const prefN = net => netPriority(net);
         const ideal = fromKm + reach*0.78;
-        return Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (a.off-b.off) || ((pref[a.net]||9)-(pref[b.net]||9));
+        return Math.abs(a.atKm-ideal)-Math.abs(b.atKm-ideal) || (a.off-b.off) || (prefN(a.net)-prefN(b.net));
       })[0];
       if (!chosen){
         chosen = uniq.filter(c => c.atKm>=fromKm+minGap && c.atKm<=windowTo+30 && c.off<=14 && !used.has(c.id))
@@ -2741,8 +2747,27 @@
   const chipWrap = document.createElement("div");
   chipWrap.className="chips";
   chipWrap.id="netChips";
-  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on" data-net="${n}" style="border-color:${netColor(n)};background:${netColor(n)};color:#111">${netLabel(n)}</span>`).join("");
+  chipWrap.innerHTML = NET_KEYS.map(n=>`<span class="chip on" draggable="true" data-net="${n}" style="border-color:${netColor(n)};background:${netColor(n)};color:#111" title="Trascina per priorità">${netLabel(n)}</span>`).join("");
   $("dest").closest(".field").insertAdjacentElement("afterend", chipWrap);
+  const priHint = document.createElement("div");
+  priHint.className = "hint";
+  priHint.style.margin = "0";
+  priHint.textContent = "Trascina i provider: il primo a sinistra è il preferito.";
+  chipWrap.insertAdjacentElement("afterend", priHint);
+  let dragChip = null;
+  chipWrap.addEventListener("dragstart", ev=>{
+    dragChip = ev.target.closest(".chip");
+  });
+  chipWrap.addEventListener("dragover", ev=>{
+    ev.preventDefault();
+    const over = ev.target.closest(".chip");
+    if (!dragChip || !over || over===dragChip) return;
+    const chips = [...chipWrap.querySelectorAll(".chip")];
+    const a = chips.indexOf(dragChip), b = chips.indexOf(over);
+    if (a<0 || b<0) return;
+    if (a < b) chipWrap.insertBefore(dragChip, over.nextSibling);
+    else chipWrap.insertBefore(dragChip, over);
+  });
   chipWrap.addEventListener("click", ev=>{
     const c = ev.target.closest(".chip");
     if (!c) return;
