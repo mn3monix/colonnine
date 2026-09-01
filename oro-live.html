@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.4.0 — Prezzo e livello di acquisto</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -153,7 +153,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live</h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.4.0</span></h1>
         <p>Prezzi in euro e zloty — oncia, grammo 24k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -219,7 +219,7 @@
     <section class="card apart">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
         <strong style="color:var(--gold-2)">Mennica Apart — 1 oz, spedizione 24h</strong>
-        <button class="refresh-btn" id="apartBtn" type="button">Aggiorna Apart</button>
+        <button class="refresh-btn" id="apartBtn" type="button">Ricalcola Apart</button>
       </div>
       <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
       <div class="stat" style="margin:12px 0">
@@ -232,7 +232,7 @@
             <tr>
               <th>#</th>
               <th>Moneta</th>
-              <th class="r">Prezzo Apart</th>
+              <th class="r">Prezzo stimato</th>
               <th class="r">Spread zł</th>
               <th class="r">Spread %</th>
             </tr>
@@ -240,14 +240,14 @@
           <tbody id="apartBody"></tbody>
         </table>
       </div>
-      <p class="hint">Listino Apart rilevato il 01/09/2026 alle 12:55. Lo spread si ricalcola sul prezzo spot live. Il sito Apart blocca le letture automatiche, quindi il listino non è tick-by-tick. Fonte: mennica.apart.pl</p>
+      <p class="hint">Apart blocca la lettura automatica del carrello. Uso il premio del listino (01/09/2026, 13:25) e lo applico allo spot live, così i prezzi si muovono con l’oro. Tocca una moneta per vedere il prezzo reale sul sito.</p>
     </section>
 
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 18k = 18/24, 14k = 14/24, 9k = 9/24 del 24k.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      Non è un consiglio di investimento.
+      App v1.4.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -258,8 +258,9 @@
     const K14 = 14 / 24;
     const K9 = 9 / 24;
     const state = { ccy: "EUR", daily: [], quote: null, spotPln: null };
+    const APART_SPOT_REF = 16363.24;
     const APART = [
-      { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-rozne-roczniki-24h/170" },
+      { name: "Krugerrand 1oz — annate miste (24h)", price: 16718, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-rozne-roczniki-24h/170" },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/britannia-1oz-rozne-roczniki-24h/13" },
       { name: "Kangur australiano 1oz 2025/2026 (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/australijski-kangur-1oz-20252026r-24h/10" },
       { name: "Britannia 1oz 2025/2026 (24h)", price: 16796, url: "https://mennica.apart.pl/produkt/britannia-1oz-20252026r-24h/133" },
@@ -280,18 +281,19 @@
         hour: "2-digit", minute: "2-digit", second: "2-digit",
       });
       document.getElementById("apartMeta").textContent =
-        "Spread ricalcolato " + now + " · listino Apart 01/09/2026 12:55";
+        "Prezzi ricalcolati " + now + " · premio fisso dal listino Apart";
       document.getElementById("spotPln").textContent = spot ? pln(spot) : "—";
       const rows = APART.map(p => {
-        const spread = p.price - spot;
-        const pct = spot ? (spread / spot) * 100 : 0;
-        return { ...p, spread, pct };
-      }).sort((a, b) => a.price - b.price);
+        const premium = p.price - APART_SPOT_REF;
+        const livePrice = spot + premium;
+        const pct = spot ? (premium / spot) * 100 : 0;
+        return { ...p, livePrice, spread: premium, pct };
+      }).sort((a, b) => a.livePrice - b.livePrice);
       document.getElementById("apartBody").innerHTML = rows.map((p, i) => `
         <tr>
           <td>${i + 1}</td>
           <td><a href="${p.url}" target="_blank" rel="noopener">${p.name}</a></td>
-          <td class="r">${pln(p.price, 0)}</td>
+          <td class="r">${pln(p.livePrice, 0)}</td>
           <td class="r">${spreadSign(p.spread)}</td>
           <td class="r">${(p.pct >= 0 ? "+" : "") + fmt(p.pct, 2)}%</td>
         </tr>`).join("");
