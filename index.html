@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.9</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.10</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -143,7 +143,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.9</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.10</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -254,7 +254,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.9 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.10 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -297,7 +297,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.9";
+  const APP_VERSION = "1.9.10";
   const MIN_CHARGE_MIN = 10;
   const MAX_CHARGE_MIN = 25;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
@@ -713,7 +713,7 @@
     const rain = winds.reduce((a,c)=>a+(+c.precipitation||+c.rain||0),0);
     let climb=0, desc=0, elevProf=[];
     try {
-      const epts = sampleCoords(coords, 16);
+      const epts = sampleCoords(coords, 48);
       const elu = `https://api.open-meteo.com/v1/elevation?latitude=${epts.map(p=>p.lat).join(",")}&longitude=${epts.map(p=>p.lng).join(",")}`;
       const elj = await fetch(elu).then(r=>r.json());
       const els = elj.elevation||[];
@@ -781,8 +781,9 @@
   }
   function gradeEnergy(climbM, descM){
     const m = CAR.mass || 2160;
-    const up = (climbM||0) * m * 9.81 / 3.6e6 / 0.87;
-    const down = (descM||0) * m * 9.81 / 3.6e6 * 0.52;
+    /* 0.80: perdite drivetrain + curve/tornanti in salita (non solo mgh ideale) */
+    const up = (climbM||0) * m * 9.81 / 3.6e6 / 0.80;
+    const down = (descM||0) * m * 9.81 / 3.6e6 * 0.48;
     return Math.max(0, up - down);
   }
   function gradeEnergySpan(fromKm, toKm){
