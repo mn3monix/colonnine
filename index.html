@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.11</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.12</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -143,7 +143,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.11</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.12</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -254,7 +254,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.11 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.12 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -297,7 +297,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.11";
+  const APP_VERSION = "1.9.12";
   const MIN_CHARGE_MIN = 10;
   const MAX_CHARGE_MIN = 25;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
@@ -1395,6 +1395,15 @@
     return three.slice(0,5);
   }
 
+  function spaceWx(list, minKm){
+    const out=[];
+    for (const s of list||[]){
+      if (!s || s.lat==null) continue;
+      if (out.some(o => haversine(o, s) < (minKm||48))) continue;
+      out.push(s);
+    }
+    return out;
+  }
   function samplePath(coords, everyKm){
     const out=[{...coords[0], d:0}];
     let acc=0, next=everyKm;
@@ -2199,8 +2208,8 @@
       }).addTo(state.map);
       state.layers.push(dm);
     }
-    const wxs = (alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || [];
-    wxs.forEach(s=>{
+    const wxs = spaceWx(((alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || []), 48);
+    wxs.forEach((s, wi)=>{
       if (!s || !s.lat) return;
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
@@ -2209,7 +2218,7 @@
       const tn = s.tempNow!=null ? Math.round(s.tempNow) : (s.cur&&s.cur.temperature_2m!=null?Math.round(s.cur.temperature_2m):null);
       const tp = tn;
       const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}<span class="t">${tp!=null?tp+"°":""}</span></div>`;
-      const pos = offsetBeside(alt.coords, s, 20, -1);
+      const pos = offsetBeside(alt.coords, s, 22, wi%2 ? 1 : -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
       if ((alt.plan.stops||[]).some(p => haversine(p, s) < 18 || haversine(p, pos) < 12)) return;
       const m = L.marker([pos.lat, pos.lng], {
@@ -2355,8 +2364,8 @@
       const dm = htmlPin(end.lat, end.lng, `<div class="dest-flag">${Number(f.arrive||0).toFixed(0)}%</div>`);
       state.gOverlays.push(dm);
     }
-    const wxs = (alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || [];
-    wxs.forEach(s=>{
+    const wxs = spaceWx(((alt.wx && alt.wx.samples) || (state.wx && state.wx.samples) || []), 48);
+    wxs.forEach((s, wi)=>{
       if (!s || !s.lat) return;
       const code = s.cur && s.cur.weather_code;
       const em = wxEmoji(code);
@@ -2364,7 +2373,7 @@
       const fog = em==="FOG";
       const tn = s.tempNow!=null ? Math.round(s.tempNow) : (s.cur&&s.cur.temperature_2m!=null?Math.round(s.cur.temperature_2m):null);
       const tp = tn;
-      const pos = offsetBeside(alt.coords, s, 20, -1);
+      const pos = offsetBeside(alt.coords, s, 22, wi%2 ? 1 : -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
       if ((alt.plan.stops||[]).some(p => haversine(p, s) < 18 || haversine(p, pos) < 12)) return;
       const pin = htmlPin(pos.lat, pos.lng, `<div class="wx-pin" title="${tn!=null?tn+"°C ora":"meteo"}">${fog?"☁":em}<span class="t">${tn!=null?tn+"°":""}</span></div>`);
