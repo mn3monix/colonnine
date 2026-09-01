@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.27</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.30</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -28,9 +28,9 @@
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt);
       font-family: Outfit, Inter, ui-sans-serif, system-ui, sans-serif; }
     .app { display: grid; grid-template-columns: 400px 1fr; height: 100%; }
-    aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 16px;
-      display: flex; flex-direction: column; gap: 16px; }
-    .blk { display: flex; flex-direction: column; gap: 8px; }
+    aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 16px 16px 28px;
+      display: flex; flex-direction: column; gap: 22px; }
+    .blk { display: flex; flex-direction: column; gap: 12px; }
     header.appbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 4px; }
     .brand { display: flex; gap: 10px; align-items: center; }
     .logo { width: 36px; height: 36px; border-radius: 9px; background: var(--red); display: grid; place-items: center; font-weight: 800; }
@@ -47,12 +47,13 @@
     #gmap { height: 100%; display: none; }
     #map.hidden, #gmap.hidden { display: none; }
     #gmap.show { display: block; }
-    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
     .row2 > div { display: flex; flex-direction: column; gap: 4px; }
     .row2 label { min-height: 26px; display: flex; align-items: flex-end; margin: 0; }
     .row2 input { height: 42px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+    #netChips { margin-top: 4px; margin-bottom: 2px; }
     .chip { font-size: 11px; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #10151b; color: var(--muted); cursor: pointer; user-select: none; }
     .chip.on { color: #fff; }
     #poiCats .chip.on { background: #ff7a18; color: #111; border-color: #ff9a40; font-weight: 700; }
@@ -61,7 +62,7 @@
     .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
     .mode b { display: block; font-size: 13px; }
     .mode span { color: var(--muted); font-size: 11px; }
-    .toggles { display: flex; gap: 8px; margin: 0; flex-wrap: wrap; }
+    .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
     .tog { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--txt); text-align: center; }
     .tog.on { border-color: var(--ok); background: #10231a; }
     .tog b { display: block; font-size: 13px; }
@@ -140,7 +141,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.27</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.30</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -252,7 +253,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.8.27 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.30 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -295,7 +296,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.27";
+  const APP_VERSION = "1.8.30";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1778,7 +1779,7 @@
           if (leg.arrive < minArrive - 0.6) continue;
           const tArr = st.time + leg.driveMin;
           if (to.kind === "dest"){
-            if (leg.arrive + 0.6 < wantDest) continue;
+            if (leg.arrive + 0.8 < wantDest) continue;
             leave[j].push({
               soc: leg.arrive, time: tArr, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: 0,
@@ -1983,16 +1984,40 @@
     const driveLast = realisticDriveMin(Math.max(remain,0), st.v, route, km, fromKm);
     return { stops, final:{ km:remain, speed:st.v, arrive:st.arrive, driveMin:driveLast, energy:st.energy }, km, navMin: route.seconds? route.seconds/60 : null };
   }
+  function enforceDestSoc(plan, opts, route){
+    if (!plan || !plan.stops || !plan.stops.length) return plan;
+    const want = Math.max(opts.minSoc || 15, opts.destArrive || 15);
+    const last = plan.stops[plan.stops.length - 1];
+    const remain = Math.max(0, (plan.km || 0) - (last.atKm || 0));
+    const v = last.speed || 115;
+    const phys = route ? spanDrive(route, last.atKm || 0, plan.km || 0, v) : {energy: consAt(v)*remain/100};
+    const needLeave = Math.min(opts.chargeMax, Math.max(opts.chargeMin, want + (phys.energy/battKwh())*100 + 2));
+    last.targetSoc = Math.round(Math.max(last.targetSoc || opts.chargeMin, needLeave));
+    last.chargeMin = chargeMinutes(last.arriveSoc, last.targetSoc, last.kw || 250);
+    last.kwh = battKwh() * Math.max(0, last.targetSoc - last.arriveSoc) / 100 / 0.95;
+    last.cost = last.kwh * (last.livePrice || (state.prices && state.prices[last.net]) || 0.4);
+    if (plan.final){
+      plan.final.arrive = last.targetSoc - (phys.energy/battKwh())*100;
+      plan.final.energy = phys.energy;
+    }
+    return plan;
+  }
   function planTrip(route, opts){
+    const wxHold = state.wx;
+    if (route && route.wx) state.wx = route.wx;
     try {
-      const dp = frvcpPlan(route, opts);
-      if (dp && dp.final && (dp.stops.length || dp.final.arrive >= Math.max(15, opts.minSoc || 15) - 1)){
-        return dp;
-      }
-    } catch (e) { console.warn("FRVCP fallback", e); }
-    const g = planTripGreedy(route, opts);
-    if (g) g.algo = "greedy";
-    return g;
+      try {
+        const dp = frvcpPlan(route, opts);
+        if (dp && dp.final && (dp.stops.length || dp.final.arrive >= Math.max(15, opts.minSoc || 15) - 1)){
+          return enforceDestSoc(dp, opts, route);
+        }
+      } catch (e) { console.warn("FRVCP fallback", e); }
+      const g = planTripGreedy(route, opts);
+      if (g) g.algo = "greedy";
+      return enforceDestSoc(g, opts, route);
+    } finally {
+      state.wx = wxHold;
+    }
   }
 
   function nearestBackup(stop, others){
