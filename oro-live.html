@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.7.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.9.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -162,7 +162,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.7.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.9.0</span></h1>
         <p>Prezzi in euro e zloty — oncia, grammo 24k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -241,6 +241,25 @@
     </div>
 
     <section class="card apart">
+      <strong style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
+      <p class="hint">Valore del contenuto d’oro alla quotazione attuale, senza premio numismatico o di rivendita.</p>
+      <div class="apart-wrap">
+        <table class="apart-tbl">
+          <thead>
+            <tr>
+              <th>Moneta</th>
+              <th>Caratura</th>
+              <th class="r">Lordo</th>
+              <th class="r">Netto Au</th>
+              <th class="r">Valore oro</th>
+            </tr>
+          </thead>
+          <tbody id="coinsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card apart">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
         <strong style="color:var(--gold-2)">Mennica Apart — 1 oz, spedizione 24h</strong>
         <button class="refresh-btn" id="apartBtn" type="button">Ricalcola Apart</button>
@@ -271,13 +290,27 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.7.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.9.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
   <script>
     const API = "https://biquote.io/api";
     const TROY_G = 31.1034768;
+    const COINS = [
+      { name: "Sterlina (Sovereign)", karat: "22 K — 916,7", gross: 7.98805, fine: 7.32238 },
+      { name: "Mezza sterlina", karat: "22 K — 916,7", gross: 3.99403, fine: 3.66119 },
+      { name: "20 Lire (Marengo)", karat: "21,6 K — 900", gross: 6.45161, fine: 5.80645 },
+      { name: "20 Marchi", karat: "21,6 K — 900", gross: 7.96500, fine: 7.16850 },
+      { name: "5 Dollari USA (Half Eagle)", karat: "21,6 K — 900", gross: 8.35900, fine: 7.52310 },
+      { name: "10 Dollari USA (Eagle)", karat: "21,6 K — 900", gross: 16.71800, fine: 15.04620 },
+      { name: "20 Dollari USA (Double Eagle)", karat: "21,6 K — 900", gross: 33.43600, fine: 30.09260 },
+      { name: "25 Dollari USA (Eagle 1/2 oz)", karat: "22 K — 916,7", gross: 16.96600, fine: 15.55170 },
+      { name: "50 Dollari USA (Eagle 1 oz)", karat: "22 K — 916,7", gross: 33.93100, fine: 31.10350 },
+      { name: "Krugerrand 1 oz", karat: "22 K — 916,7", gross: 33.93000, fine: 31.10350 },
+      { name: "Britannia 1 oz", karat: "24 K — 999,9", gross: 31.21000, fine: 31.10350 },
+      { name: "Filarmonica di Vienna 1 oz", karat: "24 K — 999,9", gross: 31.10300, fine: 31.10300 },
+    ];
     const K22 = 22 / 24;
     const K18 = 18 / 24;
     const K14 = 14 / 24;
@@ -296,6 +329,16 @@
       { name: "Krugerrand 1oz 2025/2026 (24h)", price: 16894, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-20252026r-24h/12" },
       { name: "American Eagle 1oz — annate miste (24h)", price: 17025, url: "https://mennica.apart.pl/produkt/amerykanski-orzel-1oz-rozne-roczniki-24h/248" },
     ];
+    function renderCoins(g24) {
+      document.getElementById("coinsBody").innerHTML = COINS.map(c => `
+        <tr>
+          <td style="font-family:Manrope,Inter,sans-serif;font-weight:600;color:var(--gold-2)">${c.name}</td>
+          <td>${c.karat}</td>
+          <td class="r">${fmt(c.gross, 3)} g</td>
+          <td class="r">${fmt(c.fine, 3)} g</td>
+          <td class="r">${money(g24 * c.fine)}</td>
+        </tr>`).join("");
+    }
     function pln(n, d = 2) {
       return fmt(n, d) + " zł";
     }
@@ -485,6 +528,7 @@
       document.getElementById("g18").textContent = money(g24 * K18);
       document.getElementById("g14").textContent = money(g24 * K14);
       document.getElementById("g9").textContent = money(g24 * K9);
+      renderCoins(g24);
       document.getElementById("xauusd").textContent = q.xauusd != null ? fmt(q.xauusd, 2) + " $" : "—";
       document.getElementById("eurusd").textContent = q.eurusd != null ? fmt(q.eurusd, 4) : "—";
       document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
