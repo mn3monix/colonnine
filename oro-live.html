@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.4.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.7.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -162,7 +162,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.4.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.7.0</span></h1>
         <p>Prezzi in euro e zloty — oncia, grammo 24k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -192,12 +192,15 @@
         <p class="hint" id="priceUnit" style="margin-top:6px">Oncia troy · oro 24k</p>
         <div class="meta">
           <div class="grams">
-            <div class="stat"><label>Grammo 24k</label><b id="g24">—</b></div>
-            <div class="stat k18"><label>Grammo 18k</label><b id="g18">—</b></div>
-            <div class="stat"><label>Grammo 14k</label><b id="g14">—</b></div>
-            <div class="stat"><label>Grammo 9k</label><b id="g9">—</b></div>
+            <div class="stat"><label>24 K — 999,9</label><b id="g24">—</b></div>
+            <div class="stat"><label>22 K — 916,7</label><b id="g22">—</b></div>
+            <div class="stat k18"><label>18 K — 750</label><b id="g18">—</b></div>
+            <div class="stat"><label>14 K — 585</label><b id="g14">—</b></div>
+            <div class="stat"><label>9 K — 375</label><b id="g9">—</b></div>
           </div>
           <div class="grams">
+            <div class="stat"><label>XAU / USD</label><b id="xauusd">—</b></div>
+            <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
             <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
             <div class="stat"><label>Mercato</label><b id="mkt">—</b></div>
             <div class="stat"><label>Aggiornato</label><b id="upd">—</b></div>
@@ -229,6 +232,10 @@
         <div class="stat" style="margin-top:8px">
           <label>Minimo ultimo mese</label>
           <b id="monthLow">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
+          <label>Distanza dal minimo del mese</label>
+          <b id="monthDist">—</b>
         </div>
       </section>
     </div>
@@ -262,15 +269,16 @@
 
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
-      Carati sul grammo: 18k = 18/24, 14k = 14/24, 9k = 9/24 del 24k.
+      Carati sul grammo: 22k = 916,7, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.4.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.7.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
   <script>
     const API = "https://biquote.io/api";
     const TROY_G = 31.1034768;
+    const K22 = 22 / 24;
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
@@ -436,6 +444,14 @@
       const month = monthRange(state.daily, day);
       document.getElementById("monthHigh").textContent = month.high != null ? money(month.high) : "—";
       document.getElementById("monthLow").textContent = month.low != null ? money(month.low) : "—";
+      if (month.low != null && day.price != null) {
+        const mFrom = day.price - month.low;
+        const mPct = month.low > 0 ? (mFrom / month.low) * 100 : 0;
+        document.getElementById("monthDist").textContent =
+          "+" + fmt(mPct, 2) + "%  ·  +" + money(mFrom);
+      } else {
+        document.getElementById("monthDist").textContent = "—";
+      }
     }
 
     function monthRange(daily, today) {
@@ -465,9 +481,12 @@
       chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
       chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
       document.getElementById("g24").textContent = money(g24);
+      document.getElementById("g22").textContent = money(g24 * K22);
       document.getElementById("g18").textContent = money(g24 * K18);
       document.getElementById("g14").textContent = money(g24 * K14);
       document.getElementById("g9").textContent = money(g24 * K9);
+      document.getElementById("xauusd").textContent = q.xauusd != null ? fmt(q.xauusd, 2) + " $" : "—";
+      document.getElementById("eurusd").textContent = q.eurusd != null ? fmt(q.eurusd, 4) : "—";
       document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
       document.getElementById("mkt").textContent = q.marketState === "open" ? "Aperto" : (q.marketState || "—");
       document.getElementById("upd").textContent = fmtDateTime(q.lastQuoteAt || q.timestamp);
@@ -520,10 +539,12 @@
     async function loadQuoteBiquote() {
       const gold = await getJSON(`${API}/${goldSymbol()}`);
       const epln = await getJSON(`${API}/EURPLN`);
+      const xauUsdQ = await getJSON(`${API}/XAUUSD`);
+      const eurUsdQ = await getJSON(`${API}/EURUSD`);
       const fxName = fxSymbol();
       let q;
       if (!fxName) {
-        q = { ...gold, symbol: "XAUEUR", eurpln: epln.mid };
+        q = { ...gold, symbol: "XAUEUR", eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid };
       } else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -537,6 +558,8 @@
           symbol: "XAUPLN",
           dayDiffPercent: gold.dayDiffPercent,
           eurpln: epln.mid,
+          xauusd: xauUsdQ.mid,
+          eurusd: eurUsdQ.mid,
         };
       }
       const closed = state.daily.filter(b => !b.isOpen);
@@ -556,11 +579,12 @@
       const [eur, usd, fx] = await Promise.all([
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
         getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
-        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD"),
       ]);
       const xauEur = Number(eur.symbols[0].price);
       const xauUsd = Number(usd.symbols[0].price);
       const eurpln = Number(fx.rates.PLN);
+      const eurusd = Number(fx.rates.USD);
       const ts = eur.symbols[0].computed_at;
       const mid = state.ccy === "PLN" ? xauEur * eurpln : xauEur;
       return {
@@ -574,6 +598,8 @@
         symbol: state.ccy === "PLN" ? "XAUPLN" : "XAUEUR",
         dayDiffPercent: 0,
         eurpln,
+        xauusd: xauUsd,
+        eurusd,
         _xauUsd: xauUsd,
       };
     }
