@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.8</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.9</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -143,7 +143,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.8</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.9</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -254,7 +254,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.8 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.9 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -297,7 +297,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.8";
+  const APP_VERSION = "1.9.9";
   const MIN_CHARGE_MIN = 10;
   const MAX_CHARGE_MIN = 25;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
@@ -2171,7 +2171,7 @@
     alt.plan.stops.forEach((s, si)=>{
       const n = si+1;
       const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
-      const offL = offsetBeside(alt.coords, s, 8, si%2 ? -1 : 1);
+      const offL = offsetBeside(alt.coords, s, 10, 1);
       const html = `<div class="charge-flag"><div class="k">${shortNet} ${n}</div><div class="v">${s.arriveSoc.toFixed(0)}% → ${Math.round(s.targetSoc)}% · ${fmtMin(s.chargeMin)}</div></div>`;
       const icon = L.divIcon({
         className: "",
@@ -2219,9 +2219,9 @@
       const tn = s.tempNow!=null ? Math.round(s.tempNow) : tp;
       const hh = s.passAt ? s.passAt.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "";
       const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}<span class="t">${tp!=null?tp+"°":""}</span></div>`;
-      const pos = offsetBeside(alt.coords, s, 11, -1);
+      const pos = offsetBeside(alt.coords, s, 20, -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
-      if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
+      if ((alt.plan.stops||[]).some(p => haversine(p, s) < 18 || haversine(p, pos) < 12)) return;
       const m = L.marker([pos.lat, pos.lng], {
         icon: L.divIcon({ className:"", html: fog?fogHtml:`<div class="wx-pin">${em}<span class="t">${tp!=null?tp+"°":""}</span></div>`, iconSize:[48,52], iconAnchor:[24,26] }),
         zIndexOffset: 180,
@@ -2327,7 +2327,7 @@
         fillColor:"#e31937", fillOpacity:0.22, strokeColor:"#e31937", strokeWeight:2, zIndex:199
       }));
       const shortNet = (s.net==="SUPERCHARGER"?"Tesla":s.net==="IONITY"?"Ionity":(s.net||"HPC"));
-      const off = offsetBeside(alt.coords, s, 8, si%2 ? -1 : 1);
+      const off = offsetBeside(alt.coords, s, 10, 1);
       state.gOverlays.push(new google.maps.Polyline({
         path:[{lat:s.lat,lng:s.lng},{lat:off.lat,lng:off.lng}],
         map:state.gmap, strokeColor:"#e8edf4", strokeOpacity:0.95, strokeWeight:2, zIndex:8
@@ -2375,9 +2375,9 @@
       const tp = s.tempPass!=null ? Math.round(s.tempPass) : (s.cur&&s.cur.temperature_2m!=null?Math.round(s.cur.temperature_2m):null);
       const tn = s.tempNow!=null ? Math.round(s.tempNow) : tp;
       const hh = s.passAt ? s.passAt.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "";
-      const pos = offsetBeside(alt.coords, s, 11, -1);
+      const pos = offsetBeside(alt.coords, s, 20, -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
-      if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
+      if ((alt.plan.stops||[]).some(p => haversine(p, s) < 18 || haversine(p, pos) < 12)) return;
       const pin = htmlPin(pos.lat, pos.lng, `<div class="wx-pin" title="Ora ${tn!=null?tn+"°":"—"} · passaggio ${hh} ${tp!=null?tp+"°":"—"}">${fog?"☁":em}<span class="t">${tp!=null?tp+"°":""}</span></div>`);
       state.gOverlays.push(pin);
     });
