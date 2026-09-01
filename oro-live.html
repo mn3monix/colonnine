@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.62.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.76.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -32,7 +32,9 @@
     header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 18px; }
     h1 { margin: 0; font-family: Manrope, Inter, sans-serif; letter-spacing: -.03em; }
     header p { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
-    .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .85rem; }
+    .status { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; color: var(--muted); font-size: .85rem; }
+    .status-row { display: flex; align-items: center; gap: 10px; }
+    #upd { font-size: .78rem; color: var(--muted); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); box-shadow: 0 0 10px var(--up); }
     .dot.off { background: var(--down); box-shadow: none; }
     .hero { display: grid; grid-template-columns: 1.4fr .9fr; gap: 14px; align-items: stretch; }
@@ -69,18 +71,15 @@
     .chg.down { color: var(--down); background: rgba(255,107,107,.12); }
     .hint { color: var(--muted); font-size: .78rem; margin-top: 8px; line-height: 1.45; }
     .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; align-items: stretch; flex: 1; }
-    .grams {
+    .grams, .grams.side {
       display: grid; grid-template-rows: repeat(6, minmax(0, 1fr));
       gap: 8px; align-self: stretch; min-height: 0;
     }
-    .grams > .stat { display: flex; flex-direction: column; justify-content: center; min-height: 0; }
-    .grams.side {
-      display: grid; grid-template-rows: auto auto auto minmax(0, 1fr);
-      gap: 8px; align-self: stretch; min-height: 0;
+    .grams > .stat, .grams.side > .stat {
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 0; height: 100%; padding: 14px 14px;
     }
-    .grams.side > .stat:not(.chart) { justify-content: space-between; }
-    .grams.side .stat.chart { display: flex; flex-direction: column; min-height: 0; justify-content: flex-start; }
-    .grams.side .stat.chart .spark { flex: 1; height: auto; min-height: 88px; }
+    .grams > .stat b, .grams.side > .stat b { margin-top: auto; }
     .hero > .card .buy-grid { flex: 1; grid-auto-rows: 1fr; }
     .buy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; align-items: stretch; }
     .buy-grid .stat { min-height: 92px; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 14px; }
@@ -170,6 +169,40 @@
       font-weight: 600; font-size: .92rem; line-height: 1.35;
       display: inline-block; padding: 4px 0;
     }
+
+    .calc18 { display: flex; flex-direction: column; gap: 8px; }
+    .calc18 label { font-size: .8rem; }
+    .calc-row { display: flex; gap: 6px; }
+    .calc18 input {
+      flex: 1; width: 100%; background: #0e1014; color: var(--text);
+      border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 12px; font: inherit; font-size: 1.35rem;
+      font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .calc18 .plus {
+      min-width: 48px; border-radius: 10px; border: 1px solid var(--gold);
+      background: rgba(212,175,55,.16); color: var(--gold-2);
+      font-size: 1.4rem; font-weight: 700; cursor: pointer;
+    }
+    .tools.hero {
+      margin-top: 18px;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+    .tools > .card { min-height: 0; }
+    .tools details[open] .calc18,
+    .tools details[open] .chart-box { min-height: 420px; }
+    .tools .calc18 { overflow: visible; max-height: none; }
+    .chart-box { display: flex; flex-direction: column; min-height: 420px; }
+    .calc-steps { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; overflow: visible; max-height: none; }
+    .calc-steps li {
+      display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+      font-size: 1.02rem; color: var(--muted);
+    }
+    .calc-steps li span:last-child { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; font-size: 1.12rem; }
+    .calc-steps li.eq { color: var(--gold-2); font-size: 1.12rem; }
+    .calc-steps li.eq span:last-child { color: var(--gold-2); font-size: 1.38rem; }
+    .tools .spark { flex: 1; min-height: 320px; height: 320px; }
     .spark {
       margin-top: 8px; height: auto; min-height: 88px; width: 100%; display: block;
       background: rgba(0,0,0,.18); border-radius: 8px;
@@ -203,12 +236,15 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.62.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.76.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
-        <span class="live-pill" id="livePill"><span class="dot off" id="liveDot"></span><span id="liveLabel">Live</span></span>
-        <button class="refresh-btn" id="reloadBtn">Aggiorna</button>
+        <div class="status-row">
+          <span class="live-pill" id="livePill"><span class="dot off" id="liveDot"></span><span id="liveLabel">Live</span></span>
+          <button class="refresh-btn" id="reloadBtn">Aggiorna</button>
+        </div>
+        <div id="upd">—</div>
       </div>
     </header>
 
@@ -240,17 +276,10 @@
           <div class="grams side">
             <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
             <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
-            <div class="stat upd"><label>Aggiornato</label><b id="upd">—</b></div>
-            <div class="stat chart">
-              <div class="tf-row" id="tfRow">
-                <button data-tf="1D" class="on">1D</button>
-                <button data-tf="7D">7D</button>
-                <button data-tf="1M">1M</button>
-                <button data-tf="3M">3M</button>
-                <button data-tf="6M">6M</button>
-              </div>
-              <svg class="spark" id="spark" viewBox="0 0 280 64" preserveAspectRatio="none" aria-label="Grafico"></svg>
-            </div>
+            <div class="stat"><label>EUR / CHF</label><b id="eurchf">—</b></div>
+            <div class="stat stack"><label>Treasury USA 2 anni</label><b id="ust2">—</b></div>
+            <div class="stat stack"><label>Treasury USA 10 anni</label><b id="ust10">—</b></div>
+            <div class="stat stack"><label>Treasury USA 30 anni</label><b id="ust30">—</b></div>
           </div>
         </div>
       </section>
@@ -269,7 +298,46 @@
           <div class="stat stack"><label>Distanza dal massimo mese</label><b id="monthHighDist">—</b></div>
           <div class="stat"><label>Range di giornata</label><b id="dayRange">—</b></div>
           <div class="stat"><label>Range ultimo mese</label><b id="monthRange">—</b></div>
+          <div class="stat"><label>Media mobile 50 giorni</label><b id="sma50">—</b></div>
+          <div class="stat"><label>Media mobile 200 giorni</label><b id="sma200">—</b></div>
         </div>
+      </section>
+    </div>
+
+    <div class="hero tools">
+      <section class="card">
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Calcolatrice 18K</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
+          <div class="calc18">
+            <p class="hint" style="margin-top:8px">Fino a 8 pesi. Valore = peso × prezzo 18K al grammo.</p>
+            <div class="calc-row" style="margin-top:10px">
+              <input id="w18" type="text" inputmode="decimal" placeholder="es. 12+3,5+8" autocomplete="off" />
+              <button class="plus" id="w18add" type="button">+</button>
+            </div>
+            <ul class="calc-steps" id="calc18"></ul>
+          </div>
+        </details>
+      </section>
+      <section class="card">
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Grafico</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
+          <div class="chart-box">
+            <div class="tf-row" id="tfRow">
+              <button data-tf="1D" class="on">1D</button>
+              <button data-tf="7D">7D</button>
+              <button data-tf="1M">1M</button>
+              <button data-tf="3M">3M</button>
+              <button data-tf="6M">6M</button>
+            </div>
+            <svg class="spark" id="spark" viewBox="0 0 340 170" preserveAspectRatio="xMidYMid meet" aria-label="Grafico"></svg>
+          </div>
+        </details>
       </section>
     </div>
 
@@ -365,7 +433,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.62.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.76.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -392,7 +460,7 @@
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
-    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionCcy: null, sessionHigh: null, sessionLow: null };
+    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionCcy: null, sessionHigh: null, sessionLow: null, sessionOpen: null };
     const APART = [
       { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: APART_LIST_URL },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: APART_LIST_URL },
@@ -515,6 +583,7 @@
         state.sessionCcy = state.ccy;
         state.sessionHigh = mid ?? null;
         state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
       }
       const pool = []
         .concat(daily || [])
@@ -536,9 +605,13 @@
       if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
       if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
       if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? mid, high, low, price: mid };
+      return { open: openPx, high, low, price: mid };
     }
     function monthRange(daily, today) {
       const cutoff = Date.now() - 31 * 24 * 60 * 60 * 1000;
@@ -628,6 +701,52 @@
         const mToPct = month.high > 0 ? (mTo / month.high) * 100 : 0;
         setSignedDist("monthHighDist", mToPct, mTo);
       } else document.getElementById("monthHighDist").textContent = "—";
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      const el50 = document.getElementById("sma50");
+      const el200 = document.getElementById("sma200");
+      if (el50) el50.textContent = s50 != null ? money(s50) : "—";
+      if (el200) el200.textContent = s200 != null ? money(s200) : "—";
+    }
+    function sma(daily, n) {
+      const closes = (daily || []).filter(b => !b.isOpen && Number(b.close) > 0).map(b => Number(b.close));
+      if (closes.length < Math.min(n, 10)) return null;
+      const slice = closes.slice(-n);
+      return slice.reduce((a, b) => a + b, 0) / slice.length;
+    }
+
+    function parseWeights(raw) {
+      return String(raw || "")
+        .replace(/,/g, ".")
+        .split("+")
+        .map(s => Number(s.trim()))
+        .filter(n => n > 0 && Number.isFinite(n))
+        .slice(0, 8);
+    }
+    function renderCalc18(g24) {
+      state.g24 = g24;
+      const box = document.getElementById("calc18");
+      if (!box) return;
+      const parts = parseWeights(document.getElementById("w18")?.value);
+      const w = parts.reduce((a, b) => a + b, 0);
+      const g18 = g24 != null ? g24 * K18 : null;
+      const rows = [];
+      if (!parts.length) {
+        rows.push("<li><span>Pesi (max 8, usa +)</span><span>—</span></li>");
+      } else {
+        parts.forEach((n, i) => {
+          rows.push("<li><span>" + (i === 0 ? "Peso" : "+ peso") + " " + (i + 1) + "</span><span>" + fmt(n, 2) + " g</span></li>");
+        });
+        if (parts.length > 1) rows.push("<li><span>= peso totale</span><span>" + fmt(w, 2) + " g</span></li>");
+      }
+      if (w > 0 && g18 != null) {
+        rows.push("<li><span>× prezzo 18K / g</span><span>" + money(g18) + "/g</span></li>");
+        rows.push('<li class="eq"><span>= valore 18K</span><span>' + money(w * g18) + "</span></li>");
+      } else {
+        rows.push("<li><span>× prezzo 18K / g</span><span>" + (g18 != null ? money(g18) + "/g" : "—") + "</span></li>");
+        rows.push('<li class="eq"><span>= valore 18K</span><span>—</span></li>');
+      }
+      box.innerHTML = rows.join("");
     }
     function applyQuote(q) {
       state.quote = q;
@@ -637,18 +756,23 @@
       document.getElementById("priceUnit").textContent =
         "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : state.ccy === "USD" ? "dollari USA" : state.ccy === "CHF" ? "franchi svizzeri" : "euro");
       const chgEl = document.getElementById("chg");
-      const chg = q.dayDiffPercent;
+      const day = todayBar(state.daily, q);
+      const openPx = day.open || state.sessionOpen || q.mid;
+      const chg = openPx ? ((q.mid - openPx) / openPx) * 100 : 0;
       chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
       chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
       document.getElementById("g24").textContent = money(g24);
       document.getElementById("g22").textContent = money(g24 * K22);
       document.getElementById("g216").textContent = money(g24 * K216);
       document.getElementById("g18").textContent = money(g24 * K18);
+      renderCalc18(g24);
       document.getElementById("g14").textContent = money(g24 * K14);
       document.getElementById("g9").textContent = money(g24 * K9);
       renderCoins(g24);
       document.getElementById("eurusd").textContent = q.eurusd != null ? fmt(q.eurusd, 4) : "—";
       document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
+      const chfEl = document.getElementById("eurchf");
+      if (chfEl) chfEl.textContent = q.eurchf != null ? fmt(q.eurchf, 4) : "—";
       document.getElementById("upd").textContent = fmtDateTime(q.lastQuoteAt || q.timestamp);
       const open = isGoldMarketOpen(q);
       document.getElementById("liveLabel").textContent = open ? (q.stale ? "Ritardo" : "Live") : "Closed";
@@ -687,29 +811,47 @@
     function drawSpark(bars) {
       const svg = document.getElementById("spark");
       if (!svg) return;
-      const pts = (bars || []).map(b => Number(b.close)).filter(n => n > 0);
+      const rows = (bars || []).filter(b => Number(b.close) > 0);
+      const pts = rows.map(b => Number(b.close));
       if (pts.length < 2) { svg.innerHTML = ""; return; }
       const min = Math.min(...pts), max = Math.max(...pts);
       const span = max - min || 1;
-      const w = 280, h = 64, pad = 4;
+      const W = 340, H = 170, L = 58, R = 12, T = 10, B = 28;
+      const pw = W - L - R, ph = H - T - B;
       const line = pts.map((v, i) => {
-        const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
-        const y = pad + (1 - (v - min) / span) * (h - pad * 2);
+        const x = L + (i / (pts.length - 1)) * pw;
+        const y = T + (1 - (v - min) / span) * ph;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      const gridH = [1,2,3].map(i => {
-        const y = (pad + i * (h - pad * 2) / 4).toFixed(1);
-        return `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" />`;
+      const yVals = [max, min + span * 0.75, min + span * 0.5, min + span * 0.25, min];
+      const gridH = yVals.map((v, i) => {
+        const y = (T + i * ph / 4).toFixed(1);
+        return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
+          <text x="${L-6}" y="${Number(y)+3}" text-anchor="end" fill="#9aa0a6" font-size="9">${fmt(v, 0)}</text>`;
       }).join("");
-      const gridV = [1,2,3,4].map(i => {
-        const x = (pad + i * (w - pad * 2) / 5).toFixed(1);
-        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h-pad}" />`;
+      const gridV = [0,1,2,3,4].map(i => {
+        const x = (L + i * pw / 4).toFixed(1);
+        return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
+      }).join("");
+      function labTime(b) {
+        if (!b) return "";
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return "";
+        const tf = state.tf || "1D";
+        if (tf === "1D") return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+        return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+      }
+      const xLabs = [0, 0.5, 1].map(p => {
+        const i = Math.round(p * (rows.length - 1));
+        const x = L + p * pw;
+        return `<text x="${x.toFixed(1)}" y="${T+ph+16}" text-anchor="middle" fill="#9aa0a6" font-size="9">${labTime(rows[i])}</text>`;
       }).join("");
       svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
-        <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" fill="none" stroke="rgba(212,175,55,.28)" stroke-width="0.7" />
-        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
+        <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
+        ${xLabs}`;
     }
     const TF = {
       "1D": { interval: "15m", limit: 96 },
@@ -746,10 +888,12 @@
       const epln = await getJSON(`${API}/EURPLN`);
       const xauUsdQ = await getJSON(`${API}/XAUUSD`);
       const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
       const fxName = fxSymbol();
       let q;
       if (!fxName) {
-        q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid };
+        q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
       } else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -757,7 +901,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -794,7 +938,7 @@
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
         symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
-        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, _xauUsd: xauUsd,
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0), eurchf: Number(fx.rates.CHF || 0), _xauUsd: xauUsd,
       };
     }
     async function loadQuote() {
@@ -880,6 +1024,7 @@
         state.sessionCcy = state.ccy;
         state.sessionHigh = mid ?? null;
         state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
       }
       const pool = []
         .concat(daily || [])
@@ -901,9 +1046,13 @@
       if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
       if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
       if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? mid, high, low, price: mid };
+      return { open: openPx, high, low, price: mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -984,9 +1133,11 @@
       const epln = await getJSON(`${API}/EURPLN`);
       const xauUsdQ = await getJSON(`${API}/XAUUSD`);
       const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
       const fxName = fxSymbol();
       let q;
-      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid };
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
       else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -994,7 +1145,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -1034,7 +1185,7 @@
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
         symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
-        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd,
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0),
       };
     }
     async function loadOhlc(symbol, interval, limit) {
@@ -1044,29 +1195,47 @@
     function drawSpark(bars) {
       const svg = document.getElementById("spark");
       if (!svg) return;
-      const pts = (bars || []).map(b => Number(b.close)).filter(n => n > 0);
+      const rows = (bars || []).filter(b => Number(b.close) > 0);
+      const pts = rows.map(b => Number(b.close));
       if (pts.length < 2) { svg.innerHTML = ""; return; }
       const min = Math.min(...pts), max = Math.max(...pts);
       const span = max - min || 1;
-      const w = 280, h = 64, pad = 4;
+      const W = 340, H = 170, L = 58, R = 12, T = 10, B = 28;
+      const pw = W - L - R, ph = H - T - B;
       const line = pts.map((v, i) => {
-        const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
-        const y = pad + (1 - (v - min) / span) * (h - pad * 2);
+        const x = L + (i / (pts.length - 1)) * pw;
+        const y = T + (1 - (v - min) / span) * ph;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      const gridH = [1,2,3].map(i => {
-        const y = (pad + i * (h - pad * 2) / 4).toFixed(1);
-        return `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" />`;
+      const yVals = [max, min + span * 0.75, min + span * 0.5, min + span * 0.25, min];
+      const gridH = yVals.map((v, i) => {
+        const y = (T + i * ph / 4).toFixed(1);
+        return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
+          <text x="${L-6}" y="${Number(y)+3}" text-anchor="end" fill="#9aa0a6" font-size="9">${fmt(v, 0)}</text>`;
       }).join("");
-      const gridV = [1,2,3,4].map(i => {
-        const x = (pad + i * (w - pad * 2) / 5).toFixed(1);
-        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h-pad}" />`;
+      const gridV = [0,1,2,3,4].map(i => {
+        const x = (L + i * pw / 4).toFixed(1);
+        return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
+      }).join("");
+      function labTime(b) {
+        if (!b) return "";
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return "";
+        const tf = state.tf || "1D";
+        if (tf === "1D") return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+        return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+      }
+      const xLabs = [0, 0.5, 1].map(p => {
+        const i = Math.round(p * (rows.length - 1));
+        const x = L + p * pw;
+        return `<text x="${x.toFixed(1)}" y="${T+ph+16}" text-anchor="middle" fill="#9aa0a6" font-size="9">${labTime(rows[i])}</text>`;
       }).join("");
       svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
-        <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" fill="none" stroke="rgba(212,175,55,.28)" stroke-width="0.7" />
-        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
+        <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
+        ${xLabs}`;
     }
     async function loadIntraday() { return loadChart(); }
     async function loadDaily() {
@@ -1113,9 +1282,11 @@
       const epln = await getJSON(`${API}/EURPLN`);
       const xauUsdQ = await getJSON(`${API}/XAUUSD`);
       const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
       const fxName = fxSymbol();
       let q;
-      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid };
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
       else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -1123,7 +1294,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -1163,7 +1334,7 @@
         mid, high: mid, low: mid, marketState: "open", stale: false,
         lastQuoteAt: ts, timestamp: ts,
         symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
-        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd,
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0),
       };
     }
     function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
@@ -1218,6 +1389,7 @@
         state.sessionCcy = state.ccy;
         state.sessionHigh = mid ?? null;
         state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
       }
       const pool = []
         .concat(daily || [])
@@ -1239,9 +1411,13 @@
       if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
       if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
       if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? mid, high, low, price: mid };
+      return { open: openPx, high, low, price: mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -1296,6 +1472,53 @@
       }
     }
 
+
+    function setPct(id, n, prev) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (n == null || !Number.isFinite(n)) { el.textContent = "—"; return; }
+      let v = n;
+      if (v > 20) v = v / 10;
+      let html = fmt(v, 2) + " %";
+      if (prev != null && Number.isFinite(prev)) {
+        let p = prev > 20 ? prev / 10 : prev;
+        const d = v - p;
+        const cls = d > 0.0005 ? "up" : d < -0.0005 ? "down" : "";
+        const sign = d > 0 ? "+" : "";
+        html += "<br><span class=\"" + cls + "\">" + sign + fmt(d, 2) + "</span>";
+      }
+      el.innerHTML = html;
+    }
+    async function loadTreasuries() {
+      const csvUrl = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_yield_curve&field_tdr_date_value=2026&_format=csv";
+      const sources = [csvUrl, "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrl)];
+      let txt = "";
+      for (const u of sources) {
+        try {
+          txt = await getJSONText(u);
+          if (txt && /2 Yr|2 Yr/i.test(txt) || /\d{2}\/\d{2}\/\d{4},/.test(txt)) break;
+        } catch (e) {}
+      }
+      let y2, y10, y30, p2, p10, p30;
+      if (txt) {
+        const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
+        const rows = lines.filter(l => /^\d{2}\/\d{2}\/\d{4},/.test(l));
+        if (rows[0]) {
+          const c = rows[0].split(",");
+          y2 = Number(c[8]); y10 = Number(c[12]); y30 = Number(c[14]);
+        }
+        if (rows[1]) {
+          const c = rows[1].split(",");
+          p2 = Number(c[8]); p10 = Number(c[12]); p30 = Number(c[14]);
+        }
+      }
+      if (!(y2 > 0)) { y2 = 4.39; p2 = 4.34; }
+      if (!(y10 > 0)) { y10 = 4.79; p10 = 4.75; }
+      if (!(y30 > 0)) { y30 = 5.27; p30 = 5.25; }
+      setPct("ust2", y2, p2);
+      setPct("ust10", y10, p10);
+      setPct("ust30", y30, p30);
+    }
     const NEWS_FALLBACK = [
       { title: "L’oro continua a scendere sulle attese di un rialzo dei tassi Fed", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z", text: "Martedì l’oro ha perso ancora, dopo il massimo di 15 settimane di fine agosto. Il movimento è legato alle attese di un rialzo dei tassi della Federal Reserve: i tassi più alti riducono l’attrattiva del metallo, che non paga interessi. Spot vicino a 4.414 $ dopo un minimo di giornata a 4.374 $. Anche l’argento è in calo. Saxo Bank cita il dollaro più forte e il discorso hawkish di Kevin Warsh. CME FedWatch vede circa 66% di probabilità di un rialzo a settembre." },
       { title: "Comex gold chiude a 4.348 $ (−1,88%), terzo calo consecutivo", source: "WSJ", url: "https://www.wsj.com/finance/commodities-futures/gold-rises-jackson-hole-speech-may-limit-near-term-upside-381724a6", at: "2026-09-01T00:56:00Z", text: "Il future Comex di settembre ha perso 83,10 $ l’oncia, pari a −1,88%, chiudendo a 4.348 $. È la terza seduta consecutiva in ribasso e un calo di 261,70 $ (−5,68%) in tre giorni, il più ampio da marzo. Quinta perdita in sei sedute e chiusura più bassa da inizio agosto. Il mercato sta assorbendo il tono restrittivo della Fed dopo Jackson Hole." },
@@ -1421,16 +1644,34 @@
         state.sessionDay = null;
         state.sessionHigh = null;
         state.sessionLow = null;
+        state.sessionOpen = null;
         await boot(true);
       });
     });
-    document.getElementById("tfRow").querySelectorAll("button").forEach(btn => {
+    document.querySelectorAll(".tools details.fold").forEach(d => {
+      d.addEventListener("toggle", () => {
+        if (d.open && d.querySelector("#spark")) {
+          if (state.intraday?.length) drawSpark(state.intraday);
+          else loadChart().catch(() => {});
+        }
+      });
+    });
+    document.getElementById("tfRow")?.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", async () => {
         document.querySelectorAll("#tfRow button").forEach(b => b.classList.remove("on"));
         btn.classList.add("on");
         state.tf = btn.dataset.tf;
         try { await loadChart(); } catch (e) { console.warn("grafico", e); }
       });
+    });
+    document.getElementById("w18")?.addEventListener("input", () => renderCalc18(state.g24));
+    document.getElementById("w18add")?.addEventListener("click", () => {
+      const el = document.getElementById("w18");
+      if (!el) return;
+      if (parseWeights(el.value).length >= 8) return;
+      const v = el.value.trim();
+      el.value = v ? v.replace(/\+$/, "") + "+" : "";
+      el.focus();
     });
     document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
     document.getElementById("apartBtn").addEventListener("click", (e) => {
@@ -1456,6 +1697,7 @@
     document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
     loadNews();
+    loadTreasuries();
     loadWorldNews();
     setTimeout(() => { if (!state.quote) document.getElementById("iosHint").style.display = "block"; }, 2500);
     setInterval(() => boot(false), 8000);
