@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.54.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.57.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -60,6 +60,7 @@
       padding: 6px 0; cursor: pointer; font: inherit; font-size: .72rem;
       font-weight: 600; letter-spacing: .04em; min-height: 32px;
     }
+
     .price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center; }
     .px { font-size: 3.05rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
     #priceUnit { text-align: center; }
@@ -202,7 +203,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.54.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.57.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -287,6 +288,22 @@
       </details>
     </section>
 
+    <section class="card apart" id="worldCard">
+      <details class="fold" open>
+        <summary>
+          <div class="fold-title">
+            <strong style="color:var(--gold-2)">Economia, materie prime e geopolitica</strong>
+            <p class="hint" id="worldMeta">Feed in caricamento…</p>
+          </div>
+          <span class="fold-actions">
+            <button class="refresh-btn" id="worldBtn" type="button">Aggiorna</button>
+            <span class="fold-btn"></span>
+          </span>
+        </summary>
+        <ul class="news-list" id="worldList"></ul>
+      </details>
+    </section>
+
     <section class="card apart">
       <details class="fold">
         <summary>
@@ -347,7 +364,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.54.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.57.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -1157,12 +1174,12 @@
       if (Number.isNaN(d.getTime())) return String(iso);
       return d.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     }
-    function renderNews(items, stamp, sourceNote) {
-      const list = document.getElementById("newsList");
-      const meta = document.getElementById("newsMeta");
+    function renderNews(items, stamp, sourceNote, listId, metaId, limit) {
+      const list = document.getElementById(listId || "newsList");
+      const meta = document.getElementById(metaId || "newsMeta");
       if (!list || !meta) return;
       meta.textContent = "Feed aggiornato: " + newsWhen(stamp) + (sourceNote ? " · " + sourceNote : "");
-      list.innerHTML = (items || []).slice(0, 10).map(n => {
+      list.innerHTML = (items || []).slice(0, limit || 10).map(n => {
         const when = newsWhen(n.at);
         const src = n.source ? n.source : "";
         const ex = escNews(n.text || "");
@@ -1206,15 +1223,49 @@
         return { title: clean, url: link, source, at: pub ? new Date(pub).toISOString() : "", text };
       }).filter(n => n.title);
     }
+
+    const WORLD_FALLBACK = [
+      { title: "Fed: dopo Jackson Hole sale al 66% la probabilità di un rialzo a settembre", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z", text: "Kevin Warsh ha detto che la Fed potrebbe avere ancora lavoro da fare se l’inflazione non torna al 2%. Le probabilità di un rialzo a settembre sono salite da circa 36% a 66%, a dicembre verso il 90%. Dollaro e rendimenti si sono irrigiditi, con effetto immediato su oro e altri asset senza rendimento." },
+      { title: "Treasury USA a 10 anni verso il 4,78%: pressione su bond e metalli", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:27:00Z", text: "Il rialzo dei rendimenti americani è il canale principale del sell-off. Un decennale più alto alza il costo opportunità di oro e azioni growth. Il mercato aspetta JOLTS, ADP e payrolls per capire se il movimento sui tassi continua." },
+      { title: "Settimana dei dati sul lavoro USA: JOLTS, ADP e nonfarm payrolls", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:10:00Z", text: "Gli investitori guardano la tenuta del mercato del lavoro. Un’occupazione ancora calda rinforza lo scenario di rialzo tassi; un raffreddamento riaprirebbe spazio a un pause della Fed. È il catalizzatore macro della settimana." },
+      { title: "Debito USA oltre i 40mila miliardi e buyback dei Treasury: torna il tema debasement", source: "IG", url: "https://www.ig.com/ae/news-and-trade-ideas/gold-still-up-10--in-august-despite-late-month-whiplash-260901", at: "2026-09-01T04:07:00Z", text: "A metà agosto il Tesoro ha annunciato di almeno raddoppiare i riacquisti di titoli lunghi. Il mercato ha letto la mossa come tentativo di contenere i rendimenti senza tagliare spesa o alzare tasse. È uno dei motivi del rally dell’oro in agosto, prima del dietrofront di Warsh." },
+      { title: "Petrolio nervoso: Hormuz e tensioni in Medio Oriente restano sul tavolo", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:12:00Z", text: "Il mercato energetico continua a prezzare il rischio sullo Stretto di Hormuz. A inizio agosto Trump aveva parlato di una possibile riapertura ravvicinata; a settembre il rischio geopolitico resta e sostiene i premi sul greggio, con effetti su inflazione e banche centrali." },
+      { title: "Rischio Iran e sanzioni: safe haven e petrolio si muovono insieme", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xau-usd-silver-price-forecast-hawkish-fed-meets-iran-risk-as-jobs-data-looms-1620988", at: "2026-09-01T05:58:00Z", text: "L’escalation delle sanzioni e delle tensioni con Teheran è il secondo motore, dopo la Fed, per oro e petrolio. Nel breve i tassi USA vincono; se la situazione militare peggiora, il bid da rifugio può tornare in fretta." },
+      { title: "Brent in rialzo sulla settimana mentre i metalli correggono", source: "Investing.com", url: "https://it.investing.com/commodities", at: "2026-09-01T16:52:00Z", text: "Il petrolio ha mostrato una tenuta migliore dell’oro nelle ultime sedute, con il Brent in recupero settimanale. La divergenza dice che il mercato distingue tra rischio inflazione energetica e repricing dei tassi. Rame e platino sono invece in calo insieme all’oro." },
+      { title: "Argento sotto pressione con l’oro: spot verso 65 $ l’oncia", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:20:00Z", text: "L’argento ha perso più del 2% in giornata, scendendo verso 65 $ dopo un minimo a 64,35 $. Segue l’oro nella correzione post Jackson Hole, ma resta più volatile. La domanda industriale non sta compensando il deflusso speculativo di queste ore." },
+      { title: "Dollaro più forte: DXY tiene dopo il discorso di Warsh", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xauusd-price-forecast-gold-waits-on-warsh-as-dollar-weakness-stalls-1619738", at: "2026-08-27T20:04:00Z", text: "Il dollaro ha smesso di indebolirsi in attesa e poi a seguito di Jackson Hole. Un DXY più fermo pesa su materie prime quotate in dollari e sugli emergenti. Finché i tassi USA restano prezzati al rialzo, il biglietto verde resta sostenuto." },
+      { title: "Inflazione USA: il 2% PCE resta il vincolo dichiarato da Warsh", source: "BullionVault", url: "https://oro.bullionvault.it/Prezzo-Oro.do", at: "2026-08-28T13:20:00Z", text: "A Jackson Hole Warsh ha escluso una forward guidance accomodante e ha legato ogni pausa a evidenze convincenti sul PCE verso il 2%. Il messaggio ha fatto scendere l’oro di decine di dollari in pochi minuti venerdì e guida ancora il posizionamento di inizio settembre." },
+      { title: "Banche centrali ancora nette acquirenti di oro nel 2026", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:30:00Z", text: "Nel primo trimestre gli acquisti ufficiali sono stati 244 tonnellate, il ritmo più alto da fine 2024. La Cina ha aggiunto almeno 8 tonnellate ad aprile. Il flusso strutturale resta un pavimento di medio periodo, anche se non ferma le correzioni tattiche." },
+      { title: "Cina e dazi: l’incertezza commerciale resta uno dei rischi globali", source: "DailyForex", url: "https://www.dailyforex.com/forex-technical-analysis/2026/08/gold-analysis-25-august-2026/249015", at: "2026-08-25T00:00:00Z", text: "Oltre a Iran e Fed, i mercati continuano a prezzare attriti commerciali con la Cina. È un fattore che sostiene domanda di riserve e oro da parte delle banche centrali emergenti, ma pesa su crescita e materie prime industriali come il rame." },
+      { title: "Oro ancora +7% sul mese nonostante il crollo di tre giorni", source: "Investing.com", url: "https://it.investing.com/commodities/gold-related-securities", at: "2026-09-01T15:03:00Z", text: "Il future dicembre perde l’1,6% in giornata ma sul mese resta in positivo di circa il 7%. La settimana è a −6%. Il quadro dice correzione violenta dentro un mese ancora costruttivo, non inversione strutturale da sola." },
+      { title: "Record di gennaio a 5.589 $: da lì l’oro ha perso oltre il 21%", source: "CBS News", url: "https://www.cbsnews.com/news/golds-price-down-by-over-21-percent-where-will-it-head-september-2026/", at: "2026-09-01T16:17:00Z", text: "Il massimo del 28 gennaio 2026 è il riferimento dell’anno. A 4.369 $ il drawdown è circa 22%. La discesa non è stata lineare: agosto aveva recuperato prima del sell-off di Warsh. Settembre si gioca su tassi e geopolitica." },
+      { title: "Spot europeo: oncia a circa 3.747 €, grammo a 120 €", source: "StoneX", url: "https://stonexbullion.com/it/grafici/prezzo-oro/", at: "2026-09-01T18:09:00Z", text: "In euro la giornata è pesante: −87 € sull’oncia, range 3.731–3.845 €. Il cambio EUR/USD sopra 1,15 attenua in parte il calo espresso in dollari. Per chi guarda il fisico in Europa conta questa quotazione, non solo XAU/USD." },
+      { title: "Stretto di Hormuz: ogni segnale su aperture o chiusure muove oil e inflazione", source: "IG", url: "https://www.ig.com/ae/news-and-trade-ideas/gold-still-up-10--in-august-despite-late-month-whiplash-260901", at: "2026-09-01T04:10:00Z", text: "Il 5 agosto Trump aveva detto che lo Stretto si sarebbe riaperto presto. Quel tono aveva raffreddato il petrolio e aiutato l’idea di una Fed meno aggressiva. Oggi quel canale geopolitico è di nuovo un rischio per i prezzi energetici globali." },
+      { title: "Politica fiscale USA: buyback sì, tagli di spesa no", source: "FOREX.com", url: "https://www.forex.com/en-us/news-and-analysis/gold-works-to-complete-strongest-month-in-18-years-4600-in-play/", at: "2026-08-26T15:59:00Z", text: "Il dibattito di fine agosto è stato sulla volontà del Tesoro di tenere bassi i rendimenti lunghi senza consolidamento fiscale. Per i mercati è il classico schema di dominanza fiscale: più debito, più intervento, più domanda di oro come assicurazione." },
+      { title: "Materie prime agricole miste mentre energia e metalli divergono", source: "Investing.com", url: "https://it.investing.com/commodities", at: "2026-09-01T16:53:00Z", text: "Il frumento ha recuperato in giornata, il cotone è in calo. Il complesso commodities non si muove in blocco: energia sostenuta dalla geopolitica, metalli preziosi colpiti dai tassi, agricoli più legati a clima e scorte. Serve leggere i singoli mercati." },
+      { title: "Platino e palladio: correzione più contenuta rispetto all’oro", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:11:00Z", text: "Il platino ha mostrato anche sedute in lieve rialzo mentre l’oro scendeva. Il palladio è rimasto più stabile. La domanda industriale (auto, idrogeno) li distingue dai preziosi puri e riduce la correlazione al solo tema Fed." },
+      { title: "Geopolitica e guerra: il premio al rischio resta, ma oggi vince la Fed", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xau-usd-silver-price-forecast-hawkish-fed-meets-iran-risk-as-jobs-data-looms-1620988", at: "2026-09-01T06:00:00Z", text: "Medio Oriente, Iran e rotte energetiche restano sullo sfondo. In una giornata normale basterebbero a sostenere oro e petrolio. L’1 settembre 2026 il mercato ha scelto il canale tassi: hawkish Fed, jobs data in arrivo, metalli in calo. Il rischio geopolitico non è sparito, è solo passato in secondo piano." }
+    ];
+    async function loadWorldNews() {
+      renderNews(WORLD_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026", "worldList", "worldMeta", 20);
+      const rss = "https://news.google.com/rss/search?q=economia+OR+petrolio+OR+geopolitica+OR+guerra+OR+Fed+OR+Iran+OR+Hormuz&hl=it&gl=IT&ceid=IT:it";
+      try {
+        const xml = await fetchNewsText(rss);
+        const items = parseRss(xml);
+        if (!items.length) return;
+        const withText = items.filter(n => n.text && n.text.length > 40);
+        renderNews((withText.length ? withText : items).slice(0, 20), new Date().toISOString(), "Google News", "worldList", "worldMeta", 20);
+      } catch (e) { console.warn("world news", e); }
+    }
     async function loadNews() {
-      renderNews(NEWS_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026");
+      renderNews(NEWS_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026", "newsList", "newsMeta", 10);
       const rss = "https://news.google.com/rss/search?q=oro+OR+gold+price+OR+XAUUSD&hl=it&gl=IT&ceid=IT:it";
       try {
         const xml = await fetchNewsText(rss);
         const items = parseRss(xml);
         if (!items.length) return;
         const withText = items.filter(n => n.text && n.text.length > 40);
-        renderNews(withText.length ? withText : items, new Date().toISOString(), "Google News");
+        renderNews(withText.length ? withText : items, new Date().toISOString(), "Google News", "newsList", "newsMeta", 10);
       } catch (e) {
         console.warn("news live", e);
       }
@@ -1245,11 +1296,18 @@
       e.preventDefault();
       e.stopPropagation();
       loadNews();
+    loadWorldNews();
+    });
+    document.getElementById("worldBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      loadWorldNews();
     });
 
     document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
     loadNews();
+    loadWorldNews();
     setTimeout(() => { if (!state.quote) document.getElementById("iosHint").style.display = "block"; }, 2500);
     setInterval(() => boot(false), 8000);
     setInterval(() => boot(true), 180000);
