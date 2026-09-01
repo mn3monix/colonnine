@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.4</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.5</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -141,7 +141,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.4</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.5</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -252,7 +252,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.4 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta min 10 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.5 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta min 10 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -295,7 +295,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.4";
+  const APP_VERSION = "1.9.5";
   const MIN_CHARGE_MIN = 10;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
   const CAR = {
@@ -2696,9 +2696,64 @@
     document.querySelectorAll(".pac-container").forEach(el => { el.style.display="none"; el.remove(); });
   }
   async function nominatimSuggest(q){
-    const url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&featuretype=settlement&countrycodes=it,fr,de,at,ch,pl,si,hr,sk,cz,nl,be,es,pt,hu,ro,dk,se,no,fi,gb,ie,lu,lt,lv,ee,bg,gr&q="+encodeURIComponent(q);
+    const url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=8&accept-language=it&countrycodes=it,ch,at,fr,de,si&q="+encodeURIComponent(q);
     const r = await fetch(url, { headers: { "Accept":"application/json" } });
     return r.json();
+  }
+  async function searchPlaces(q){
+    const out=[];
+    if (window.google && google.maps && google.maps.places && google.maps.places.AutocompleteService){
+      try {
+        const preds = await new Promise(resolve=>{
+          const svc = new google.maps.places.AutocompleteService();
+          svc.getPlacePredictions({
+            input: q,
+            componentRestrictions: { country: ["it","ch","at","fr","de"] }
+          }, (list, st) => resolve((st==="OK" && list) ? list : []));
+        });
+        for (const p of preds.slice(0,8)){
+          out.push({ label: p.description, placeId: p.place_id });
+        }
+        if (out.length) return out;
+      } catch(e){}
+    }
+    const queries = [q, q+" Italia"];
+    const seen=new Set();
+    for (const query of queries){
+      try {
+        const list = await nominatimSuggest(query);
+        for (const it of list||[]){
+          const lab = it.display_name;
+          if (seen.has(lab)) continue;
+          seen.add(lab);
+          out.push({ label: lab, lat: it.lat, lng: it.lon });
+        }
+        if (out.length>=5) break;
+      } catch(e){}
+    }
+    return out;
+  }
+  async function applyPlace(input, item){
+    if (item.placeId && window.google && google.maps && google.maps.places){
+      const node = state.gmap || document.createElement("div");
+      const svc = new google.maps.places.PlacesService(node);
+      const det = await new Promise(resolve=>{
+        svc.getDetails({ placeId: item.placeId, fields:["geometry","formatted_address","name"] }, (pl,st)=>resolve(st==="OK"?pl:null));
+      });
+      if (det && det.geometry && det.geometry.location){
+        input.value = det.formatted_address || det.name || item.label;
+        input.dataset.lat = det.geometry.location.lat();
+        input.dataset.lng = det.geometry.location.lng();
+        input.dataset.label = input.value;
+        input.dataset.lock = "1";
+        return;
+      }
+    }
+    input.value = item.label;
+    if (item.lat) input.dataset.lat = item.lat;
+    if (item.lng) input.dataset.lng = item.lng;
+    input.dataset.label = item.label;
+    input.dataset.lock = "1";
   }
   function hookSuggest(input, box){
     let t=null;
@@ -2711,21 +2766,19 @@
       delete input.dataset.lat; delete input.dataset.lng; delete input.dataset.label;
       clearTimeout(t);
       const q=input.value.trim();
-      if (q.length<3){ hideAllSuggests(); return; }
+      if (q.length<2){ hideAllSuggests(); return; }
       t=setTimeout(async ()=>{
         try{
-          const list = await nominatimSuggest(q);
-          if (!list.length){ box.style.display="none"; return; }
-          box.innerHTML = list.map(it=>`<button type="button" data-lat="${it.lat}" data-lng="${it.lon}">${it.display_name}</button>`).join("");
+          const list = await searchPlaces(q);
+          if (!list.length){ box.style.display="none"; box.innerHTML=""; return; }
+          box.innerHTML = list.map((it,i)=>`<button type="button" data-i="${i}">${it.label}</button>`).join("");
           box.style.display="block";
           box.querySelectorAll("button").forEach(btn=>{
             btn.onmousedown = ev => ev.preventDefault();
-            btn.onclick=()=>{
-              input.value = btn.textContent;
-              input.dataset.lat = btn.dataset.lat;
-              input.dataset.lng = btn.dataset.lng;
-              input.dataset.label = btn.textContent;
-              input.dataset.lock = "1";
+            btn.onclick=async ()=>{
+              const item = list[+btn.dataset.i];
+              if (!item) return;
+              await applyPlace(input, item);
               box.style.display="none";
               box.innerHTML="";
               hideAllSuggests();
@@ -2733,7 +2786,7 @@
             };
           });
         }catch(e){ box.style.display="none"; }
-      }, 320);
+      }, 220);
     });
     input.addEventListener("blur", ()=> setTimeout(hideAllSuggests, 180));
     input.addEventListener("keydown", ev => { if (ev.key==="Escape" || ev.key==="Enter") hideAllSuggests(); });
