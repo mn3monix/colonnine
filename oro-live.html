@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.35.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.36.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -159,7 +159,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.35.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.36.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -185,12 +185,12 @@
         <p class="hint" id="priceUnit" style="margin-top:6px">Oncia troy · oro 24k</p>
         <div class="meta">
           <div class="grams">
-            <div class="stat"><label>24 K — 999,9</label><b id="g24">—</b></div>
-            <div class="stat"><label>22 K — 916,7</label><b id="g22">—</b></div>
-            <div class="stat"><label>21,6 K — 900</label><b id="g216">—</b></div>
-            <div class="stat k18"><label>18 K — 750</label><b id="g18">—</b></div>
-            <div class="stat"><label>14 K — 585</label><b id="g14">—</b></div>
-            <div class="stat"><label>9 K — 375</label><b id="g9">—</b></div>
+            <div class="stat"><label>24K — 999,9</label><b id="g24">—</b></div>
+            <div class="stat"><label>22K — 916,7</label><b id="g22">—</b></div>
+            <div class="stat"><label>21,6K — 900</label><b id="g216">—</b></div>
+            <div class="stat k18"><label>18K — 750</label><b id="g18">—</b></div>
+            <div class="stat"><label>14K — 585</label><b id="g14">—</b></div>
+            <div class="stat"><label>9K — 375</label><b id="g9">—</b></div>
           </div>
           <div class="grams side">
             <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
@@ -282,7 +282,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.35.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.36.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -291,18 +291,18 @@
     const TROY_G = 31.1034768;
     const APART_LIST_URL = "https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h";
     const COINS = [
-      { name: "Sterlina (Sovereign)", karat: "22 K — 916,7", gross: 7.98805, fine: 7.32238 },
-      { name: "Mezza sterlina", karat: "22 K — 916,7", gross: 3.99403, fine: 3.66119 },
-      { name: "20 Lire (Marengo)", karat: "21,6 K — 900", gross: 6.45161, fine: 5.80645 },
-      { name: "20 Marchi", karat: "21,6 K — 900", gross: 7.96500, fine: 7.16850 },
-      { name: "5 Dollari USA (Half Eagle)", karat: "21,6 K — 900", gross: 8.35900, fine: 7.52310 },
-      { name: "10 Dollari USA (Eagle)", karat: "21,6 K — 900", gross: 16.71800, fine: 15.04620 },
-      { name: "20 Dollari USA (Double Eagle)", karat: "21,6 K — 900", gross: 33.43600, fine: 30.09260 },
-      { name: "25 Dollari USA (Eagle 1/2 oz)", karat: "22 K — 916,7", gross: 16.96600, fine: 15.55170 },
-      { name: "50 Dollari USA (Eagle 1 oz)", karat: "22 K — 916,7", gross: 33.93100, fine: 31.10350 },
-      { name: "Krugerrand 1 oz", karat: "22 K — 916,7", gross: 33.93000, fine: 31.10350 },
-      { name: "Britannia 1 oz", karat: "24 K — 999,9", gross: 31.21000, fine: 31.10350 },
-      { name: "Filarmonica di Vienna 1 oz", karat: "24 K — 999,9", gross: 31.10300, fine: 31.10300 },
+      { name: "Sterlina (Sovereign)", karat: "22K — 916,7", gross: 7.98805, fine: 7.32238 },
+      { name: "Mezza sterlina", karat: "22K — 916,7", gross: 3.99403, fine: 3.66119 },
+      { name: "20 Lire (Marengo)", karat: "21,6K — 900", gross: 6.45161, fine: 5.80645 },
+      { name: "20 Marchi", karat: "21,6K — 900", gross: 7.96500, fine: 7.16850 },
+      { name: "5 Dollari USA (Half Eagle)", karat: "21,6K — 900", gross: 8.35900, fine: 7.52310 },
+      { name: "10 Dollari USA (Eagle)", karat: "21,6K — 900", gross: 16.71800, fine: 15.04620 },
+      { name: "20 Dollari USA (Double Eagle)", karat: "21,6K — 900", gross: 33.43600, fine: 30.09260 },
+      { name: "25 Dollari USA (Eagle 1/2 oz)", karat: "22K — 916,7", gross: 16.96600, fine: 15.55170 },
+      { name: "50 Dollari USA (Eagle 1 oz)", karat: "22K — 916,7", gross: 33.93100, fine: 31.10350 },
+      { name: "Krugerrand 1 oz", karat: "22K — 916,7", gross: 33.93000, fine: 31.10350 },
+      { name: "Britannia 1 oz", karat: "24K — 999,9", gross: 31.21000, fine: 31.10350 },
+      { name: "Filarmonica di Vienna 1 oz", karat: "24K — 999,9", gross: 31.10300, fine: 31.10300 },
     ];
     const K22 = 22 / 24;
     const K216 = 21.6 / 24;
