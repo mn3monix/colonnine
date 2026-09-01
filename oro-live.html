@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.50.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.53.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -127,6 +127,17 @@
     }
     .fold-title { flex: 1; min-width: 0; text-align: left; }
     .fold-title .hint { margin: 4px 0 0; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .news-preview { margin: 8px 0 0; padding: 0; list-style: none; }
+    .news-preview li { margin: 0 0 10px; padding: 8px 0 0; color: var(--text); font-size: .88rem; line-height: 1.35; font-weight: 500; border-top: 1px solid rgba(212,175,55,.08); }
+    .news-preview li:first-child { border-top: 0; padding-top: 4px; }
+    .news-preview a { color: var(--text); text-decoration: none; display: block; }
+    .news-preview .t { color: var(--muted); font-size: .7rem; font-weight: 400; margin-left: 6px; }
+    .news-ex {
+      display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+      overflow: hidden; margin: 8px 0 0; color: #cfc6b0; font-size: .86rem;
+      font-weight: 400; line-height: 1.45; max-height: calc(1.45em * 5);
+    }
+    .news-list li { padding-bottom: 12px; }
     .fold-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto; }
     details.fold > summary::-webkit-details-marker { display: none; }
     .fold-btn {
@@ -191,7 +202,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.50.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.53.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -336,7 +347,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.50.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.53.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -1126,12 +1137,15 @@
     }
 
     const NEWS_FALLBACK = [
-      { title: "L’oro continua a scendere sulle attese di un rialzo dei tassi Fed", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z" },
-      { title: "Comex gold chiude a 4.348 $ (−1,88%), terzo calo consecutivo", source: "WSJ", url: "https://www.wsj.com/finance/commodities-futures/gold-rises-jackson-hole-speech-may-limit-near-term-upside-381724a6", at: "2026-09-01T00:56:00Z" },
-      { title: "XAU/USD sui minimi di 10 giorni: rendimenti USA e discorso Warsh a Jackson Hole", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:27:00Z" },
-      { title: "Oro in calo in attesa dei dati sul lavoro USA, focus anche sul Medio Oriente", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:10:00Z" },
-      { title: "Da gennaio l’oro è sotto di circa il 22% rispetto al picco: cosa può muovere settembre", source: "CBS News", url: "https://www.cbsnews.com/news/golds-price-down-by-over-21-percent-where-will-it-head-september-2026/", at: "2026-09-01T16:17:00Z" }
+      { title: "L’oro continua a scendere sulle attese di un rialzo dei tassi Fed", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z", text: "Martedì l’oro ha perso ancora, dopo il massimo di 15 settimane di fine agosto. Il movimento è legato alle attese di un rialzo dei tassi della Federal Reserve: i tassi più alti riducono l’attrattiva del metallo, che non paga interessi. Spot vicino a 4.414 $ dopo un minimo di giornata a 4.374 $. Anche l’argento è in calo. Saxo Bank cita il dollaro più forte e il discorso hawkish di Kevin Warsh. CME FedWatch vede circa 66% di probabilità di un rialzo a settembre." },
+      { title: "Comex gold chiude a 4.348 $ (−1,88%), terzo calo consecutivo", source: "WSJ", url: "https://www.wsj.com/finance/commodities-futures/gold-rises-jackson-hole-speech-may-limit-near-term-upside-381724a6", at: "2026-09-01T00:56:00Z", text: "Il future Comex di settembre ha perso 83,10 $ l’oncia, pari a −1,88%, chiudendo a 4.348 $. È la terza seduta consecutiva in ribasso e un calo di 261,70 $ (−5,68%) in tre giorni, il più ampio da marzo. Quinta perdita in sei sedute e chiusura più bassa da inizio agosto. Il mercato sta assorbendo il tono restrittivo della Fed dopo Jackson Hole." },
+      { title: "XAU/USD sui minimi di 10 giorni: rendimenti USA e discorso Warsh a Jackson Hole", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:27:00Z", text: "L’oro ha toccato un minimo di 10 giorni mentre i rendimenti USA salgono: il decennale è intorno al 4,78%. Il presidente Fed Kevin Warsh ha indicato che potrebbe servire altro lavoro sui tassi se l’inflazione non torna al 2%. Nel breve pesa il repricing dei tassi; nel medio restano gli acquisti delle banche centrali, 244 tonnellate nel primo trimestre. Supporti osservati verso 4.380 / 4.334 $." },
+      { title: "Oro in calo in attesa dei dati sul lavoro USA, focus anche sul Medio Oriente", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:10:00Z", text: "Lo spot è sceso dopo aver toccato i minimi dal 19 agosto. Questa settimana arrivano JOLTS, ADP e payrolls, dati che possono spostare le attese sulla Fed. I mercati assegnano circa 66% a un rialzo a settembre e quasi 90% entro dicembre. Restano sullo sfondo le tensioni in Medio Oriente, che in teoria sostengono il safe haven ma oggi restano secondarie rispetto ai tassi." },
+      { title: "Da gennaio l’oro è sotto di circa il 22% rispetto al picco: cosa può muovere settembre", source: "CBS News", url: "https://www.cbsnews.com/news/golds-price-down-by-over-21-percent-where-will-it-head-september-2026/", at: "2026-09-01T16:17:00Z", text: "Dopo il record di fine gennaio vicino a 5.589 $ l’oncia, a settembre l’oro è intorno a 4.369 $, circa −22% dal massimo. Il calo non è stato lineare: ad agosto c’è stato un rimbalzo poi invertito dal discorso di Warsh. A settembre i catalizzatori restano i tassi USA, i dati sul lavoro e l’inflazione. Su 12 mesi il metallo resta comunque in forte rialzo rispetto al 2025." }
     ];
+    function escNews(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
     function newsWhen(iso) {
       if (!iso) return "";
       const d = new Date(iso);
@@ -1143,10 +1157,11 @@
       const meta = document.getElementById("newsMeta");
       if (!list || !meta) return;
       meta.textContent = "Feed aggiornato: " + newsWhen(stamp) + (sourceNote ? " · " + sourceNote : "");
-      list.innerHTML = (items || []).slice(0, 8).map(n => {
+      list.innerHTML = (items || []).slice(0, 5).map(n => {
         const when = newsWhen(n.at);
         const src = n.source ? n.source : "";
-        return "<li><a href=\"" + (n.url || "#") + "\" target=\"_blank\" rel=\"noopener\">" + (n.title || "") + "</a><div class=\"meta-n\">" + [src, when].filter(Boolean).join(" · ") + "</div></li>";
+        const ex = escNews(n.text || "");
+        return '<li><a href="' + (n.url || "#") + '" target="_blank" rel="noopener">' + escNews(n.title) + "</a><div class=\"meta-n\">" + [src, when].filter(Boolean).join(" · ") + "</div>" + (ex ? '<div class="news-ex">' + ex + "</div>" : "") + "</li>";
       }).join("") || "<li><div class=\"meta-n\">Nessuna news disponibile.</div></li>";
     }
     async function fetchNewsText(url) {
@@ -1181,7 +1196,9 @@
         let clean = title;
         const dash = title.lastIndexOf(" - ");
         if (dash > 20) { source = source || title.slice(dash + 3); clean = title.slice(0, dash); }
-        return { title: clean, url: link, source, at: pub ? new Date(pub).toISOString() : "" };
+        const raw = it.querySelector("description")?.textContent || it.querySelector("content")?.textContent || "";
+        const text = raw.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+        return { title: clean, url: link, source, at: pub ? new Date(pub).toISOString() : "", text };
       }).filter(n => n.title);
     }
     async function loadNews() {
@@ -1191,7 +1208,8 @@
         const xml = await fetchNewsText(rss);
         const items = parseRss(xml);
         if (!items.length) return;
-        renderNews(items, new Date().toISOString(), "Google News");
+        const withText = items.filter(n => n.text && n.text.length > 40);
+        renderNews(withText.length ? withText : items, new Date().toISOString(), "Google News");
       } catch (e) {
         console.warn("news live", e);
       }
@@ -1223,6 +1241,7 @@
       e.stopPropagation();
       loadNews();
     });
+
     document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
     loadNews();
