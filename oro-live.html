@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.47.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.49.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -61,7 +61,7 @@
       font-weight: 600; letter-spacing: .04em; min-height: 32px;
     }
     .price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center; }
-    .px { font-size: 2.6rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .px { font-size: 3.05rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
     #priceUnit { text-align: center; }
     .chg { font-weight: 600; padding: 4px 8px; border-radius: 8px; }
     .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
@@ -88,7 +88,7 @@
       display: block; color: var(--muted); font-size: .72rem;
       letter-spacing: .08em; text-transform: uppercase;
     }
-    .stat b { display: block; margin-top: 4px; font-size: 1.42rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    .stat b { display: block; margin-top: 4px; font-size: 1.52rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
     .stat b.up, .stat b .up { color: var(--up); }
     .stat b.down, .stat b .down { color: var(--down); }
     .stat.upd { text-align: left; }
@@ -180,9 +180,9 @@
     .news-list .meta-n { color: var(--muted); font-size: .72rem; margin-top: 4px; }
     footer { color: var(--muted); font-size: .75rem; line-height: 1.5; margin-top: 18px; }
     @media (max-width: 820px) {
-      .px { font-size: 2rem; }
+      .px { font-size: 2.35rem; }
       .buy-level { font-size: 1.55rem; }
-      .stat b { font-size: 1.32rem; }
+      .stat b { font-size: 1.42rem; }
     }
   </style>
 </head>
@@ -190,7 +190,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.47.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.49.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -333,7 +333,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.47.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.49.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -1161,7 +1161,7 @@
     }
     async function getJSONText(url) {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 9000);
+      const t = setTimeout(() => ctrl.abort(), 4500);
       try {
         const r = await fetch(url, { signal: ctrl.signal });
         if (!r.ok) throw new Error("http " + r.status);
@@ -1182,14 +1182,15 @@
       }).filter(n => n.title);
     }
     async function loadNews() {
+      renderNews(NEWS_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026");
       const rss = "https://news.google.com/rss/search?q=oro+OR+gold+price+OR+XAUUSD&hl=it&gl=IT&ceid=IT:it";
       try {
         const xml = await fetchNewsText(rss);
         const items = parseRss(xml);
-        if (!items.length) throw new Error("vuoto");
+        if (!items.length) return;
         renderNews(items, new Date().toISOString(), "Google News");
       } catch (e) {
-        renderNews(NEWS_FALLBACK, new Date().toISOString(), "riepilogo (feed live non disponibile)");
+        console.warn("news live", e);
       }
     }
         document.querySelectorAll(".pair-tabs button").forEach(btn => {
@@ -1221,6 +1222,7 @@
     });
     document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
+    loadNews();
     setTimeout(() => { if (!state.quote) document.getElementById("iosHint").style.display = "block"; }, 2500);
     setInterval(() => boot(false), 8000);
     setInterval(() => boot(true), 180000);
