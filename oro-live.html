@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.76.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.85.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -55,7 +55,7 @@
       color: #1a1404; background: linear-gradient(180deg, var(--gold-2), var(--gold));
       border-color: transparent; font-weight: 600;
     }
-    .tf-row { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: space-between; margin-bottom: 6px; }
+    .tf-row { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: space-between; margin: 8px 0 0; width: 100%; }
     .tf-row button {
       flex: 1; background: transparent; color: var(--muted);
       border: 1px solid var(--line); border-radius: 999px;
@@ -186,15 +186,18 @@
     }
     .tools.hero {
       margin-top: 18px;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: .8fr 1.2fr;
       align-items: start;
     }
-    .tools > .card { min-height: 0; }
+    .tools > .card { min-height: 0; padding: 12px 14px; }
+    .tools details.fold > summary { gap: 8px; }
+    .tools .hint { margin-top: 4px !important; }
+    .tools .calc-row { margin-top: 8px !important; }
     .tools details[open] .calc18,
-    .tools details[open] .chart-box { min-height: 420px; }
-    .tools .calc18 { overflow: visible; max-height: none; }
-    .chart-box { display: flex; flex-direction: column; min-height: 420px; }
-    .calc-steps { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; overflow: visible; max-height: none; }
+    .tools details[open] .chart-box { min-height: 420px; height: 420px; }
+    .tools .calc18 { overflow: auto; max-height: 420px; }
+    .chart-box { display: flex; flex-direction: column; align-items: stretch; min-height: 420px; height: 420px; }
+    .calc-steps { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; overflow: visible; max-height: none; }
     .calc-steps li {
       display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
       font-size: 1.02rem; color: var(--muted);
@@ -202,7 +205,7 @@
     .calc-steps li span:last-child { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; font-size: 1.12rem; }
     .calc-steps li.eq { color: var(--gold-2); font-size: 1.12rem; }
     .calc-steps li.eq span:last-child { color: var(--gold-2); font-size: 1.38rem; }
-    .tools .spark { flex: 1; min-height: 320px; height: 320px; }
+    .tools .spark { flex: 1; width: 100%; min-height: 0; height: 100%; margin: 8px 0 0; }
     .spark {
       margin-top: 8px; height: auto; min-height: 88px; width: 100%; display: block;
       background: rgba(0,0,0,.18); border-radius: 8px;
@@ -236,7 +239,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.76.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.85.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -312,8 +315,8 @@
             <span class="fold-actions"><span class="fold-btn"></span></span>
           </summary>
           <div class="calc18">
-            <p class="hint" style="margin-top:8px">Fino a 8 pesi. Valore = peso × prezzo 18K al grammo.</p>
-            <div class="calc-row" style="margin-top:10px">
+            <p class="hint" style="margin-top:4px">Fino a 8 pesi. Valore = peso × prezzo 18K al grammo.</p>
+            <div class="calc-row" style="margin-top:8px">
               <input id="w18" type="text" inputmode="decimal" placeholder="es. 12+3,5+8" autocomplete="off" />
               <button class="plus" id="w18add" type="button">+</button>
             </div>
@@ -335,7 +338,7 @@
               <button data-tf="3M">3M</button>
               <button data-tf="6M">6M</button>
             </div>
-            <svg class="spark" id="spark" viewBox="0 0 340 170" preserveAspectRatio="xMidYMid meet" aria-label="Grafico"></svg>
+            <svg class="spark" id="spark" viewBox="0 0 560 280" preserveAspectRatio="none" aria-label="Grafico"></svg>
           </div>
         </details>
       </section>
@@ -433,7 +436,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.76.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.85.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -816,7 +819,7 @@
       if (pts.length < 2) { svg.innerHTML = ""; return; }
       const min = Math.min(...pts), max = Math.max(...pts);
       const span = max - min || 1;
-      const W = 340, H = 170, L = 58, R = 12, T = 10, B = 28;
+      const W = 560, H = 280, L = 8, R = 52, T = 6, B = 22;
       const pw = W - L - R, ph = H - T - B;
       const line = pts.map((v, i) => {
         const x = L + (i / (pts.length - 1)) * pw;
@@ -829,7 +832,7 @@
       const gridH = yVals.map((v, i) => {
         const y = (T + i * ph / 4).toFixed(1);
         return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
-          <text x="${L-6}" y="${Number(y)+3}" text-anchor="end" fill="#9aa0a6" font-size="9">${fmt(v, 0)}</text>`;
+          <text x="${W-R+6}" y="${Number(y)+3}" text-anchor="start" fill="#9aa0a6" font-size="10">${fmt(v, 0)}</text>`;
       }).join("");
       const gridV = [0,1,2,3,4].map(i => {
         const x = (L + i * pw / 4).toFixed(1);
@@ -1200,7 +1203,7 @@
       if (pts.length < 2) { svg.innerHTML = ""; return; }
       const min = Math.min(...pts), max = Math.max(...pts);
       const span = max - min || 1;
-      const W = 340, H = 170, L = 58, R = 12, T = 10, B = 28;
+      const W = 560, H = 280, L = 8, R = 52, T = 6, B = 22;
       const pw = W - L - R, ph = H - T - B;
       const line = pts.map((v, i) => {
         const x = L + (i / (pts.length - 1)) * pw;
@@ -1213,7 +1216,7 @@
       const gridH = yVals.map((v, i) => {
         const y = (T + i * ph / 4).toFixed(1);
         return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
-          <text x="${L-6}" y="${Number(y)+3}" text-anchor="end" fill="#9aa0a6" font-size="9">${fmt(v, 0)}</text>`;
+          <text x="${W-R+6}" y="${Number(y)+3}" text-anchor="start" fill="#9aa0a6" font-size="10">${fmt(v, 0)}</text>`;
       }).join("");
       const gridV = [0,1,2,3,4].map(i => {
         const x = (L + i * pw / 4).toFixed(1);
