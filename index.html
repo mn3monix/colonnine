@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.8.26</title>
+  <title>Model Y AWD 2026 — Route Planner v1.8.27</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -140,7 +140,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.8.26</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.8.27</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -252,7 +252,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.8.26 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
+      <div class="hint">v1.8.27 · FRVCP. Autostrada 115 km/h fissi. Altre strade al limite.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -295,7 +295,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.8.26";
+  const APP_VERSION = "1.8.27";
   /* ===== Vehicle Model Y AWD 2026 ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026",
@@ -1570,13 +1570,13 @@
   async function extraChargers(pathCoords){
     const keys = loadKeys();
     let extra=[];
-    const samples = samplePath(pathCoords, 70).pts.slice(0, 14);
+    const samples = samplePath(pathCoords, 40).pts.slice(0, 22);
     const allowed = allOperatorNets();
 
     async function ocmAt(p){
       const params = new URLSearchParams({
         output:"json", maxresults:"40", compact:"true", verbose:"false",
-        latitude:String(p.lat), longitude:String(p.lng), distance:"35",
+        latitude:String(p.lat), longitude:String(p.lng), distance:"45",
         distanceunit:"KM", minpowerkw:"100"
       });
       if (keys.o) params.set("key", keys.o);
@@ -1596,7 +1596,7 @@
       return out;
     }
 
-    const ocmPts = [samples[0], samples[Math.floor(samples.length/2)], samples[samples.length-1]].filter(Boolean);
+    const ocmPts = samples.filter((_,i)=> i%2===0).slice(0,8);
     for (const p of ocmPts){
       try { extra.push(...await ocmAt(p)); } catch(e){ console.warn("OCM", e); }
     }
@@ -1794,8 +1794,9 @@
           for (const tgt of targets){
             if (tgt <= leg.arrive + 1) continue;
             const cmin = chargeMinutes(leg.arrive, tgt, to.kw || 250);
+            const plug = (to.kw||250) >= 240 ? 6 : 9;
             leave[j].push({
-              soc: tgt, time: tArr + cmin, prev: i, prevSt: st,
+              soc: tgt, time: tArr + cmin + plug, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
               arrive: leg.arrive, target: tgt, cons: leg.cons, dkm,
               kwhAdd: battKwh() * (tgt - leg.arrive) / 100 / 0.95
