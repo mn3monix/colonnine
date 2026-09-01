@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.10.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.19.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -86,7 +86,11 @@
     .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
     .chg.down { color: var(--down); background: rgba(255,107,107,.12); }
     .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
-    .grams { display: flex; flex-direction: column; gap: 8px; }
+    .grams { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+    .grams.side .stat.chart {
+      flex: 1; display: flex; flex-direction: column; min-height: 0;
+    }
+    .grams.side .stat.chart .spark { flex: 1; height: auto; min-height: 88px; }
     .stat { background: var(--bg-3); border-radius: 12px; padding: 10px 12px; }
     .stat label {
       display: block; color: var(--muted); font-size: .72rem;
@@ -124,7 +128,7 @@
     .badge.wait { color: var(--gold-2); background: rgba(212,175,55,.12); }
     .badge.high { color: var(--down); background: rgba(255,107,107,.12); }
     .apart { margin-top: 14px; }
-    table.apart-tbl { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    table.apart-tbl { width: 100%; border-collapse: collapse; font-size: .86rem; font-family: Manrope, Inter, sans-serif; }
     table.apart-tbl th {
       text-align: left; color: var(--muted); font-size: .68rem;
       letter-spacing: .08em; text-transform: uppercase; font-weight: 600;
@@ -134,13 +138,18 @@
       padding: 8px; border-bottom: 1px solid rgba(212,175,55,.08);
       font-variant-numeric: tabular-nums; vertical-align: top;
     }
-    table.apart-tbl tr:first-child td { color: var(--up); }
     table.apart-tbl td.r { text-align: right; }
+    #apartBody tr:first-child td { color: var(--up); }
+    #apartBody tr:first-child a { color: var(--up); }
     table.apart-tbl a {
       color: var(--gold-2); text-decoration: none;
       font-family: Manrope, Inter, sans-serif;
       font-weight: 600; font-size: .92rem; line-height: 1.35;
       display: inline-block; padding: 4px 0;
+    }
+    .spark {
+      margin-top: 8px; height: 72px; width: 100%; display: block;
+      background: rgba(0,0,0,.18); border-radius: 8px;
     }
     .apart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     footer { margin-top: 18px; color: var(--muted); font-size: .75rem; line-height: 1.5; }
@@ -162,8 +171,8 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.10.0</span></h1>
-        <p>Prezzi in euro e zloty — oncia, grammo 24k / 18k / 14k / 9k</p>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.19.0</span></h1>
+        <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
         <span class="dot" id="liveDot"></span>
@@ -195,15 +204,20 @@
           <div class="grams">
             <div class="stat"><label>24 K — 999,9</label><b id="g24">—</b></div>
             <div class="stat"><label>22 K — 916,7</label><b id="g22">—</b></div>
+            <div class="stat"><label>21,6 K — 900</label><b id="g216">—</b></div>
             <div class="stat k18"><label>18 K — 750</label><b id="g18">—</b></div>
             <div class="stat"><label>14 K — 585</label><b id="g14">—</b></div>
             <div class="stat"><label>9 K — 375</label><b id="g9">—</b></div>
           </div>
-          <div class="grams">
+          <div class="grams side">
             <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
             <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
             <div class="stat"><label>Mercato</label><b id="mkt">—</b></div>
             <div class="stat"><label>Aggiornato</label><b id="upd">—</b></div>
+            <div class="stat chart">
+              <label>Grafico giornata</label>
+              <svg class="spark" id="spark" viewBox="0 0 280 64" preserveAspectRatio="none" aria-label="Grafico giornata"></svg>
+            </div>
           </div>
         </div>
       </section>
@@ -288,9 +302,9 @@
 
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
-      Carati sul grammo: 22k = 916,7, 18k = 750, 14k = 585, 9k = 375.
+      Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.10.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.19.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -312,6 +326,7 @@
       { name: "Filarmonica di Vienna 1 oz", karat: "24 K — 999,9", gross: 31.10300, fine: 31.10300 },
     ];
     const K22 = 22 / 24;
+    const K216 = 21.6 / 24;
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
@@ -527,6 +542,7 @@
       chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
       document.getElementById("g24").textContent = money(g24);
       document.getElementById("g22").textContent = money(g24 * K22);
+      document.getElementById("g216").textContent = money(g24 * K216);
       document.getElementById("g18").textContent = money(g24 * K18);
       document.getElementById("g14").textContent = money(g24 * K14);
       document.getElementById("g9").textContent = money(g24 * K9);
@@ -539,6 +555,11 @@
         (q.stale ? "Dati in ritardo · " : "Live · ") + q.symbol;
       document.getElementById("liveDot").classList.toggle("off", !!q.stale);
       renderBuy(todayBar(state.daily, q));
+      if (state.intraday?.length && q.mid) {
+        const last = state.intraday[state.intraday.length - 1];
+        if (last) last.close = q.mid;
+        drawSpark(state.intraday);
+      }
     }
 
     function multiplyBars(goldBars, fxBars) {
@@ -572,6 +593,35 @@
     async function loadOhlc(symbol, interval, limit) {
       const data = await getJSON(`${API}/${symbol}/ohlc?interval=${interval}&limit=${limit}`);
       return data.bars || [];
+    }
+
+    function drawSpark(bars) {
+      const svg = document.getElementById("spark");
+      if (!svg) return;
+      const pts = (bars || []).map(b => Number(b.close)).filter(n => n > 0);
+      if (pts.length < 2) {
+        svg.innerHTML = "";
+        return;
+      }
+      const min = Math.min(...pts), max = Math.max(...pts);
+      const span = max - min || 1;
+      const w = 280, h = 64, pad = 4;
+      const line = pts.map((v, i) => {
+        const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+        const y = pad + (1 - (v - min) / span) * (h - pad * 2);
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+      const up = pts[pts.length - 1] >= pts[0];
+      const col = up ? "#3dd68c" : "#ff6b6b";
+      svg.innerHTML = `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />`;
+    }
+
+    async function loadIntraday() {
+      const gold = await loadOhlc(goldSymbol(), "15m", 48);
+      const fx = fxSymbol();
+      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "15m", 48)) : gold;
+      state.intraday = series.slice().reverse();
+      drawSpark(state.intraday);
     }
 
     async function loadDaily() {
@@ -670,6 +720,10 @@
         if (full) {
           try { await loadDaily(); }
           catch (e) { console.warn("storico non disponibile", e); }
+          try { await loadIntraday(); }
+          catch (e) { console.warn("intraday non disponibile", e); }
+        } else if (state.intraday?.length) {
+          drawSpark(state.intraday);
         }
         await loadQuote();
       } catch (e) {
