@@ -8,6 +8,8 @@
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
   <title>Oro Live v1.4.0 — Prezzo e livello di acquisto</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -91,6 +93,13 @@
       letter-spacing: .08em; text-transform: uppercase;
     }
     .stat b { display: block; margin-top: 4px; font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .stat.k18 {
+      border: 1.5px solid var(--gold);
+      box-shadow: 0 0 0 1px rgba(212,175,55,.25), 0 0 18px rgba(212,175,55,.18);
+      background: linear-gradient(180deg, rgba(212,175,55,.14), var(--bg-3));
+    }
+    .stat.k18 label { color: var(--gold-2); }
+    .stat.k18 b { color: var(--gold-2); font-size: 1.18rem; }
     .pair-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
     .pair-tabs button, .refresh-btn {
       background: transparent; color: var(--muted);
@@ -184,7 +193,7 @@
         <div class="meta">
           <div class="grams">
             <div class="stat"><label>Grammo 24k</label><b id="g24">—</b></div>
-            <div class="stat"><label>Grammo 18k</label><b id="g18">—</b></div>
+            <div class="stat k18"><label>Grammo 18k</label><b id="g18">—</b></div>
             <div class="stat"><label>Grammo 14k</label><b id="g14">—</b></div>
             <div class="stat"><label>Grammo 9k</label><b id="g9">—</b></div>
           </div>
@@ -202,16 +211,24 @@
         <div class="buy-level" id="buyPrice">—</div>
         <p class="hint" id="buyHint" style="margin-top:0">In attesa dei dati di giornata.</p>
         <div class="stat" style="margin-top:12px">
-          <label>Minimo di giornata</label>
-          <b id="dayLow">—</b>
-        </div>
-        <div class="stat" style="margin-top:8px">
           <label>Massimo di giornata</label>
           <b id="dayHigh">—</b>
         </div>
         <div class="stat" style="margin-top:8px">
+          <label>Minimo di giornata</label>
+          <b id="dayLow">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
           <label>Distanza dal minimo di giornata</label>
           <b id="buyDist">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
+          <label>Massimo ultimo mese</label>
+          <b id="monthHigh">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
+          <label>Minimo ultimo mese</label>
+          <b id="monthLow">—</b>
         </div>
       </section>
     </div>
@@ -416,6 +433,24 @@
       const fromLowPct = day.low > 0 ? (fromLow / day.low) * 100 : 0;
       document.getElementById("buyDist").textContent =
         "+" + fmt(fromLowPct, 2) + "%  ·  +" + money(fromLow);
+      const month = monthRange(state.daily, day);
+      document.getElementById("monthHigh").textContent = month.high != null ? money(month.high) : "—";
+      document.getElementById("monthLow").textContent = month.low != null ? money(month.low) : "—";
+    }
+
+    function monthRange(daily, today) {
+      const cutoff = Date.now() - 31 * 24 * 60 * 60 * 1000;
+      let bars = (daily || []).filter(b => {
+        const t = new Date(b.openTime || b.time || 0).getTime();
+        return t && !Number.isNaN(t) && t >= cutoff;
+      });
+      if (!bars.length && daily?.length) bars = daily.slice(-22);
+      let high = today?.high, low = today?.low;
+      bars.forEach(b => {
+        if (b.high != null) high = high == null ? b.high : Math.max(high, b.high);
+        if (b.low != null) low = low == null ? b.low : Math.min(low, b.low);
+      });
+      return { high, low };
     }
 
     function applyQuote(q) {
