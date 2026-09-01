@@ -1,1 +1,615 @@
-<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>Oro Live</title></head><body><p>Caricamento versione completa in corso. Apri index se presente.</p></body></html>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0c0e" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Oro Live — Prezzo e livello di acquisto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0c0e;
+      --bg-3: #1a1d22;
+      --gold: #d4af37;
+      --gold-2: #f0d78c;
+      --text: #ece8dc;
+      --muted: #9a9484;
+      --up: #3dd68c;
+      --down: #ff6b6b;
+      --line: rgba(212, 175, 55, 0.18);
+      --card: rgba(18, 20, 24, 0.86);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(212,175,55,.12), transparent 50%),
+        radial-gradient(900px 500px at 110% 10%, rgba(212,175,55,.07), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    .wrap {
+      max-width: 980px; margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+               max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    }
+    header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+    }
+    .brand h1 {
+      font-size: 1.85rem; font-weight: 700; letter-spacing: -.03em;
+      color: var(--gold-2); line-height: 1;
+    }
+    .brand p { color: var(--muted); margin-top: 6px; font-size: .92rem; }
+    .status { display: flex; align-items: center; gap: 10px; font-size: .82rem; color: var(--muted); }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold); box-shadow: 0 0 10px var(--gold);
+      animation: pulse 1.6s infinite;
+    }
+    .dot.off { background: #666; box-shadow: none; animation: none; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .hero { display: grid; grid-template-columns: 1.15fr .95fr; gap: 14px; }
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; }
+      .px { font-size: 1.85rem; }
+      .buy-level { font-size: 1.55rem; }
+      .meta { grid-template-columns: 1fr; }
+      header { align-items: flex-start; }
+      .status { width: 100%; flex-wrap: wrap; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+    .price-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    .px {
+      font-size: 2.45rem; font-weight: 700; letter-spacing: -.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .chg { font-size: 1.05rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+    .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
+    .chg.down { color: var(--down); background: rgba(255,107,107,.12); }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+    .grams { display: flex; flex-direction: column; gap: 8px; }
+    .stat { background: var(--bg-3); border-radius: 12px; padding: 10px 12px; }
+    .stat label {
+      display: block; color: var(--muted); font-size: .72rem;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .stat b { display: block; margin-top: 4px; font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .pair-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .pair-tabs button, .refresh-btn {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 10px 16px; cursor: pointer; font: inherit; font-size: .9rem;
+      min-height: 44px; touch-action: manipulation;
+    }
+    .pair-tabs button.on {
+      color: #1a1404; background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      border-color: transparent; font-weight: 600;
+    }
+    .hint { color: var(--muted); font-size: .78rem; margin-top: 8px; line-height: 1.45; }
+    .buy-level {
+      font-size: 2rem; font-weight: 700; letter-spacing: -.03em;
+      color: var(--gold-2); font-variant-numeric: tabular-nums; margin: 8px 0 6px;
+    }
+    .badge {
+      display: inline-block; font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; font-weight: 600; padding: 4px 8px; border-radius: 6px;
+    }
+    .badge.ok { color: var(--up); background: rgba(61,214,140,.12); }
+    .badge.wait { color: var(--gold-2); background: rgba(212,175,55,.12); }
+    .badge.high { color: var(--down); background: rgba(255,107,107,.12); }
+    .apart { margin-top: 14px; }
+    table.apart-tbl { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    table.apart-tbl th {
+      text-align: left; color: var(--muted); font-size: .68rem;
+      letter-spacing: .08em; text-transform: uppercase; font-weight: 600;
+      padding: 6px 8px; border-bottom: 1px solid var(--line);
+    }
+    table.apart-tbl td {
+      padding: 8px; border-bottom: 1px solid rgba(212,175,55,.08);
+      font-variant-numeric: tabular-nums; vertical-align: top;
+    }
+    table.apart-tbl tr:first-child td { color: var(--up); }
+    table.apart-tbl td.r { text-align: right; }
+    table.apart-tbl a {
+      color: var(--gold-2); text-decoration: none;
+      font-family: Manrope, Inter, sans-serif;
+      font-weight: 600; font-size: .92rem; line-height: 1.35;
+      display: inline-block; padding: 4px 0;
+    }
+    .apart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    footer { margin-top: 18px; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+    .err, .ios-hint {
+      border-radius: 10px; margin-bottom: 12px; padding: 10px 12px;
+      font-size: .86rem; line-height: 1.45;
+    }
+    .err {
+      color: var(--down); background: rgba(255,107,107,.1);
+      border: 1px solid rgba(255,107,107,.25); display: none;
+    }
+    .ios-hint {
+      color: var(--gold-2); background: rgba(212,175,55,.1);
+      border: 1px solid var(--line); display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Oro Live</h1>
+        <p>Prezzi in euro e zloty — oncia, grammo 24k / 18k / 14k / 9k</p>
+      </div>
+      <div class="status">
+        <span class="dot" id="liveDot"></span>
+        <span id="liveLabel">Connessione in corso…</span>
+        <button class="refresh-btn" id="reloadBtn">Aggiorna</button>
+      </div>
+    </header>
+
+    <div class="err" id="errBox"></div>
+    <div class="ios-hint" id="iosHint">
+      Su iPhone l’anteprima File blocca i prezzi live. Tocca l’icona Condividi
+      (quadrato con freccia) in basso e scegli <b>Apri in Safari</b>.
+      Poi lascia questa pagina aperta in Safari.
+    </div>
+
+    <div class="hero">
+      <section class="card">
+        <div class="pair-tabs">
+          <button data-ccy="PLN">XAU / PLN</button>
+          <button class="on" data-ccy="EUR">XAU / EUR</button>
+        </div>
+        <div class="price-row">
+          <div class="px" id="price">—</div>
+          <div class="chg" id="chg">—</div>
+        </div>
+        <p class="hint" id="priceUnit" style="margin-top:6px">Oncia troy · oro 24k</p>
+        <div class="meta">
+          <div class="grams">
+            <div class="stat"><label>Grammo 24k</label><b id="g24">—</b></div>
+            <div class="stat"><label>Grammo 18k</label><b id="g18">—</b></div>
+            <div class="stat"><label>Grammo 14k</label><b id="g14">—</b></div>
+            <div class="stat"><label>Grammo 9k</label><b id="g9">—</b></div>
+          </div>
+          <div class="grams">
+            <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
+            <div class="stat"><label>Mercato</label><b id="mkt">—</b></div>
+            <div class="stat"><label>Aggiornato</label><b id="upd">—</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <strong style="color:var(--gold-2)">Livello di acquisto</strong>
+        <div id="buyBadge" class="badge wait" style="margin-top:10px">Calcolo…</div>
+        <div class="buy-level" id="buyPrice">—</div>
+        <p class="hint" id="buyHint" style="margin-top:0">In attesa dei dati di giornata.</p>
+        <div class="stat" style="margin-top:12px">
+          <label>Minimo di giornata</label>
+          <b id="dayLow">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
+          <label>Massimo di giornata</label>
+          <b id="dayHigh">—</b>
+        </div>
+        <div class="stat" style="margin-top:8px">
+          <label>Distanza dal minimo di giornata</label>
+          <b id="buyDist">—</b>
+        </div>
+      </section>
+    </div>
+
+    <section class="card apart">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+        <strong style="color:var(--gold-2)">Mennica Apart — 1 oz, spedizione 24h</strong>
+        <button class="refresh-btn" id="apartBtn" type="button">Aggiorna Apart</button>
+      </div>
+      <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
+      <div class="stat" style="margin:12px 0">
+        <label>Spot 1 oz in PLN (live)</label>
+        <b id="spotPln">—</b>
+      </div>
+      <div class="apart-wrap">
+        <table class="apart-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Moneta</th>
+              <th class="r">Prezzo Apart</th>
+              <th class="r">Spread zł</th>
+              <th class="r">Spread %</th>
+            </tr>
+          </thead>
+          <tbody id="apartBody"></tbody>
+        </table>
+      </div>
+      <p class="hint">Listino Apart rilevato il 01/09/2026 alle 12:55. Lo spread si ricalcola sul prezzo spot live. Il sito Apart blocca le letture automatiche, quindi il listino non è tick-by-tick. Fonte: mennica.apart.pl</p>
+    </section>
+
+    <footer>
+      Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
+      Carati sul grammo: 18k = 18/24, 14k = 14/24, 9k = 9/24 del 24k.
+      1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
+      Non è un consiglio di investimento.
+    </footer>
+  </div>
+
+  <script>
+    const API = "https://biquote.io/api";
+    const TROY_G = 31.1034768;
+    const K18 = 18 / 24;
+    const K14 = 14 / 24;
+    const K9 = 9 / 24;
+    const state = { ccy: "EUR", daily: [], quote: null, spotPln: null };
+    const APART = [
+      { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-rozne-roczniki-24h/170" },
+      { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/britannia-1oz-rozne-roczniki-24h/13" },
+      { name: "Kangur australiano 1oz 2025/2026 (24h)", price: 16779, url: "https://mennica.apart.pl/produkt/australijski-kangur-1oz-20252026r-24h/10" },
+      { name: "Britannia 1oz 2025/2026 (24h)", price: 16796, url: "https://mennica.apart.pl/produkt/britannia-1oz-20252026r-24h/133" },
+      { name: "Maple Leaf 1oz — annate miste (24h)", price: 16829, url: "https://mennica.apart.pl/produkt/kanadyjski-lisc-klonowy-1oz-rozne-roczniki-24h/202" },
+      { name: "Filarmonica Vienna 1oz — annate miste (24h)", price: 16861, url: "https://mennica.apart.pl/produkt/filharmonik-wiedenski-1oz-rozne-roczniki-24h/246" },
+      { name: "Filarmonica Vienna 1oz 2025/2026 (24h)", price: 16878, url: "https://mennica.apart.pl/produkt/filharmonik-wiedenski-1oz-20252026r-24h/9" },
+      { name: "Maple Leaf 1oz 2025/2026 (24h)", price: 16878, url: "https://mennica.apart.pl/produkt/kanadyjski-lisc-klonowy-1oz-20252026r-24h/8" },
+      { name: "Krugerrand 1oz 2025/2026 (24h)", price: 16894, url: "https://mennica.apart.pl/produkt/krugerrand-1oz-20252026r-24h/12" },
+      { name: "American Eagle 1oz — annate miste (24h)", price: 17025, url: "https://mennica.apart.pl/produkt/amerykanski-orzel-1oz-rozne-roczniki-24h/248" },
+    ];
+    function pln(n, d = 2) {
+      return fmt(n, d) + " zł";
+    }
+    function renderApart(spot) {
+      state.spotPln = spot;
+      const now = new Date().toLocaleString("it-IT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
+      document.getElementById("apartMeta").textContent =
+        "Spread ricalcolato " + now + " · listino Apart 01/09/2026 12:55";
+      document.getElementById("spotPln").textContent = spot ? pln(spot) : "—";
+      const rows = APART.map(p => {
+        const spread = p.price - spot;
+        const pct = spot ? (spread / spot) * 100 : 0;
+        return { ...p, spread, pct };
+      }).sort((a, b) => a.price - b.price);
+      document.getElementById("apartBody").innerHTML = rows.map((p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><a href="${p.url}" target="_blank" rel="noopener">${p.name}</a></td>
+          <td class="r">${pln(p.price, 0)}</td>
+          <td class="r">${spreadSign(p.spread)}</td>
+          <td class="r">${(p.pct >= 0 ? "+" : "") + fmt(p.pct, 2)}%</td>
+        </tr>`).join("");
+    }
+    function spreadSign(n) {
+      return (n >= 0 ? "+" : "") + pln(n);
+    }
+
+    function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : null; }
+
+    function fmt(n, d = 2) {
+      if (n == null || Number.isNaN(n)) return "—";
+      return Number(n).toLocaleString("it-IT", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+        useGrouping: true,
+      });
+    }
+    function money(n, d = 2) {
+      const num = fmt(n, d);
+      return state.ccy === "PLN" ? num + " zł" : num + " €";
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleString("it-IT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
+    }
+    function showErr(msg) {
+      const box = document.getElementById("errBox");
+      if (!msg) { box.style.display = "none"; box.textContent = ""; return; }
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+    async function getJSON(url, ms = 8000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally {
+        clearTimeout(t);
+      }
+    }
+    async function firstOk(jobs) {
+      let last = null;
+      for (const job of jobs) {
+        try { return await job(); }
+        catch (e) { last = e; }
+      }
+      throw last || new Error("nessuna fonte");
+    }
+
+    function todayBar(daily, quote) {
+      const last = daily[daily.length - 1];
+      const high = Math.max(quote.high ?? 0, last?.high ?? 0, quote.mid);
+      const low = Math.min(quote.low ?? Infinity, last?.low ?? Infinity, quote.mid);
+      return {
+        open: last?.open ?? quote.mid,
+        high,
+        low: Number.isFinite(low) ? low : quote.mid,
+        price: quote.mid,
+      };
+    }
+
+    /* Livello di acquisto sulla seduta odierna.
+       1) Media di sessione = (apertura + massimo + minimo) / 3
+       2) Zona sconto = minimo + 23,6% del range del giorno
+       Se il prezzo è già nella parte bassa del range, la zona è attiva.
+       Se è sopra la media di sessione, si attende un rientro su quella media. */
+    function bestBuy(day) {
+      const { open, high, low, price } = day;
+      const range = high - low;
+      if (!range || range <= 0) {
+        return {
+          level: price,
+          status: "wait",
+          label: "Dati insufficienti",
+          hint: "Range di giornata ancora troppo stretto per un livello affidabile.",
+        };
+      }
+      const pos = (price - low) / range;
+      const sessionMean = (open + high + low) / 3;
+      const discount = low + range * 0.236;
+      const mid = (high + low) / 2;
+
+      let level, status, label, hint;
+      if (pos <= 0.28) {
+        level = price;
+        status = "ok";
+        label = "Zona di acquisto attiva";
+        hint = "Il prezzo è nella parte bassa della giornata (vicino al minimo di seduta). Quotazione corrente favorevole rispetto al range odierno.";
+      } else if (price > sessionMean) {
+        level = sessionMean;
+        status = pos >= 0.72 ? "high" : "wait";
+        label = pos >= 0.72 ? "Parte alta della seduta" : "Attendi ritracciamento";
+        hint = "Il prezzo è sopra la media di sessione (apertura + max + min) / 3. Livello di acquisto: rientro su quella media.";
+      } else {
+        level = Math.min(discount, mid);
+        status = "wait";
+        label = "Attendi sconto di giornata";
+        hint = "Prezzo sotto la media ma non ancora sul minimo. Livello di acquisto: zona sconto a circa il 24% del range dal minimo odierno.";
+      }
+      return { level, status, label, hint, pos, sessionMean, discount, range };
+    }
+
+    function renderBuy(day) {
+      const buy = bestBuy(day);
+      const badge = document.getElementById("buyBadge");
+      badge.className = "badge " + buy.status;
+      badge.textContent = buy.label;
+      document.getElementById("buyPrice").textContent = money(buy.level);
+      document.getElementById("buyHint").textContent = buy.hint;
+      document.getElementById("dayLow").textContent = money(day.low);
+      document.getElementById("dayHigh").textContent = money(day.high);
+      const fromLow = day.price - day.low;
+      const fromLowPct = day.low > 0 ? (fromLow / day.low) * 100 : 0;
+      document.getElementById("buyDist").textContent =
+        "+" + fmt(fromLowPct, 2) + "%  ·  +" + money(fromLow);
+    }
+
+    function applyQuote(q) {
+      state.quote = q;
+      const mid = q.mid;
+      const g24 = mid / TROY_G;
+      document.getElementById("price").textContent = money(mid);
+      document.getElementById("priceUnit").textContent =
+        "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : "euro");
+      const chgEl = document.getElementById("chg");
+      const chg = q.dayDiffPercent;
+      chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
+      chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
+      document.getElementById("g24").textContent = money(g24);
+      document.getElementById("g18").textContent = money(g24 * K18);
+      document.getElementById("g14").textContent = money(g24 * K14);
+      document.getElementById("g9").textContent = money(g24 * K9);
+      document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
+      document.getElementById("mkt").textContent = q.marketState === "open" ? "Aperto" : (q.marketState || "—");
+      document.getElementById("upd").textContent = fmtDateTime(q.lastQuoteAt || q.timestamp);
+      document.getElementById("liveLabel").textContent =
+        (q.stale ? "Dati in ritardo · " : "Live · ") + q.symbol;
+      document.getElementById("liveDot").classList.toggle("off", !!q.stale);
+      renderBuy(todayBar(state.daily, q));
+    }
+
+    function multiplyBars(goldBars, fxBars) {
+      const fxMap = new Map();
+      (fxBars || []).forEach(b => fxMap.set(b.openTime, b));
+      const times = [...fxMap.keys()].sort();
+      function nearestFx(t) {
+        if (fxMap.has(t)) return fxMap.get(t);
+        let best = null, bestDt = Infinity;
+        for (const ft of times) {
+          const dt = Math.abs(new Date(ft) - new Date(t));
+          if (dt < bestDt) { bestDt = dt; best = fxMap.get(ft); }
+        }
+        return best;
+      }
+      return goldBars.map(g => {
+        const fx = nearestFx(g.openTime);
+        if (!fx) return null;
+        const m = fx.close;
+        return {
+          openTime: g.openTime,
+          open: g.open * (fx.open || m),
+          high: g.high * (fx.high || m),
+          low: g.low * (fx.low || m),
+          close: g.close * m,
+          isOpen: g.isOpen,
+        };
+      }).filter(Boolean);
+    }
+
+    async function loadOhlc(symbol, interval, limit) {
+      const data = await getJSON(`${API}/${symbol}/ohlc?interval=${interval}&limit=${limit}`);
+      return data.bars || [];
+    }
+
+    async function loadDaily() {
+      const gold = await loadOhlc(goldSymbol(), "1d", 80);
+      const fx = fxSymbol();
+      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "1d", 80)) : gold;
+      state.daily = series.slice().reverse();
+    }
+
+    async function loadQuoteBiquote() {
+      const gold = await getJSON(`${API}/${goldSymbol()}`);
+      const epln = await getJSON(`${API}/EURPLN`);
+      const fxName = fxSymbol();
+      let q;
+      if (!fxName) {
+        q = { ...gold, symbol: "XAUEUR", eurpln: epln.mid };
+      } else {
+        const fx = await getJSON(`${API}/${fxName}`);
+        q = {
+          mid: gold.mid * fx.mid,
+          high: gold.high * fx.high,
+          low: gold.low * fx.low,
+          marketState: gold.marketState,
+          stale: gold.stale || fx.stale,
+          lastQuoteAt: gold.lastQuoteAt || gold.timestamp,
+          timestamp: gold.timestamp,
+          symbol: "XAUPLN",
+          dayDiffPercent: gold.dayDiffPercent,
+          eurpln: epln.mid,
+        };
+      }
+      const closed = state.daily.filter(b => !b.isOpen);
+      if (closed.length >= 1) {
+        const prev = closed[closed.length - 1].close;
+        q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
+        const today = state.daily[state.daily.length - 1];
+        if (today) {
+          q.high = Math.max(today.high || q.mid, q.mid);
+          q.low = Math.min(today.low || q.mid, q.mid);
+        }
+      }
+      return q;
+    }
+
+    async function loadQuoteFallback() {
+      const [eur, usd, fx] = await Promise.all([
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN"),
+      ]);
+      const xauEur = Number(eur.symbols[0].price);
+      const xauUsd = Number(usd.symbols[0].price);
+      const eurpln = Number(fx.rates.PLN);
+      const ts = eur.symbols[0].computed_at;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : xauEur;
+      return {
+        mid,
+        high: mid,
+        low: mid,
+        marketState: "open",
+        stale: false,
+        lastQuoteAt: ts,
+        timestamp: ts,
+        symbol: state.ccy === "PLN" ? "XAUPLN" : "XAUEUR",
+        dayDiffPercent: 0,
+        eurpln,
+        _xauUsd: xauUsd,
+      };
+    }
+
+    async function loadQuote() {
+      const q = await firstOk([loadQuoteBiquote, loadQuoteFallback]);
+      applyQuote(q);
+      document.getElementById("iosHint").style.display = "none";
+      try {
+        const xau = await getJSON(`${API}/XAUUSD`);
+        const usdpln = await getJSON(`${API}/USDPLN`);
+        renderApart(xau.mid * usdpln.mid);
+      } catch (e) {
+        if (q.eurpln && q.symbol === "XAUEUR") renderApart(q.mid * q.eurpln);
+        else if (q._xauUsd && q.eurpln) renderApart(q.mid);
+        else if (state.ccy === "PLN") renderApart(q.mid);
+      }
+    }
+
+    async function boot(full = true) {
+      try {
+        showErr("");
+        if (full) {
+          try { await loadDaily(); }
+          catch (e) { console.warn("storico non disponibile", e); }
+        }
+        await loadQuote();
+      } catch (e) {
+        console.error(e);
+        document.getElementById("iosHint").style.display = "block";
+        showErr("Dati non arrivati. Su iPhone apri il file in Safari (Condividi → Apri in Safari), non nell’anteprima File. (" + (e.name === "AbortError" ? "timeout" : e.message) + ")");
+        document.getElementById("liveDot").classList.add("off");
+        document.getElementById("liveLabel").textContent = "Offline";
+      }
+    }
+
+    document.querySelectorAll(".pair-tabs button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll(".pair-tabs button").forEach(b => b.classList.remove("on"));
+        btn.classList.add("on");
+        state.ccy = btn.dataset.ccy;
+        await boot(true);
+      });
+    });
+    document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
+    async function refreshApart() {
+      const btn = document.getElementById("apartBtn");
+      btn.disabled = true;
+      btn.textContent = "Aggiorno…";
+      try {
+        const xau = await getJSON(`${API}/XAUUSD`);
+        const usdpln = await getJSON(`${API}/USDPLN`);
+        renderApart(xau.mid * usdpln.mid);
+      } catch (e) {
+        if (state.quote) {
+          const q = state.quote;
+          if (state.ccy === "PLN") renderApart(q.mid);
+          else if (q.eurpln) renderApart(q.mid * q.eurpln);
+        }
+        document.getElementById("apartMeta").textContent =
+          "Spot non aggiornato (" + (e.message || "errore") + "). Spreads sul ultimo prezzo disponibile.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Aggiorna Apart";
+      }
+    }
+    document.getElementById("apartBtn").addEventListener("click", refreshApart);
+    boot(true);
+    setTimeout(() => {
+      if (!state.quote) document.getElementById("iosHint").style.display = "block";
+    }, 2500);
+    setInterval(() => boot(false), 8000);
+    setInterval(() => boot(true), 180000);
+  </script>
+</body>
+</html>
