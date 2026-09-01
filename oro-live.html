@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.23.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.24.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -193,7 +193,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.23.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.24.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -335,8 +335,8 @@
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
-      1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.23.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      1 oncia troy = 31,1034768 g. Il livello di acquisto usa i supporti di giornata, di ieri e del mese.
+      App v1.24.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -479,49 +479,67 @@
       };
     }
 
-    /* Livello di acquisto sulla seduta odierna.
-       1) Media di sessione = (apertura + massimo + minimo) / 3
-       2) Zona sconto = minimo + 23,6% del range del giorno
-       Se il prezzo è già nella parte bassa del range, la zona è attiva.
-       Se è sopra la media di sessione, si attende un rientro su quella media. */
-    function bestBuy(day) {
-      const { open, high, low, price } = day;
-      const range = high - low;
-      if (!range || range <= 0) {
+    function supportLevels(daily, day) {
+      const month = monthRange(daily, day);
+      const closed = (daily || []).filter(b => !b.isOpen);
+      const prev = closed.length ? closed[closed.length - 1] : null;
+      const levels = [];
+      if (day?.low) levels.push({ name: "minimo di giornata", value: day.low });
+      if (month.low) levels.push({ name: "minimo del mese", value: month.low });
+      if (prev) {
+        const P = (prev.high + prev.low + prev.close) / 3;
+        levels.push({ name: "supporto S1", value: 2 * P - prev.high });
+        levels.push({ name: "supporto S2", value: P - (prev.high - prev.low) });
+        levels.push({ name: "minimo di ieri", value: prev.low });
+      }
+      if (month.high && month.low && month.high > month.low) {
+        const mr = month.high - month.low;
+        levels.push({ name: "ritracciamento 38,2% mese", value: month.high - mr * 0.382 });
+        levels.push({ name: "ritracciamento 61,8% mese", value: month.high - mr * 0.618 });
+      }
+      return levels.filter(l => l.value > 0);
+    }
+
+    function bestBuy(day, daily) {
+      const price = day.price;
+      const levels = supportLevels(daily, day);
+      if (!levels.length) {
         return {
-          level: price,
+          level: day.low || price,
           status: "wait",
           label: "Dati insufficienti",
-          hint: "Range di giornata ancora troppo stretto per un livello affidabile.",
+          hint: "Ancora pochi dati per calcolare i supporti.",
         };
       }
-      const pos = (price - low) / range;
-      const sessionMean = (open + high + low) / 3;
-      const discount = low + range * 0.236;
-      const mid = (high + low) / 2;
-
-      let level, status, label, hint;
-      if (pos <= 0.28) {
-        level = price;
-        status = "ok";
-        label = "Zona di acquisto attiva";
-        hint = "Il prezzo è nella parte bassa della giornata (vicino al minimo di seduta). Quotazione corrente favorevole rispetto al range odierno.";
-      } else if (price > sessionMean) {
-        level = sessionMean;
-        status = pos >= 0.72 ? "high" : "wait";
-        label = pos >= 0.72 ? "Parte alta della seduta" : "Attendi ritracciamento";
-        hint = "Il prezzo è sopra la media di sessione (apertura + max + min) / 3. Livello di acquisto: rientro su quella media.";
-      } else {
-        level = Math.min(discount, mid);
-        status = "wait";
-        label = "Attendi sconto di giornata";
-        hint = "Prezzo sotto la media ma non ancora sul minimo. Livello di acquisto: zona sconto a circa il 24% del range dal minimo odierno.";
+      const below = levels.filter(l => l.value <= price * 1.0015).sort((a, b) => b.value - a.value);
+      const target = below[0] || levels.slice().sort((a, b) => b.value - a.value)[0];
+      const distPct = ((price - target.value) / target.value) * 100;
+      if (distPct <= 0.25 && target.value <= price * 1.0015) {
+        return {
+          level: target.value,
+          status: "ok",
+          label: "Sul supporto",
+          hint: "Il prezzo è sul supporto (" + target.name + "). Zona di acquisto attiva.",
+        };
       }
-      return { level, status, label, hint, pos, sessionMean, discount, range };
+      if (distPct > 1.2) {
+        return {
+          level: target.value,
+          status: "high",
+          label: "Lontano dal supporto",
+          hint: "Livello di acquisto sul supporto più vicino sotto il prezzo: " + target.name + ".",
+        };
+      }
+      return {
+        level: target.value,
+        status: "wait",
+        label: "Attendi il supporto",
+        hint: "Livello di acquisto: " + target.name + ". Aspetta un rientro su quel livello.",
+      };
     }
 
     function renderBuy(day) {
-      const buy = bestBuy(day);
+      const buy = bestBuy(day, state.daily);
       const badge = document.getElementById("buyBadge");
       badge.className = "badge " + buy.status;
       badge.textContent = buy.label;
