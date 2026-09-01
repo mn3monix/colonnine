@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.61.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.62.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -62,7 +62,7 @@
     }
 
     .price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center; }
-    .px { font-size: 3.05rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .px { font-size: 3.05rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
     #priceUnit { text-align: center; }
     .chg { font-weight: 600; padding: 4px 8px; border-radius: 8px; }
     .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
@@ -89,7 +89,7 @@
       display: block; color: var(--muted); font-size: .72rem;
       letter-spacing: .08em; text-transform: uppercase;
     }
-    .stat b { display: block; margin-top: 4px; font-size: 1.52rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    .stat b { display: block; margin-top: 4px; font-size: 1.52rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
     .stat b.up, .stat b .up { color: var(--up); }
     .stat b.down, .stat b .down { color: var(--down); }
     .stat.upd { text-align: left; }
@@ -203,7 +203,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.61.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.62.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -365,7 +365,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.61.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.62.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -450,10 +450,10 @@
     }
     function money(n, d = 2) {
       const num = fmt(n, d);
-      if (state.ccy === "PLN") return num + " zł";
-      if (state.ccy === "CHF") return num + " CHF";
-      if (state.ccy === "USD") return num + " $";
-      return num + " €";
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
     }
     function fmtDateTime(iso) {
       if (!iso) return "—";
@@ -836,10 +836,10 @@
     }
     function money(n, d = 2) {
       const num = fmt(n, d);
-      if (state.ccy === "PLN") return num + " zł";
-      if (state.ccy === "CHF") return num + " CHF";
-      if (state.ccy === "USD") return num + " $";
-      return num + " €";
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
     }
     function fmtDateTime(iso) {
       if (!iso) return "—";
@@ -1174,10 +1174,10 @@
     }
     function money(n, d = 2) {
       const num = fmt(n, d);
-      if (state.ccy === "PLN") return num + " zł";
-      if (state.ccy === "CHF") return num + " CHF";
-      if (state.ccy === "USD") return num + " $";
-      return num + " €";
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
     }
     function fmtDateTime(iso) {
       if (!iso) return "—";
