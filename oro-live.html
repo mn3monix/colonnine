@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.21.0 — Prezzo e livello di acquisto</title>
+  <title>Oro Live v1.23.0 — Prezzo e livello di acquisto</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +128,28 @@
     .badge.wait { color: var(--gold-2); background: rgba(212,175,55,.12); }
     .badge.high { color: var(--down); background: rgba(255,107,107,.12); }
     .apart { margin-top: 14px; }
+    details.fold > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    .fold-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--muted);
+      font-size: .85rem;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+    }
+    details.fold[open] .fold-btn::after { content: "Nascondi"; }
+    details.fold:not([open]) .fold-btn::after { content: "Mostra"; }
     table.apart-tbl { width: 100%; border-collapse: collapse; font-size: .86rem; font-family: Manrope, Inter, sans-serif; }
     table.apart-tbl th {
       text-align: left; color: var(--muted); font-size: .68rem;
@@ -171,7 +193,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.21.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.23.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -255,30 +277,39 @@
     </div>
 
     <section class="card apart">
-      <strong style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
-      <p class="hint">Valore del contenuto d’oro alla quotazione attuale, senza premio numismatico o di rivendita.</p>
-      <div class="apart-wrap">
-        <table class="apart-tbl">
-          <thead>
-            <tr>
-              <th>Moneta</th>
-              <th>Caratura</th>
-              <th class="r">Lordo</th>
-              <th class="r">Netto Au</th>
-              <th class="r">Valore oro</th>
-            </tr>
-          </thead>
-          <tbody id="coinsBody"></tbody>
-        </table>
-      </div>
+      <details class="fold">
+        <summary>
+          <strong style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
+          <span class="fold-btn"></span>
+        </summary>
+        <p class="hint">Valore del contenuto d’oro alla quotazione attuale, senza premio numismatico o di rivendita.</p>
+        <div class="apart-wrap">
+          <table class="apart-tbl">
+            <thead>
+              <tr>
+                <th>Moneta</th>
+                <th>Caratura</th>
+                <th class="r">Lordo</th>
+                <th class="r">Netto Au</th>
+                <th class="r">Valore oro</th>
+              </tr>
+            </thead>
+            <tbody id="coinsBody"></tbody>
+          </table>
+        </div>
+      </details>
     </section>
 
     <section class="card apart">
-      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
-        <strong style="color:var(--gold-2)"><a href="https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Mennica Apart — 1 oz, spedizione 24h</a></strong>
-        <button class="refresh-btn" id="apartBtn" type="button">Aggiorna listino Apart</button>
-      </div>
-      <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
+      <details class="fold">
+        <summary>
+          <strong style="color:var(--gold-2)"><a id="apartTitleLink" href="https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Mennica Apart — 1 oz, spedizione 24h</a></strong>
+          <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="refresh-btn" id="apartBtn" type="button">Aggiorna listino Apart</button>
+            <span class="fold-btn"></span>
+          </span>
+        </summary>
+        <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
       <div class="stat" style="margin:12px 0">
         <label>Spot 1 oz in PLN (live)</label>
         <b id="spotPln">—</b>
@@ -298,13 +329,14 @@
         </table>
       </div>
       <p class="hint">Prezzi del listino Apart (non stimati). Lo spread è listino meno spot live. Il tasto prova a rileggere il sito; se Apart blocca, restano gli ultimi prezzi veri letti dal catalogo.</p>
+      </details>
     </section>
 
     <footer>
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il livello di acquisto usa solo i dati della seduta odierna (apertura, massimo, minimo, prezzo).
-      App v1.21.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.23.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -814,7 +846,12 @@
         btn.textContent = "Aggiorna listino Apart";
       }
     }
-    document.getElementById("apartBtn").addEventListener("click", refreshApart);
+    document.getElementById("apartBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      refreshApart();
+    });
+    document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
     boot(true);
     setTimeout(() => {
       if (!state.quote) document.getElementById("iosHint").style.display = "block";
