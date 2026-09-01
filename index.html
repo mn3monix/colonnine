@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.2</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.4</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -62,7 +62,7 @@
     .mode.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
     .mode b { display: block; font-size: 13px; }
     .mode span { color: var(--muted); font-size: 11px; }
-    .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+    .toggles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 0; }
     .tog { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--txt); text-align: center; }
     .tog.on { border-color: var(--ok); background: #10231a; }
     .tog b { display: block; font-size: 13px; }
@@ -141,7 +141,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.2</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.4</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -252,7 +252,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.2 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta min 10 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.4 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta min 10 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -295,7 +295,7 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.2";
+  const APP_VERSION = "1.9.4";
   const MIN_CHARGE_MIN = 10;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
   const CAR = {
@@ -2668,27 +2668,8 @@
     setStatus("Google ha rifiutato la chiave. Cause tipiche: fatturazione assente, API non attivate (Maps JavaScript + Places + Directions + Geocoding), referrer non autorizzato, oppure file aperto come file://. Avvia un server locale e autorizza http://localhost/* .","err");
   };
   function bindGoogleAutocomplete(){
-    if (!(window.google && google.maps && google.maps.places && google.maps.places.Autocomplete)) return;
-    document.querySelectorAll("input.place, #origin, #dest").forEach(inp=>{
-      if (inp._gauto) return;
-      try {
-        const ac = new google.maps.places.Autocomplete(inp, {
-          fields: ["geometry","formatted_address","name"],
-          types: ["geocode"]
-        });
-        ac.addListener("place_changed", ()=>{
-          const p = ac.getPlace();
-          if (p && p.geometry && p.geometry.location){
-            inp.dataset.lat = p.geometry.location.lat();
-            inp.dataset.lng = p.geometry.location.lng();
-            inp.dataset.label = p.formatted_address || p.name || inp.value;
-            inp.dataset.lock = "1";
-          }
-          hideAllSuggests();
-        });
-        inp._gauto = ac;
-      } catch(e){ console.warn(e); }
-    });
+    /* Solo Nominatim: il widget Google lascia la tendina aperta sopra gli altri campi. */
+    document.querySelectorAll(".pac-container").forEach(el => el.remove());
   }
   function maybeLoadGoogle(){
     const k=loadKeys();
@@ -2712,7 +2693,7 @@
 
   function hideAllSuggests(){
     document.querySelectorAll(".suggest").forEach(el => { el.style.display="none"; el.innerHTML=""; });
-    document.querySelectorAll(".pac-container").forEach(el => { el.style.display="none"; });
+    document.querySelectorAll(".pac-container").forEach(el => { el.style.display="none"; el.remove(); });
   }
   async function nominatimSuggest(q){
     const url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&featuretype=settlement&countrycodes=it,fr,de,at,ch,pl,si,hr,sk,cz,nl,be,es,pt,hu,ro,dk,se,no,fi,gb,ie,lu,lt,lv,ee,bg,gr&q="+encodeURIComponent(q);
@@ -2744,7 +2725,11 @@
               input.dataset.lat = btn.dataset.lat;
               input.dataset.lng = btn.dataset.lng;
               input.dataset.label = btn.textContent;
+              input.dataset.lock = "1";
+              box.style.display="none";
+              box.innerHTML="";
               hideAllSuggests();
+              input.blur();
             };
           });
         }catch(e){ box.style.display="none"; }
@@ -2755,6 +2740,10 @@
   }
   hookSuggest($("origin"), $("sug-origin"));
   hookSuggest($("dest"), $("sug-dest"));
+  document.addEventListener("pointerdown", ev=>{
+    if (ev.target.closest(".suggest") || ev.target.closest("#origin") || ev.target.closest("#dest") || ev.target.closest(".via-inp")) return;
+    hideAllSuggests();
+  }, true);
 
   function addVia(val){
     const wrap=$("vias");
