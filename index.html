@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Model Y AWD 2026 — Route Planner v1.9.5</title>
+  <title>Model Y AWD 2026 — Route Planner v1.9.8</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e31937'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,Arial' font-size='36' font-weight='800' fill='white'%3EY%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -121,7 +121,9 @@
       padding:6px 12px; font-weight:800; font-size:13px; font-family:Outfit,sans-serif;
       box-shadow:0 6px 18px rgba(0,0,0,.35); }
     @keyframes pulse { 0%{transform:translate(-50%,-50%) scale(.7);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
-    .wx-pin { width:44px;height:44px;border-radius:50%;background:#111c16;border:2px solid #3dd68c;
+    .wx-pin { width:48px;height:52px;border-radius:14px;background:#111c16;border:2px solid #3dd68c;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;line-height:1; }
+    .wx-pin .t { font-size:11px;font-weight:800;color:#e8edf4;margin-top:2px;letter-spacing:0; }
       display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,.5); }
     .wx-pin.fog { width:78px;height:34px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.5px;
       color:#eef2f6; background:#5b6570; border:2px solid #d7dee6; }
@@ -141,7 +143,7 @@
         <div class="brand">
           <div class="logo">Y</div>
           <div>
-            <h1>Model Y AWD 2026 <span class="ver">v1.9.5</span></h1>
+            <h1>Model Y AWD 2026 <span class="ver">v1.9.8</span></h1>
             <div class="sub">Planner HPC · Tesla · Ionity · Electra · Atlante · Plenitude · Enel X</div>
           </div>
         </div>
@@ -176,11 +178,11 @@
       <div class="row2">
         <div>
           <label>Ricarica % min</label>
-          <input id="socChargeMin" type="number" min="20" max="90" value="60" title="Non lasciare la colonnina sotto questa %" />
+          <input id="socChargeMin" type="number" min="20" max="90" value="50" title="Fascia veloce 15–60%. Default uscita 50%." />
         </div>
         <div>
           <label>Ricarica % max</label>
-          <input id="socChargeMax" type="number" min="50" max="100" value="80" title="Non superare questa % in colonnina" />
+          <input id="socChargeMax" type="number" min="40" max="100" value="60" title="Oltre 60% la curva Tesla è lenta. Default 60%." />
         </div>
       </div>
 
@@ -252,7 +254,7 @@
 
       <div class="blk">
       <button class="go" id="btnGo">Calcola tragitto</button>
-      <div class="hint">v1.9.5 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta min 10 min · pendenza/meteo/traffico Google.</div>
+      <div class="hint">v1.9.8 · consumi reali 19" · gomme invernali 15/11–15/4 · sosta 10–25 min · pendenza/meteo/traffico Google.</div>
       <div id="status"></div>
       <div class="results" id="results"></div>
       </div>
@@ -295,8 +297,9 @@
 
   <script src="config.local.js"></script>
   <script>
-  const APP_VERSION = "1.9.5";
+  const APP_VERSION = "1.9.8";
   const MIN_CHARGE_MIN = 10;
+  const MAX_CHARGE_MIN = 25;
   /* ===== Vehicle Model Y AWD 2026 · 19" · consumi REALI (non WLTP) ===== */
   const CAR = {
     name: "Tesla Model Y AWD 2026 19\"",
@@ -624,12 +627,29 @@
     if (wind>=40) return {lvl:1, name:"vento"};
     return {lvl:0, name:"ok"};
   }
+  function pickHourly(hourly, when){
+    if (!hourly || !hourly.time || !hourly.time.length) return null;
+    const tms = when.getTime();
+    let best=0, bestD=1e15;
+    hourly.time.forEach((iso,i)=>{
+      const d=Math.abs(new Date(iso).getTime()-tms);
+      if (d<bestD){ bestD=d; best=i; }
+    });
+    return {
+      temperature_2m: hourly.temperature_2m && hourly.temperature_2m[best],
+      weather_code: hourly.weather_code && hourly.weather_code[best],
+      precipitation: hourly.precipitation && hourly.precipitation[best],
+      wind_speed_10m: hourly.wind_speed_10m && hourly.wind_speed_10m[best],
+      wind_direction_10m: hourly.wind_direction_10m && hourly.wind_direction_10m[best],
+      iso: hourly.time[best]
+    };
+  }
   async function fetchWxPoint(lat,lng){
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,precipitation,rain,showers,wind_speed_10m,wind_direction_10m,temperature_2m&wind_speed_unit=kmh&timezone=auto`;
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,precipitation,rain,showers,wind_speed_10m,wind_direction_10m,temperature_2m&hourly=temperature_2m,weather_code,precipitation,wind_speed_10m,wind_direction_10m&forecast_days=3&wind_speed_unit=kmh&timezone=auto`;
     const r = await fetch(u);
     if (!r.ok) throw new Error("meteo");
     const j = await r.json();
-    return j.current || {};
+    return { current: j.current || {}, hourly: j.hourly || null };
   }
   function offsetBeside(coords, p, km, sign){
     if (!coords || coords.length<2) return {lat:p.lat, lng:p.lng};
@@ -658,13 +678,29 @@
   }
   async function weatherForRoute(coords){
     const pts = sampleCoords(coords, 10);
-    const samples=[];
+    let acc=0;
+    const withKm=[];
     for (let i=0;i<pts.length;i++){
-      const p = pts[i];
-      const sign = i%2===0 ? 1 : -1;
+      if (i) acc += haversine(pts[i-1], pts[i]);
+      withKm.push({...pts[i], km:acc});
+    }
+    const start = departDate();
+    const samples=[];
+    for (let i=0;i<withKm.length;i++){
+      const p = withKm[i];
       const off = offsetBeside(coords, p, 11, -1);
-      try { samples.push({...p, olat:off.lat, olng:off.lng, cur: await fetchWxPoint(p.lat,p.lng)}); }
-      catch(e){ samples.push({...p, olat:off.lat, olng:off.lng, cur:null}); }
+      const passAt = new Date(start.getTime() + (p.km/115)*3600000);
+      try {
+        const raw = await fetchWxPoint(p.lat,p.lng);
+        const curNow = raw.current || raw;
+        const pass = pickHourly(raw.hourly, passAt) || curNow;
+        samples.push({
+          ...p, olat:off.lat, olng:off.lng, passAt,
+          tempNow: curNow.temperature_2m,
+          tempPass: pass.temperature_2m,
+          cur: { ...curNow, ...pass, temperature_2m: pass.temperature_2m }
+        });
+      } catch(e){ samples.push({...p, olat:off.lat, olng:off.lng, cur:null}); }
     }
     const hazards = samples.map(s => s.cur ? wxSeverity(s.cur) : {lvl:0,name:"n/d"}).filter(h=>h.lvl>0);
     const worst = hazards.reduce((a,b)=>b.lvl>a.lvl?b:a, {lvl:0,name:"ok"});
@@ -798,6 +834,14 @@
       }
     }
     return 12;
+  }
+  function fitChargeTarget(arrive, want, stallKw, lo, hi){
+    let t = Math.max(lo||arrive+1, Math.min(hi||80, want));
+    let m = chargeMinutes(arrive, t, stallKw||250);
+    while (m < MIN_CHARGE_MIN && t < hi){ t += 5; m = chargeMinutes(arrive, t, stallKw||250); }
+    while (m > MAX_CHARGE_MIN && t > Math.max(arrive+2, lo||0)){ t -= 5; m = chargeMinutes(arrive, t, stallKw||250); }
+    if (m < MIN_CHARGE_MIN || m > MAX_CHARGE_MIN) return null;
+    return { target: t, minutes: m };
   }
   function chargeMinutes(from, to, stallKw){
     if (to <= from) return 0;
@@ -1826,17 +1870,15 @@
           if (!targets.length && hi > leg.arrive + 2) targets.push(Math.min(hi, Math.round(leg.arrive + 10)));
           for (const rawT of targets){
             if (rawT <= leg.arrive + 1) continue;
-            let useT = rawT;
-            let cmin = chargeMinutes(leg.arrive, useT, to.kw || 250);
-            if (cmin > 0 && cmin < MIN_CHARGE_MIN){
-              while (useT < hi && chargeMinutes(leg.arrive, useT, to.kw||250) < MIN_CHARGE_MIN) useT += 5;
-              cmin = chargeMinutes(leg.arrive, useT, to.kw||250);
-              if (cmin < MIN_CHARGE_MIN) continue;
-            }
+            const fit = fitChargeTarget(leg.arrive, rawT, to.kw || 250, lo, hi);
+            if (!fit) continue;
+            const useT = fit.target;
+            const cmin = fit.minutes;
             const plug = (to.kw||250) >= 240 ? 6 : 9;
             const prefMin = netPriority(to.net) * 1.8;
+            const peakPen = useT > 60 ? (useT - 60) * 0.65 : 0;
             leave[j].push({
-              soc: useT, time: tArr + cmin + plug + prefMin, prev: i, prevSt: st,
+              soc: useT, time: tArr + cmin + plug + prefMin + peakPen, prev: i, prevSt: st,
               v: leg.v, driveMin: leg.driveMin, energy: leg.energy, chargeMin: cmin,
               arrive: leg.arrive, target: useT, cons: leg.cons, dkm,
               kwhAdd: battKwh() * (useT - leg.arrive) / 100 / 0.95
@@ -1969,12 +2011,9 @@
         st = combo;
         arrive = Math.max(1, combo.arrive);
         target = Math.round(combo.target != null ? combo.target : chargeMax);
-        mins = combo.chargeMin != null ? combo.chargeMin : chargeMinutes(arrive, target, chosen.kw);
-        while (mins > 0 && mins < MIN_CHARGE_MIN && target < chargeMax){
-          target = Math.min(chargeMax, target + 5);
-          mins = chargeMinutes(arrive, target, chosen.kw);
-        }
-        if (mins > 0 && mins < MIN_CHARGE_MIN) continue;
+        const fitS = fitChargeTarget(arrive, target, chosen.kw, chargeMin, chargeMax);
+        if (!fitS) continue;
+        target = fitS.target; mins = fitS.minutes;
         kwhAdd = combo.kwhAdd != null ? combo.kwhAdd : battKwh() * Math.max(0,target-arrive)/100 / 0.95;
       } else {
         st = { v:120, arrive: soc - (consAt(120)*dkm/100)/battKwh()*100, driveMin: dkm/120*60, energy: consAt(120)*dkm/100, cons:consAt(120) };
@@ -1984,12 +2023,9 @@
           target = Math.max(chargeMin, Math.min(chargeMax, arrive + 5));
         }
         target = Math.round(Math.max(chargeMin, Math.min(chargeMax, target)));
-        mins = chargeMinutes(arrive, target, chosen.kw);
-        while (mins > 0 && mins < MIN_CHARGE_MIN && target < chargeMax){
-          target = Math.min(chargeMax, target + 5);
-          mins = chargeMinutes(arrive, target, chosen.kw);
-        }
-        if (mins > 0 && mins < MIN_CHARGE_MIN) continue;
+        const fitG = fitChargeTarget(arrive, target, chosen.kw, chargeMin, chargeMax);
+        if (!fitG) continue;
+        target = fitG.target; mins = fitG.minutes;
         kwhAdd = battKwh() * Math.max(0, target-arrive)/100 / 0.95;
       }
       const price = state.prices[chosen.net];
@@ -2041,11 +2077,13 @@
     const v = last.speed || 115;
     const phys = route ? spanDrive(route, last.atKm || 0, plan.km || 0, v) : {energy: consAt(v)*remain/100};
     const needLeave = Math.min(opts.chargeMax, Math.max(opts.chargeMin, want + (phys.energy/battKwh())*100 + 2));
-    last.targetSoc = Math.round(Math.max(last.targetSoc || opts.chargeMin, needLeave));
-    last.chargeMin = chargeMinutes(last.arriveSoc, last.targetSoc, last.kw || 250);
-    while (last.chargeMin > 0 && last.chargeMin < MIN_CHARGE_MIN && last.targetSoc < (opts.chargeMax||80)){
-      last.targetSoc = Math.min(opts.chargeMax||80, last.targetSoc + 5);
-      last.chargeMin = chargeMinutes(last.arriveSoc, last.targetSoc, last.kw || 250);
+    const fitL = fitChargeTarget(last.arriveSoc, Math.max(last.targetSoc || opts.chargeMin, needLeave), last.kw || 250, opts.chargeMin, opts.chargeMax||80);
+    if (fitL){
+      last.targetSoc = fitL.target;
+      last.chargeMin = fitL.minutes;
+    } else {
+      last.targetSoc = Math.round(Math.max(last.targetSoc || opts.chargeMin, needLeave));
+      last.chargeMin = Math.min(MAX_CHARGE_MIN, Math.max(MIN_CHARGE_MIN, chargeMinutes(last.arriveSoc, last.targetSoc, last.kw || 250)));
     }
     last.kwh = battKwh() * Math.max(0, last.targetSoc - last.arriveSoc) / 100 / 0.95;
     last.cost = last.kwh * (last.livePrice || (state.prices && state.prices[last.net]) || 0.4);
@@ -2177,15 +2215,18 @@
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
       const fog = em==="FOG";
-      const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}</div>`;
+      const tp = s.tempPass!=null ? Math.round(s.tempPass) : (s.cur&&s.cur.temperature_2m!=null?Math.round(s.cur.temperature_2m):null);
+      const tn = s.tempNow!=null ? Math.round(s.tempNow) : tp;
+      const hh = s.passAt ? s.passAt.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "";
+      const fogHtml = `<div class="wx-pin" style="background:#8a93a0;border-color:#dfe6ee">${fogSvgInner()}<span class="t">${tp!=null?tp+"°":""}</span></div>`;
       const pos = offsetBeside(alt.coords, s, 11, -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
       if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
       const m = L.marker([pos.lat, pos.lng], {
-        icon: L.divIcon({ className:"", html: fog?fogHtml:`<div class="wx-pin">${em}</div>`, iconSize:[44,44], iconAnchor:[22,22] }),
+        icon: L.divIcon({ className:"", html: fog?fogHtml:`<div class="wx-pin">${em}<span class="t">${tp!=null?tp+"°":""}</span></div>`, iconSize:[48,52], iconAnchor:[24,26] }),
         zIndexOffset: 180,
         pane: "weather"
-      }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
+      }).bindPopup(`<b>Meteo</b><br>${em} ${lab}<br>Ora: ${tn!=null?tn+"°C":"—"}<br>Al passaggio${hh?" ("+hh+")":""}: ${tp!=null?tp+"°C":"—"}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h`).addTo(state.map);
       state.layers.push(m);
     });
     (state.pois||[]).forEach(p=>{
@@ -2331,25 +2372,14 @@
       const em = wxEmoji(code);
       const lab = wxLabel(code) || "sereno";
       const fog = em==="FOG";
-      const fogUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"><circle cx="22" cy="22" r="20" fill="#8a93a0" stroke="#dfe6ee" stroke-width="2"/><circle cx="22" cy="16" r="7" fill="#f2f4f7" fill-opacity=".6"/><rect x="8" y="24" width="28" height="3" rx="1.5" fill="#e8edf3"/><rect x="10" y="29" width="24" height="3" rx="1.5" fill="#d5dce6"/><rect x="12" y="34" width="20" height="2.5" rx="1.2" fill="#c5ced8"/></svg>`);
+      const tp = s.tempPass!=null ? Math.round(s.tempPass) : (s.cur&&s.cur.temperature_2m!=null?Math.round(s.cur.temperature_2m):null);
+      const tn = s.tempNow!=null ? Math.round(s.tempNow) : tp;
+      const hh = s.passAt ? s.passAt.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "";
       const pos = offsetBeside(alt.coords, s, 11, -1);
       if ((state.pois||[]).some(p => haversine(p, pos) < 3)) return;
       if ((alt.plan.stops||[]).some(p => haversine(p, pos) < 4)) return;
-      const m = new google.maps.Marker({
-        position:{lat:pos.lat,lng:pos.lng}, map:state.gmap,
-        label: fog ? undefined : {text:em, fontSize:"22px"},
-        icon: fog
-          ? { url:fogUrl, scaledSize:new google.maps.Size(44,44), anchor:new google.maps.Point(22,22) }
-          : { path: google.maps.SymbolPath.CIRCLE, scale:18, fillColor:"#111c16", fillOpacity:0.92, strokeColor:"#3dd68c", strokeWeight:2 },
-        title: `Meteo ${lab}`,
-        zIndex: 60,
-        optimized: false
-      });
-      const info = new google.maps.InfoWindow({
-        content:`<div style="color:#111"><b>Meteo</b><br>${em} ${lab}<br>vento ${s.cur&&s.cur.wind_speed_10m!=null?Math.round(s.cur.wind_speed_10m):"—"} km/h</div>`
-      });
-      m.addListener("click", ()=>info.open({map:state.gmap, anchor:m}));
-      state.gOverlays.push(m);
+      const pin = htmlPin(pos.lat, pos.lng, `<div class="wx-pin" title="Ora ${tn!=null?tn+"°":"—"} · passaggio ${hh} ${tp!=null?tp+"°":"—"}">${fog?"☁":em}<span class="t">${tp!=null?tp+"°":""}</span></div>`);
+      state.gOverlays.push(pin);
     });
     (state.pois||[]).forEach(p=>{
       bounds.extend({lat:p.lat,lng:p.lng});
