@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.60.0 — Prezzo e statistiche</title>
+  <title>Oro Live v1.61.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -203,7 +203,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.60.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.61.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -365,7 +365,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.60.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v1.61.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -392,7 +392,7 @@
     const K18 = 18 / 24;
     const K14 = 14 / 24;
     const K9 = 9 / 24;
-    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionHigh: null, sessionLow: null };
+    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionCcy: null, sessionHigh: null, sessionLow: null };
     const APART = [
       { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: APART_LIST_URL },
       { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: APART_LIST_URL },
@@ -502,45 +502,56 @@
       if (s.includes("open") || s.includes("trade")) return true;
       return true;
     }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
     function todayBar(daily, quote) {
-      const day = sessionDayKey(new Date());
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
       if (state.sessionDay !== day) {
         state.sessionDay = day;
-        state.sessionHigh = quote?.mid ?? null;
-        state.sessionLow = quote?.mid ?? null;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
       }
-      const bars = (daily || []).filter(b => {
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
         const t0 = new Date(b.openTime || b.time || 0);
-        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
       });
-      let high = quote?.mid, low = quote?.mid;
+      let high = mid, low = mid;
       bars.forEach(b => {
-        if (b.high != null) high = Math.max(high, b.high);
-        if (b.low != null) low = Math.min(low, b.low);
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
       });
-      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
-      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
-      if (quote?.mid != null) {
-        high = high == null ? quote.mid : Math.max(high, quote.mid);
-        low = low == null ? quote.mid : Math.min(low, quote.mid);
-      }
-      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
-      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
+      return { open: bars[0]?.open ?? mid, high, low, price: mid };
     }
     function monthRange(daily, today) {
       const cutoff = Date.now() - 31 * 24 * 60 * 60 * 1000;
+      const mid = today?.price || today?.high || today?.low;
       let bars = (daily || []).filter(b => {
-        const t = new Date(b.openTime || b.time || 0).getTime();
-        return t && !Number.isNaN(t) && t >= cutoff;
+        const ts = new Date(b.openTime || b.time || 0).getTime();
+        return ts && !Number.isNaN(ts) && ts >= cutoff && (sameScale(b.high, mid, 0.45) || sameScale(b.low, mid, 0.45) || sameScale(b.close, mid, 0.45));
       });
-      if (!bars.length && daily?.length) bars = daily.slice(-22);
+      if (!bars.length && daily?.length) bars = daily.slice(-22).filter(b => sameScale(b.close || b.high, mid, 0.45));
       let high = today?.high, low = today?.low;
       bars.forEach(b => {
-        if (b.high != null) high = high == null ? b.high : Math.max(high, b.high);
-        if (b.low != null) low = low == null ? b.low : Math.min(low, b.low);
+        if (sameScale(b.high, mid, 0.45)) high = high == null ? b.high : Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.45)) low = low == null ? b.low : Math.min(low, b.low);
       });
       return { high, low };
     }
@@ -856,33 +867,43 @@
       for (const job of jobs) { try { return await job(); } catch (e) { last = e; } }
       throw last || new Error("nessuna fonte");
     }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
     function todayBar(daily, quote) {
-      const day = sessionDayKey(new Date());
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
       if (state.sessionDay !== day) {
         state.sessionDay = day;
-        state.sessionHigh = quote?.mid ?? null;
-        state.sessionLow = quote?.mid ?? null;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
       }
-      const bars = (daily || []).filter(b => {
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
         const t0 = new Date(b.openTime || b.time || 0);
-        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
       });
-      let high = quote?.mid, low = quote?.mid;
+      let high = mid, low = mid;
       bars.forEach(b => {
-        if (b.high != null) high = Math.max(high, b.high);
-        if (b.low != null) low = Math.min(low, b.low);
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
       });
-      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
-      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
-      if (quote?.mid != null) {
-        high = high == null ? quote.mid : Math.max(high, quote.mid);
-        low = low == null ? quote.mid : Math.min(low, quote.mid);
-      }
-      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
-      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
+      return { open: bars[0]?.open ?? mid, high, low, price: mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -1184,33 +1205,43 @@
       for (const job of jobs) { try { return await job(); } catch (e) { last = e; } }
       throw last || new Error("nessuna fonte");
     }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
     function todayBar(daily, quote) {
-      const day = sessionDayKey(new Date());
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
       if (state.sessionDay !== day) {
         state.sessionDay = day;
-        state.sessionHigh = quote?.mid ?? null;
-        state.sessionLow = quote?.mid ?? null;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
       }
-      const bars = (daily || []).filter(b => {
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
         const t0 = new Date(b.openTime || b.time || 0);
-        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
       });
-      let high = quote?.mid, low = quote?.mid;
+      let high = mid, low = mid;
       bars.forEach(b => {
-        if (b.high != null) high = Math.max(high, b.high);
-        if (b.low != null) low = Math.min(low, b.low);
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
       });
-      if (quote?.high != null && bars.length) high = Math.max(high, quote.high);
-      if (quote?.low != null && bars.length) low = Math.min(low, quote.low);
-      if (quote?.mid != null) {
-        high = high == null ? quote.mid : Math.max(high, quote.mid);
-        low = low == null ? quote.mid : Math.min(low, quote.mid);
-      }
-      if (state.sessionHigh != null) high = Math.max(high, state.sessionHigh);
-      if (state.sessionLow != null) low = Math.min(low, state.sessionLow);
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
       state.sessionHigh = high;
       state.sessionLow = low;
-      return { open: bars[0]?.open ?? quote?.mid, high, low, price: quote?.mid };
+      return { open: bars[0]?.open ?? mid, high, low, price: mid };
     }
     function parseApartCatalog(text) {
       const rows = [];
@@ -1387,6 +1418,9 @@
         document.querySelectorAll(".pair-tabs button").forEach(b => b.classList.remove("on"));
         btn.classList.add("on");
         state.ccy = btn.dataset.ccy;
+        state.sessionDay = null;
+        state.sessionHigh = null;
+        state.sessionLow = null;
         await boot(true);
       });
     });
