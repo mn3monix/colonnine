@@ -1,2 +1,2573 @@
 <!DOCTYPE html>
-<!-- see artifacts/oro-live.html v2.05.0 -->
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0c0e" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Oro Live v2.08.1 — Prezzo e statistiche</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0c0e;
+      --bg-2: #12141a;
+      --bg-3: #1a1d24;
+      --line: rgba(212,175,55,.22);
+      --text: #ece7d8;
+      --muted: #9a937f;
+      --gold: #d4af37;
+      --gold-2: #f0d78c;
+      --up: #3dd68c;
+      --down: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px 40px; }
+    header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 18px; }
+    h1 { margin: 0; font-family: Manrope, Inter, sans-serif; letter-spacing: -.03em; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
+    .status { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; color: var(--muted); font-size: .85rem; }
+    .status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .live-pill .upd-d { color: var(--text); font-weight: 600; text-transform: capitalize; margin-left: 6px; }
+    .live-pill .upd-t { color: var(--gold-2); font-variant-numeric: tabular-nums; font-weight: 600; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); box-shadow: 0 0 10px var(--up); }
+    .dot.off { background: var(--down); box-shadow: none; }
+    .hero { display: grid; grid-template-columns: 1.4fr .9fr; gap: 14px; align-items: stretch; }
+    .hero > .card { display: flex; flex-direction: column; }
+    @media (max-width: 820px) {
+      .hero { grid-template-columns: 1fr; }
+      .tools.hero { grid-template-columns: 1fr !important; }
+      .tools details[open] .calc18,
+      .tools details[open] .chart-box { min-height: 0; height: auto; }
+      .tools .calc18 { max-height: none; overflow: visible; }
+      .chart-box { min-height: 380px; height: 400px; }
+      .tools .spark { min-height: 340px; height: 340px; margin-top: 4px; }
+    }
+    .card {
+      background: var(--bg-2); border: 1px solid var(--line);
+      border-radius: 18px; padding: 16px;
+    }
+    .pair-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: nowrap; }
+    .pair-tabs button, .refresh-btn {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 10px 16px; cursor: pointer; font: inherit; font-size: .9rem;
+      min-height: 44px; touch-action: manipulation;
+    }
+    .pair-tabs button {
+      flex: 1 1 0; min-width: 0; padding: 8px 6px; font-size: .72rem;
+      white-space: nowrap; letter-spacing: 0;
+    }
+    .pair-tabs button.on, .tf-row button.on {
+      color: #1a1404; background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      border-color: transparent; font-weight: 600;
+    }
+    .tf-row { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: space-between; margin: 8px 0 0; width: 100%; }
+    .tf-row button {
+      flex: 1; background: transparent; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 6px 0; cursor: pointer; font: inherit; font-size: .72rem;
+      font-weight: 600; letter-spacing: .04em; min-height: 32px;
+    }
+
+    .price-row { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+    .px { font-size: 3.55rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #priceUnit { text-align: center; }
+    .chg { font-weight: 700; padding: 8px 12px; border-radius: 10px; font-size: 1.35rem; }
+    .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
+    .chg.down { color: var(--down); background: rgba(255,107,107,.12); }
+    .hint { color: var(--muted); font-size: .78rem; margin-top: 8px; line-height: 1.45; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; align-items: stretch; flex: 1; }
+    .grams, .grams.side {
+      display: grid; grid-template-rows: repeat(6, minmax(0, 1fr));
+      gap: 8px; align-self: stretch; min-height: 0;
+    }
+    .grams > .stat, .grams.side > .stat {
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 0; height: 100%; padding: 8px 10px;
+    }
+    .grams > .stat b, .grams.side > .stat b { margin-top: auto; }
+    .hero > .card .buy-grid { flex: 1; grid-auto-rows: 1fr; }
+    .buy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; align-items: stretch; }
+    .buy-grid .stat { min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 10px; }
+    .stat { background: var(--bg-3); border-radius: 12px; padding: 8px 10px; }
+    .stat label {
+      display: block; color: var(--muted); font-size: .62rem;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .stat b { display: block; margin-top: 2px; font-size: 1.18rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .stat b.up, .stat b .up { color: var(--up); }
+    .stat b.down, .stat b .down { color: var(--down); }
+    .stat.upd { text-align: left; }
+    .stat.upd label { text-align: left; }
+    .stat.upd b { text-align: right; }
+    .stat.stack b { line-height: 1.28; }
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 10px 14px; font: inherit; font-size: .9rem; min-height: 44px;
+    }
+    .stat.k18 {
+      border: 1.5px solid var(--gold);
+      box-shadow: 0 0 0 1px rgba(212,175,55,.25), 0 0 18px rgba(212,175,55,.18);
+      background: linear-gradient(180deg, rgba(212,175,55,.14), var(--bg-3));
+    }
+    .stat.k18 label { color: var(--gold-2); }
+    .stat.k18 b { color: var(--gold-2); }
+    .sig-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px; }
+    .sig-score { font-size:2.35rem; font-weight:700; letter-spacing:-.03em; color:var(--gold-2); font-variant-numeric:tabular-nums; line-height:1; }
+    .sig-score span { display:block; font-size:.68rem; color:var(--muted); font-weight:600; letter-spacing:.08em; text-transform:uppercase; margin-top:6px; }
+    .sig-bar { height:8px; background:var(--bg-3); border:1px solid var(--line); border-radius:99px; overflow:hidden; margin:12px 0 8px; }
+    .sig-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,#ff6b6b,#d4af37,#3dd68c); border-radius:99px; }
+    .sig-checks { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    .sig-item { background:var(--bg-3); border:1px solid transparent; border-radius:12px; padding:8px 10px; }
+    .sig-item.on { border-color:rgba(61,214,140,.35); }
+    .sig-item.off { border-color:rgba(255,107,107,.28); }
+    .sig-item.warn { border-color:rgba(212,175,55,.35); }
+    .sig-item label { display:block; color:var(--muted); font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; }
+    .sig-item b { display:block; margin-top:4px; font-size:1.05rem; text-align:right; font-variant-numeric:tabular-nums; }
+    @media (max-width: 820px) {
+      .sig-checks { grid-template-columns:1fr 1fr; }
+      .sig-score { font-size:2rem; }
+    }
+    .buy-level {
+      font-size: 2rem; font-weight: 700; letter-spacing: -.03em;
+      color: var(--gold-2); font-variant-numeric: tabular-nums; margin: 8px 0 6px;
+    }
+    .badge {
+      display: inline-block; font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; font-weight: 600; padding: 4px 8px; border-radius: 6px;
+    }
+    .badge.ok { color: var(--up); background: rgba(61,214,140,.12); }
+    .badge.wait { color: var(--gold-2); background: rgba(212,175,55,.12); }
+    .badge.high { color: var(--down); background: rgba(255,107,107,.12); }
+    .sig-phase {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px;
+      background: var(--bg-3); border: 1px solid var(--line);
+    }
+    .sig-phase b { font-size: .92rem; letter-spacing: .04em; text-transform: uppercase; }
+    .sig-phase span { color: var(--muted); font-size: .75rem; line-height: 1.35; text-align: right; }
+    .sig-phase.ok { border-color: rgba(61,214,140,.4); }
+    .sig-phase.wait { border-color: rgba(212,175,55,.4); }
+    .sig-phase.high { border-color: rgba(255,107,107,.35); }
+    .apart { margin-top: 14px; }
+    details.fold > summary {
+      list-style: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; flex-wrap: nowrap;
+    }
+    .fold-title { flex: 1; min-width: 0; text-align: left; }
+    .fold-title .hint { margin: 4px 0 0; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .news-preview { margin: 8px 0 0; padding: 0; list-style: none; }
+    .news-preview li { margin: 0 0 10px; padding: 8px 0 0; color: var(--text); font-size: .88rem; line-height: 1.35; font-weight: 500; border-top: 1px solid rgba(212,175,55,.08); }
+    .news-preview li:first-child { border-top: 0; padding-top: 4px; }
+    .news-preview a { color: var(--text); text-decoration: none; display: block; }
+    .news-preview .t { color: var(--muted); font-size: .7rem; font-weight: 400; margin-left: 6px; }
+    .news-ex {
+      display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+      overflow: hidden; margin: 8px 0 0; color: #cfc6b0; font-size: .86rem;
+      font-weight: 400; line-height: 1.45; max-height: calc(1.45em * 5);
+    }
+    .news-list li { padding-bottom: 12px; }
+    .fold-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto; }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    .fold-btn {
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; color: var(--muted); font-size: .85rem;
+      min-height: 40px; display: inline-flex; align-items: center;
+    }
+    details.fold[open] .fold-btn::after { content: "Nascondi"; }
+    details.fold:not([open]) .fold-btn::after { content: "Mostra"; }
+    table.apart-tbl {
+      width: 100%; border-collapse: collapse; font-size: .86rem;
+      font-family: Manrope, Inter, sans-serif;
+    }
+    table.apart-tbl th {
+      text-align: left; color: var(--muted); font-size: .68rem;
+      letter-spacing: .08em; text-transform: uppercase; font-weight: 600;
+      padding: 6px 8px; border-bottom: 1px solid var(--line);
+    }
+    table.apart-tbl td {
+      padding: 8px; border-bottom: 1px solid rgba(212,175,55,.08);
+      font-variant-numeric: tabular-nums; vertical-align: top;
+    }
+    table.apart-tbl td.r { text-align: right; }
+    table.apart-tbl td.w { white-space: nowrap; text-align: right; font-size: .82rem; }
+    table.apart-tbl td.k { white-space: nowrap; font-size: .78rem; }
+    #apartBody tr:first-child td { color: var(--up); }
+    #apartBody tr:first-child a { color: var(--up); }
+    table.apart-tbl a {
+      color: var(--gold-2); text-decoration: none;
+      font-family: Manrope, Inter, sans-serif;
+      font-weight: 600; font-size: .92rem; line-height: 1.35;
+      display: inline-block; padding: 4px 0;
+    }
+
+    .calc18 { display: flex; flex-direction: column; gap: 8px; }
+    .calc18 label { font-size: .8rem; }
+    .calc-row { display: flex; gap: 6px; }
+    .calc18 input {
+      flex: 1; width: 100%; background: #0e1014; color: var(--text);
+      border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 12px; font: inherit; font-size: 1.35rem;
+      font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .calc-keys { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+    .calc18 .plus, .calc-keys button {
+      min-width: 0; border-radius: 10px; border: 1px solid var(--gold);
+      background: rgba(212,175,55,.16); color: var(--gold-2);
+      min-height: 40px; font: inherit; font-weight: 700; cursor: pointer;
+    }
+    .calc-keys button.danger { border-color: rgba(255,107,107,.45); color: #ffb4b4; background: rgba(255,107,107,.1); }
+    .calc18 .plus {
+      font-size: 1.4rem; font-weight: 700; cursor: pointer;
+    }
+    .tools.hero {
+      margin-top: 18px;
+      grid-template-columns: .8fr 1.2fr;
+      align-items: start;
+    }
+    .tools > .card { min-height: 0; padding: 12px 14px; }
+    .tools details.fold > summary { gap: 8px; }
+    .tools .hint { margin-top: 4px !important; }
+    .tools .calc-row { margin-top: 8px !important; }
+    .tools details[open] .calc18,
+    .tools details[open] .chart-box { min-height: 420px; height: 420px; }
+    .tools .calc18 { overflow: auto; max-height: 420px; }
+    .chart-box { display: flex; flex-direction: column; align-items: stretch; min-height: 420px; height: 420px; }
+    .calc-steps { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; overflow: visible; max-height: none; }
+    .calc-steps li {
+      display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+      font-size: 1.02rem; color: var(--muted);
+    }
+    .calc-steps li span:last-child { color: var(--text); font-weight: 400; font-variant-numeric: tabular-nums; text-align: right; font-size: 1.12rem; }
+    .calc-steps li.tot {
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid rgba(212,175,55,.28);
+      color: var(--text); font-weight: 700;
+    }
+    .calc-steps li.tot span { font-weight: 700; }
+    .calc-steps li.tot span:last-child { font-weight: 700; color: var(--text); }
+    .calc-steps li.eq { color: var(--gold-2); font-size: 1.12rem; font-weight: 700; }
+    .calc-steps li.eq span:last-child { color: var(--gold-2); font-size: 1.38rem; font-weight: 700; }
+    .tools .spark { flex: 1; width: 100%; min-height: 0; height: 100%; margin: 8px 0 0; }
+    .spark {
+      margin-top: 8px; height: auto; min-height: 88px; width: 100%; display: block;
+      background: rgba(0,0,0,.18); border-radius: 8px;
+    }
+    .apart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .err {
+      display: none; margin: 0 0 14px; padding: 10px 12px;
+      border: 1px solid rgba(255,107,107,.35); color: #ffb4b4;
+      background: rgba(255,107,107,.08); border-radius: 12px; font-size: .86rem;
+    }
+
+    .news-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .news-list li {
+      background: var(--bg-3); border-radius: 12px; padding: 10px 12px;
+    }
+    .news-list a {
+      color: var(--text); text-decoration: none; font-weight: 600;
+      font-family: Manrope, Inter, sans-serif; font-size: .95rem; line-height: 1.35;
+      display: block;
+    }
+    .news-list .meta-n { color: var(--muted); font-size: .72rem; margin-top: 4px; }
+    footer { color: var(--muted); font-size: .75rem; line-height: 1.5; margin-top: 18px; }
+    @media (max-width: 820px) {
+      .px { font-size: 2.75rem; }
+      .buy-level { font-size: 1.55rem; }
+      .stat b { font-size: 1.42rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.08.1</span></h1>
+        <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
+      </div>
+      <div class="status">
+        <div class="status-row">
+          <span class="live-pill" id="livePill"><span class="dot off" id="liveDot"></span><span id="liveLabel">Live</span><span class="upd-d" id="updD"></span><span class="upd-t" id="updT">—</span></span>
+          <button class="refresh-btn" id="reloadBtn">Aggiorna</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="err" id="errBox"></div>
+    <p class="hint" id="iosHint" style="display:none">Su iPhone apri il file in Safari, non nell’anteprima di File.</p>
+
+    <div class="hero">
+      <section class="card">
+        <div class="pair-tabs">
+          <button class="on" data-ccy="EUR">XAU / EUR</button>
+          <button data-ccy="USD">XAU / USD</button>
+          <button data-ccy="CHF">XAU / CHF</button>
+          <button data-ccy="PLN">XAU / PLN</button>
+        </div>
+        <div class="price-row">
+          <div class="px" id="price">—</div>
+          <div class="chg" id="chg">—</div>
+        </div>
+        <p class="hint" id="priceUnit" style="margin-top:6px">Oncia troy · oro 24k</p>
+        <div class="meta">
+          <div class="grams">
+            <div class="stat"><label>24K — 999,9</label><b id="g24">—</b></div>
+            <div class="stat"><label>22K — 916,7</label><b id="g22">—</b></div>
+            <div class="stat"><label>21,6K — 900</label><b id="g216">—</b></div>
+            <div class="stat k18"><label>18K — 750</label><b id="g18">—</b></div>
+            <div class="stat"><label>14K — 585</label><b id="g14">—</b></div>
+            <div class="stat"><label>9K — 375</label><b id="g9">—</b></div>
+          </div>
+          <div class="grams side">
+            <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
+            <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
+            <div class="stat"><label>EUR / CHF</label><b id="eurchf">—</b></div>
+            <div class="stat"><label>Treasury USA 2 anni</label><b id="ust2">—</b></div>
+            <div class="stat"><label>Treasury USA 10 anni</label><b id="ust10">—</b></div>
+            <div class="stat"><label>Treasury USA 30 anni</label><b id="ust30">—</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Statistiche</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
+        <p class="hint" style="margin-top:6px">Minimi, massimi e distanze sul prezzo attuale.</p>
+        <div class="buy-grid">
+          <div class="stat"><label>Minimo di giornata</label><b id="dayLow">—</b></div>
+          <div class="stat"><label>Massimo di giornata</label><b id="dayHigh">—</b></div>
+          <div class="stat stack"><label>Distanza dal minimo giorno</label><b id="buyDist">—</b></div>
+          <div class="stat stack"><label>Distanza dal massimo giorno</label><b id="dayHighDist">—</b></div>
+          <div class="stat"><label>Minimo ultimo mese</label><b id="monthLow">—</b></div>
+          <div class="stat"><label>Massimo ultimo mese</label><b id="monthHigh">—</b></div>
+          <div class="stat stack"><label>Distanza dal minimo mese</label><b id="monthDist">—</b></div>
+          <div class="stat stack"><label>Distanza dal massimo mese</label><b id="monthHighDist">—</b></div>
+          <div class="stat"><label>Range di giornata</label><b id="dayRange">—</b></div>
+          <div class="stat"><label>Range ultimo mese</label><b id="monthRange">—</b></div>
+          <div class="stat"><label>Media mobile 50 giorni</label><b id="sma50">—</b></div>
+          <div class="stat"><label>Media mobile 200 giorni</label><b id="sma200">—</b></div>
+          <div class="stat stack"><label>Argento — vs ieri</label><b id="xagPx">—</b></div>
+          <div class="stat stack"><label>Platino — vs ieri</label><b id="xptPx">—</b></div>
+        </div>
+        </details>
+      </section>
+    </div>
+
+    <section class="card apart" id="signalCard">
+      <details class="fold" open>
+        <summary>
+          <strong class="fold-title" style="color:var(--gold-2)">Segnale acquisto fisico</strong>
+          <span class="fold-actions"><span class="fold-btn"></span></span>
+        </summary>
+        <p class="hint" style="margin-top:6px">Algoritmo su dati giornalieri 2010–2026. Cerca la fase dopo la rottura di un livello noto, quando la volatilità sale e gli stop scattano: è lì che l’accumulo fisico ha più senso. Non è trading intraday: lo spread monete (2–6%) filtra i segnali troppo frequenti.</p>
+        <div class="sig-head">
+          <div>
+            <div class="sig-score" id="sigScore">—<span>punteggio 0–100</span></div>
+          </div>
+          <div style="text-align:right">
+            <span class="badge wait" id="sigBadge">In attesa dati</span>
+            <div class="buy-level" id="sigZonePx" style="font-size:1.35rem;margin:8px 0 0">—</div>
+            <div class="hint" id="sigZoneLab" style="margin:0">ingresso prudente</div>
+          </div>
+        </div>
+        <div class="sig-bar" aria-hidden="true"><i id="sigBar"></i></div>
+        <div class="sig-phase wait" id="sigPhase"><b>Fase —</b><span>In attesa dello storico daily</span></div>
+        <p class="hint" id="sigHint">Carico lo storico per SMA200, RSI, rotture e volatilità.</p>
+        <p class="hint" id="sigRisk" style="margin-top:6px">Nessun prezzo è infallibile: il ribasso residuo è la distanza dal supporto strutturale (SMA200 / minimi / low dello sweep).</p>
+        <div class="sig-checks" id="sigChecks"></div>
+      </details>
+    </section>
+
+    <div class="hero tools">
+      <section class="card">
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Calcolatrice 18K</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
+          <div class="calc18">
+            <p class="hint" style="margin-top:4px">Fino a 8 numeri. + − × ÷ poi × prezzo 18K/g.</p>
+            <div class="calc-row" style="margin-top:8px">
+              <input id="w18" type="text" inputmode="decimal" placeholder="es. 12+3,5-1×2" autocomplete="off" />
+            </div>
+            <div class="calc-keys" id="calcKeys">
+              <button type="button" data-op="+">+</button>
+              <button type="button" data-op="-">−</button>
+              <button type="button" data-op="*">×</button>
+              <button type="button" data-op="/">÷</button>
+              <button type="button" data-act="del" class="danger">⌫</button>
+              <button type="button" data-act="ac" class="danger">C</button>
+            </div>
+            <ul class="calc-steps" id="calc18"></ul>
+          </div>
+        </details>
+      </section>
+      <section class="card">
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Grafico</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
+          <div class="chart-box">
+            <div class="tf-row" id="tfRow">
+              <button data-tf="1D" class="on">1D</button>
+              <button data-tf="7D">7D</button>
+              <button data-tf="1M">1M</button>
+              <button data-tf="3M">3M</button>
+              <button data-tf="6M">6M</button>
+            </div>
+            <svg class="spark" id="spark" viewBox="0 0 560 400" preserveAspectRatio="xMidYMid meet" aria-label="Grafico"></svg>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <section class="card apart" id="newsCard">
+      <details class="fold">
+        <summary>
+          <div class="fold-title">
+            <strong style="color:var(--gold-2)">News oro</strong>
+            <p class="hint" id="newsMeta">Feed in caricamento…</p>
+          </div>
+          <span class="fold-actions">
+            <button class="refresh-btn" id="newsBtn" type="button">Aggiorna</button>
+            <span class="fold-btn"></span>
+          </span>
+        </summary>
+        <ul class="news-list" id="newsList"></ul>
+      </details>
+    </section>
+
+    <section class="card apart" id="worldCard">
+      <details class="fold">
+        <summary>
+          <div class="fold-title">
+            <strong style="color:var(--gold-2)">Economia, materie prime e geopolitica</strong>
+            <p class="hint" id="worldMeta">Feed in caricamento…</p>
+          </div>
+          <span class="fold-actions">
+            <button class="refresh-btn" id="worldBtn" type="button">Aggiorna</button>
+            <span class="fold-btn"></span>
+          </span>
+        </summary>
+        <ul class="news-list" id="worldList"></ul>
+      </details>
+    </section>
+
+    <section class="card apart">
+      <details class="fold">
+        <summary>
+          <strong class="fold-title" style="color:var(--gold-2)">Monete d’oro storiche — valore del solo oro</strong>
+          <span class="fold-actions"><span class="fold-btn"></span></span>
+        </summary>
+        <p class="hint">Valore del contenuto d’oro alla quotazione attuale, senza premio numismatico o di rivendita.</p>
+        <div class="apart-wrap">
+          <table class="apart-tbl">
+            <thead>
+              <tr>
+                <th>Moneta</th>
+                <th>Caratura</th>
+                <th class="r">Lordo</th>
+                <th class="r">Netto Au</th>
+                <th class="r">Valore oro</th>
+              </tr>
+            </thead>
+            <tbody id="coinsBody"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section class="card apart">
+      <details class="fold">
+        <summary>
+          <strong class="fold-title" style="color:var(--gold-2)"><a id="apartTitleLink" href="https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Mennica Apart — 1 oz, spedizione 24h</a></strong>
+          <span class="fold-actions">
+            <button class="refresh-btn" id="apartBtn" type="button">Aggiorna</button>
+            <span class="fold-btn"></span>
+          </span>
+        </summary>
+        <p class="hint" id="apartMeta" style="margin-top:8px">Spread vs spot PLN live</p>
+        <div class="stat" style="margin:12px 0">
+          <label>Spot 1 oz in PLN (live)</label>
+          <b id="spotPln">—</b>
+        </div>
+        <div class="apart-wrap">
+          <table class="apart-tbl">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Moneta</th>
+                <th class="r">Prezzo Apart</th>
+                <th class="r">Spread zł</th>
+                <th class="r">Spread %</th>
+              </tr>
+            </thead>
+            <tbody id="apartBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Prezzi del listino Apart (non stimati). Lo spread è listino meno spot live. Fonte: mennica.apart.pl/zloto/monety?masa=1-oz&amp;realizacja=24h</p>
+      </details>
+    </section>
+
+    <footer>
+      Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
+      Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
+      1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
+      App v2.08.1 — 2 settembre 2026. La fase stop-run non è un timing infallibile: segnala quando un livello noto è stato rotto e la volatilità ha già fatto scattare gli stop. Non è un consiglio personalizzato.
+    </footer>
+  </div>
+
+  <script>
+    const API = "https://biquote.io/api";
+    const TROY_G = 31.1034768;
+    const APART_LIST_URL = "https://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h";
+    const COINS = [
+      { name: "Sterlina (Sovereign)", karat: "22K — 916,7", gross: 7.98805, fine: 7.32238 },
+      { name: "Mezza sterlina", karat: "22K — 916,7", gross: 3.99403, fine: 3.66119 },
+      { name: "20 Lire (Marengo)", karat: "21,6K — 900", gross: 6.45161, fine: 5.80645 },
+      { name: "20 Marchi", karat: "21,6K — 900", gross: 7.96500, fine: 7.16850 },
+      { name: "5 Dollari USA (Half Eagle)", karat: "21,6K — 900", gross: 8.35900, fine: 7.52310 },
+      { name: "10 Dollari USA (Eagle)", karat: "21,6K — 900", gross: 16.71800, fine: 15.04620 },
+      { name: "20 Dollari USA (Double Eagle)", karat: "21,6K — 900", gross: 33.43600, fine: 30.09260 },
+      { name: "25 Dollari USA (Eagle 1/2 oz)", karat: "22K — 916,7", gross: 16.96600, fine: 15.55170 },
+      { name: "50 Dollari USA (Eagle 1 oz)", karat: "22K — 916,7", gross: 33.93100, fine: 31.10350 },
+      { name: "Krugerrand 1 oz", karat: "22K — 916,7", gross: 33.93000, fine: 31.10350 },
+      { name: "Britannia 1 oz", karat: "24K — 999,9", gross: 31.21000, fine: 31.10350 },
+      { name: "Filarmonica di Vienna 1 oz", karat: "24K — 999,9", gross: 31.10300, fine: 31.10300 },
+    ];
+    const K22 = 22 / 24;
+    const K216 = 21.6 / 24;
+    const K18 = 18 / 24;
+    const K14 = 14 / 24;
+    const K9 = 9 / 24;
+    const state = { ccy: "EUR", tf: "1D", daily: [], quote: null, spotPln: null, apartList: null, apartSource: "listino 01/09/2026 15:05", sessionDay: null, sessionCcy: null, sessionHigh: null, sessionLow: null, sessionOpen: null };
+    const APART = [
+      { name: "Krugerrand 1oz — annate miste (24h)", price: 16730, url: APART_LIST_URL },
+      { name: "Britannia 1oz — annate miste (24h)", price: 16779, url: APART_LIST_URL },
+      { name: "Kangur australiano 1oz 2025/2026 (24h)", price: 16779, url: APART_LIST_URL },
+      { name: "Britannia 1oz 2025/2026 (24h)", price: 16796, url: APART_LIST_URL },
+      { name: "Maple Leaf 1oz — annate miste (24h)", price: 16829, url: APART_LIST_URL },
+      { name: "Filarmonica Vienna 1oz — annate miste (24h)", price: 16861, url: APART_LIST_URL },
+      { name: "Filarmonica Vienna 1oz 2025/2026 (24h)", price: 16878, url: APART_LIST_URL },
+      { name: "Maple Leaf 1oz 2025/2026 (24h)", price: 16878, url: APART_LIST_URL },
+      { name: "Krugerrand 1oz 2025/2026 (24h)", price: 16894, url: APART_LIST_URL },
+      { name: "American Eagle 1oz — annate miste (24h)", price: 17025, url: APART_LIST_URL },
+    ];
+
+    function renderCoins(g24) {
+      document.getElementById("coinsBody").innerHTML = COINS.map(c => `
+        <tr>
+          <td style="font-family:Manrope,Inter,sans-serif;font-weight:600;color:var(--gold-2)">${c.name}</td>
+          <td class="k">${c.karat}</td>
+          <td class="w">${fmt(c.gross, 3)}&nbsp;g</td>
+          <td class="w">${fmt(c.fine, 3)}&nbsp;g</td>
+          <td class="r">${money(g24 * c.fine)}</td>
+        </tr>`).join("");
+    }
+    function pln(n, d = 2) { return fmt(n, d) + " zł"; }
+    function renderApart(spot) {
+      state.spotPln = spot;
+      const now = new Date().toLocaleString("it-IT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
+      const live = Array.isArray(state.apartList) && state.apartList.length;
+      document.getElementById("apartMeta").textContent = live
+        ? ("Listino Apart · " + (state.apartSource || "aggiornato") + " · " + now)
+        : "In attesa di aggiornamento listino Apart";
+      document.getElementById("spotPln").textContent = spot ? pln(spot) : "—";
+      const clean = s => String(s || "").replace(/\*+/g, "").trim();
+      if (!live) {
+        document.getElementById("apartBody").innerHTML = APART.slice(0, 10).map((p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><a href="${APART_LIST_URL}" target="_blank" rel="noopener">${clean(p.name)}</a></td>
+          <td class="r">—</td>
+          <td class="r">—</td>
+          <td class="r">—</td>
+        </tr>`).join("");
+        return;
+      }
+      const rows = state.apartList.map(p => {
+        const spread = p.price - (spot || p.price);
+        const pct = spot ? (spread / spot) * 100 : 0;
+        return { ...p, name: clean(p.name), spread, pct };
+      }).sort((a, b) => a.price - b.price).slice(0, 10);
+      document.getElementById("apartBody").innerHTML = rows.map((p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><a href="${APART_LIST_URL}" target="_blank" rel="noopener">${p.name}</a></td>
+          <td class="r"><a href="${APART_LIST_URL}" target="_blank" rel="noopener">${pln(p.price, 0)}</a></td>
+          <td class="r">${spreadSign(p.spread)}</td>
+          <td class="r">${(p.pct >= 0 ? "+" : "") + fmt(p.pct, 2)}%</td>
+        </tr>`).join("");
+    }
+    function spreadSign(n) { return (n >= 0 ? "+" : "") + pln(n); }
+    function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
+    function fmt(n, d = 2) {
+      if (n == null || Number.isNaN(n)) return "—";
+      return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
+    }
+    function money(n, d = 2) {
+      const num = fmt(n, d);
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
+    }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleString("it-IT");
+    }
+    function showErr(msg) {
+      const box = document.getElementById("errBox");
+      if (!msg) { box.style.display = "none"; box.textContent = ""; return; }
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+    async function getJSON(url, ms = 8000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally { clearTimeout(t); }
+    }
+    async function firstOk(jobs) {
+      let last = null;
+      for (const job of jobs) {
+        try { return await job(); }
+        catch (e) { last = e; }
+      }
+      throw last || new Error("nessuna fonte");
+    }
+    function sessionDayKey(d) {
+      const x = d instanceof Date ? d : new Date(d || Date.now());
+      if (Number.isNaN(x.getTime())) return sessionDayKey(new Date());
+      return x.toLocaleDateString("en-CA", { timeZone: "Europe/Rome" });
+    }
+    function isGoldMarketOpen(q) {
+      const s = String(q?.marketState || "").toLowerCase();
+      if (s.includes("close")) return false;
+      const et = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+      const day = et.getDay();
+      const mins = et.getHours() * 60 + et.getMinutes();
+      if (day === 6) return false;
+      if (day === 5 && mins >= 17 * 60) return false;
+      if (day === 0 && mins < 18 * 60) return false;
+      if (s.includes("open") || s.includes("trade")) return true;
+      return true;
+    }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
+    function todayBar(daily, quote) {
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
+      }
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
+      });
+      let high = mid, low = mid;
+      bars.forEach(b => {
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
+      });
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: openPx, high, low, price: mid };
+    }
+    function monthRange(daily, today) {
+      const cutoff = Date.now() - 31 * 24 * 60 * 60 * 1000;
+      const mid = today?.price || today?.high || today?.low;
+      let bars = (daily || []).filter(b => {
+        const ts = new Date(b.openTime || b.time || 0).getTime();
+        return ts && !Number.isNaN(ts) && ts >= cutoff && (sameScale(b.high, mid, 0.45) || sameScale(b.low, mid, 0.45) || sameScale(b.close, mid, 0.45));
+      });
+      if (!bars.length && daily?.length) bars = daily.slice(-22).filter(b => sameScale(b.close || b.high, mid, 0.45));
+      let high = today?.high, low = today?.low;
+      bars.forEach(b => {
+        if (sameScale(b.high, mid, 0.45)) high = high == null ? b.high : Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.45)) low = low == null ? b.low : Math.min(low, b.low);
+      });
+      return { high, low };
+    }
+    function supportLevels(daily, day) {
+      const month = monthRange(daily, day);
+      const closed = (daily || []).filter(b => !b.isOpen);
+      const prev = closed.length ? closed[closed.length - 1] : null;
+      const levels = [];
+      if (day?.low) levels.push({ name: "minimo di giornata", value: day.low });
+      if (month.low) levels.push({ name: "minimo del mese", value: month.low });
+      if (prev) {
+        const P = (prev.high + prev.low + prev.close) / 3;
+        levels.push({ name: "supporto S1", value: 2 * P - prev.high });
+        levels.push({ name: "supporto S2", value: P - (prev.high - prev.low) });
+        levels.push({ name: "minimo di ieri", value: prev.low });
+      }
+      if (month.high && month.low && month.high > month.low) {
+        const mr = month.high - month.low;
+        levels.push({ name: "ritracciamento 38,2% mese", value: month.high - mr * 0.382 });
+        levels.push({ name: "ritracciamento 61,8% mese", value: month.high - mr * 0.618 });
+      }
+      return levels.filter(l => l.value > 0);
+    }
+    function bestBuy(day, daily) {
+      const price = day.price;
+      const levels = supportLevels(daily, day);
+      if (!levels.length) {
+        return { level: day.low || price, status: "wait", label: "Dati insufficienti", hint: "Ancora pochi dati per calcolare i supporti." };
+      }
+      const below = levels.filter(l => l.value <= price * 1.0015).sort((a, b) => b.value - a.value);
+      const target = below[0] || levels.slice().sort((a, b) => b.value - a.value)[0];
+      const distPct = ((price - target.value) / target.value) * 100;
+      if (distPct <= 0.25 && target.value <= price * 1.0015) {
+        return { level: target.value, status: "ok", label: "Sul supporto", hint: "Il prezzo è sul supporto calcolato (" + target.name + "). Non è necessariamente il minimo assoluto." };
+      }
+      if (distPct > 1.2) {
+        return { level: target.value, status: "high", label: "Lontano dal supporto", hint: "Supporto più vicino sotto il prezzo: " + target.name + ". Non coincide col semplice minimo." };
+      }
+      return { level: target.value, status: "wait", label: "Attendi il supporto", hint: "Livello di supporto: " + target.name + ". Aspetta un rientro su quel livello, non sul minimo a tutti i costi." };
+    }
+    function setSignedDist(id, pct, amount) {
+      const el = document.getElementById(id);
+      if (el == null || amount == null || Number.isNaN(amount)) {
+        if (el) el.textContent = "—";
+        return;
+      }
+      const cls = amount > 0 ? "up" : (amount < 0 ? "down" : "");
+      const as = (amount >= 0 ? "+" : "−") + money(Math.abs(amount));
+      el.className = cls;
+      el.textContent = as;
+    }
+    function renderBuy(day) {
+      document.getElementById("dayLow").textContent = money(day.low);
+      document.getElementById("dayHigh").textContent = money(day.high);
+      document.getElementById("dayRange").textContent = money(day.high - day.low);
+      const fromLow = day.price - day.low;
+      const fromLowPct = day.low > 0 ? (fromLow / day.low) * 100 : 0;
+      setSignedDist("buyDist", fromLowPct, fromLow);
+      const toHigh = day.price - day.high;
+      const toHighPct = day.high > 0 ? (toHigh / day.high) * 100 : 0;
+      setSignedDist("dayHighDist", toHighPct, toHigh);
+      const month = monthRange(state.daily, day);
+      document.getElementById("monthHigh").textContent = month.high != null ? money(month.high) : "—";
+      document.getElementById("monthLow").textContent = month.low != null ? money(month.low) : "—";
+      document.getElementById("monthRange").textContent = month.high != null && month.low != null ? money(month.high - month.low) : "—";
+      if (month.low != null && day.price != null) {
+        const mFrom = day.price - month.low;
+        const mPct = month.low > 0 ? (mFrom / month.low) * 100 : 0;
+        setSignedDist("monthDist", mPct, mFrom);
+      } else document.getElementById("monthDist").textContent = "—";
+      if (month.high != null && day.price != null) {
+        const mTo = day.price - month.high;
+        const mToPct = month.high > 0 ? (mTo / month.high) * 100 : 0;
+        setSignedDist("monthHighDist", mToPct, mTo);
+      } else document.getElementById("monthHighDist").textContent = "—";
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      const el50 = document.getElementById("sma50");
+      const el200 = document.getElementById("sma200");
+      if (el50) el50.textContent = s50 != null ? money(s50) : "—";
+      if (el200) el200.textContent = s200 != null ? money(s200) : "—";
+      paintMetals();
+      renderSignal(day);
+    }
+    function keySR(daily, day, s50, s200) {
+      const px = day?.price;
+      if (!(px > 0)) return { sup: null, res: null };
+      const bars = (daily || []).filter(b => sameScale(b.close || b.low || b.high, px, 0.25)).slice(-60);
+      const lows = [], highs = [];
+      for (let i = 2; i < bars.length - 2; i++) {
+        const l = Number(bars[i].low || bars[i].close);
+        const h = Number(bars[i].high || bars[i].close);
+        const pl = Number(bars[i-1].low || bars[i-1].close);
+        const nl = Number(bars[i+1].low || bars[i+1].close);
+        const ph = Number(bars[i-1].high || bars[i-1].close);
+        const nh = Number(bars[i+1].high || bars[i+1].close);
+        if (l <= pl && l <= nl && l > 0) lows.push(l);
+        if (h >= ph && h >= nh && h > 0) highs.push(h);
+      }
+      const step = px >= 5000 ? 100 : px >= 800 ? 50 : 10;
+      const roundDown = Math.floor(px / step) * step;
+      const roundUp = Math.ceil(px / step) * step;
+      const below = [];
+      const above = [];
+      lows.forEach(v => { if (v < px * 0.999) below.push(v); });
+      highs.forEach(v => { if (v > px * 1.001) above.push(v); });
+      if (day.low && day.low < px * 0.999) below.push(day.low);
+      if (day.high && day.high > px * 1.001) above.push(day.high);
+      if (s50 && s50 < px * 0.999) below.push(s50);
+      if (s50 && s50 > px * 1.001) above.push(s50);
+      if (s200 && s200 < px * 0.999) below.push(s200);
+      if (s200 && s200 > px * 1.001) above.push(s200);
+      if (roundDown > 0 && roundDown < px * 0.999) below.push(roundDown);
+      if (roundUp > px * 1.001) above.push(roundUp);
+      const month = monthRange(daily, day);
+      if (month.low && month.low < px) below.push(month.low);
+      if (month.high && month.high > px) above.push(month.high);
+      const sup = below.length ? Math.max(...below.filter(v => v > px * 0.85)) : (month.low || day.low);
+      const res = above.length ? Math.min(...above.filter(v => v < px * 1.15)) : (month.high || day.high);
+      return { sup, res };
+    }
+    function sma(daily, n) {
+      const closes = (daily || []).filter(b => !b.isOpen && Number(b.close) > 0).map(b => Number(b.close));
+      if (closes.length < Math.min(n, 10)) return null;
+      const slice = closes.slice(-n);
+      return slice.reduce((a, b) => a + b, 0) / slice.length;
+    }
+    function rsiCloses(closes, n) {
+      if (!closes || closes.length < n + 1) return null;
+      let gains = 0, losses = 0;
+      for (let i = closes.length - n; i < closes.length; i++) {
+        const d = closes[i] - closes[i - 1];
+        if (d >= 0) gains += d; else losses -= d;
+      }
+      const avgG = gains / n, avgL = losses / n;
+      if (avgL === 0) return 100;
+      return 100 - 100 / (1 + avgG / avgL);
+    }
+
+    function closedDaily(daily) {
+      return (daily || []).filter(b => !b.isOpen && Number(b.close) > 0);
+    }
+    function barTR(bar, prevClose) {
+      const h = Number(bar.high || bar.close);
+      const l = Number(bar.low || bar.close);
+      const c = Number(prevClose || bar.close);
+      return Math.max(h - l, Math.abs(h - c), Math.abs(l - c));
+    }
+    function atrN(bars, n) {
+      if (!bars || bars.length < n + 1) return null;
+      let s = 0;
+      for (let i = bars.length - n; i < bars.length; i++) s += barTR(bars[i], bars[i - 1].close);
+      return s / n;
+    }
+    function swingLowList(bars) {
+      const out = [];
+      for (let i = 2; i < bars.length - 2; i++) {
+        const l = Number(bars[i].low || bars[i].close);
+        const pl = Number(bars[i - 1].low || bars[i - 1].close);
+        const nl = Number(bars[i + 1].low || bars[i + 1].close);
+        const p2 = Number(bars[i - 2].low || bars[i - 2].close);
+        const n2 = Number(bars[i + 2].low || bars[i + 2].close);
+        if (l > 0 && l <= pl && l <= nl && l <= p2 && l <= n2) out.push({ i, v: l });
+      }
+      return out;
+    }
+    function roundSteps(px) {
+      const step = px >= 5000 ? 100 : px >= 2500 ? 50 : px >= 800 ? 50 : 10;
+      const half = step / 2;
+      const list = [];
+      const base = Math.round(px / step) * step;
+      for (let k = -6; k <= 3; k++) {
+        const v = base + k * step;
+        if (v > 0) list.push(v);
+        const h = base + k * step + half;
+        if (h > 0 && Math.abs(h - px) / px < 0.08) list.push(h);
+      }
+      return list;
+    }
+    function detectFlushPhase(daily, day, s50) {
+      const px = day && Number(day.price);
+      const bars = closedDaily(daily);
+      const empty = {
+        phase: "QUIETE", phaseCls: "wait",
+        phaseTxt: "Storico insufficiente per leggere rotture e volatilità.",
+        broken: null, flushLow: null, volRatio: null, drop5: null,
+        atr14: null, throughPct: null, daysSince: null
+      };
+      if (!(px > 0) || bars.length < 25) return empty;
+      const live = { high: Number((day && day.high) || px), low: Number((day && day.low) || px), close: px };
+      const seq = bars.slice();
+      const last = seq[seq.length - 1];
+      if (!last || Math.abs(Number(last.close) - px) / px > 0.0015) seq.push(live);
+      else {
+        last.high = Math.max(Number(last.high || last.close), live.high);
+        last.low = Math.min(Number(last.low || last.close), live.low);
+        last.close = px;
+      }
+      const atr14 = atrN(seq, 14);
+      const atr50 = atrN(seq, Math.min(50, Math.max(20, seq.length - 2)));
+      const volRatio = (atr14 > 0 && atr50 > 0) ? atr14 / atr50 : null;
+      const last3tr = seq.length >= 4
+        ? (barTR(seq[seq.length - 1], seq[seq.length - 2].close)
+          + barTR(seq[seq.length - 2], seq[seq.length - 3].close)
+          + barTR(seq[seq.length - 3], seq[seq.length - 4].close)) / 3
+        : null;
+      const burst = (last3tr > 0 && atr50 > 0) ? last3tr / atr50 : null;
+      const win5 = seq.slice(-5);
+      const win20 = seq.slice(-20);
+      const high20 = Math.max(...win20.map(b => Number(b.high || b.close)));
+      const low5 = Math.min(...win5.map(b => Number(b.low || b.close)));
+      const drop5 = high20 > 0 ? ((high20 - px) / high20) * 100 : null;
+      const prior = seq.slice(0, Math.max(0, seq.length - 5));
+      const candidates = [];
+      swingLowList(prior).forEach(s => candidates.push({ v: s.v, k: "swing" }));
+      roundSteps(px).forEach(v => candidates.push({ v, k: "tondo" }));
+      if (s50 > 0) candidates.push({ v: s50, k: "SMA50" });
+      const priorLow = prior.length ? Math.min(...prior.slice(-22).map(b => Number(b.low || b.close))) : null;
+      if (priorLow > 0) candidates.push({ v: priorLow, k: "min 20s" });
+      const monthPrior = prior.filter(b => {
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return false;
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+      if (monthPrior.length) {
+        const ml = Math.min(...monthPrior.map(b => Number(b.low || b.close)));
+        if (ml > 0) candidates.push({ v: ml, k: "min mese" });
+      }
+      function held(level) {
+        if (!(level > 0) || prior.length < 8) return false;
+        const sample = prior.slice(-40);
+        let touches = 0, breaks = 0;
+        sample.forEach(b => {
+          const l = Number(b.low || b.close);
+          const c = Number(b.close);
+          if (l <= level * 1.006 && c >= level * 0.997) touches += 1;
+          if (c < level * 0.994) breaks += 1;
+        });
+        const priorMin = Math.min(...sample.map(b => Number(b.low || b.close)));
+        return (priorMin >= level * 0.996 && touches >= 1) || (breaks <= 1 && touches >= 2);
+      }
+      const recentLow = Math.min(low5, Number((day && day.low) || px));
+      let broken = null;
+      candidates.forEach(c => {
+        const L = c.v;
+        if (!(L > 0)) return;
+        if (recentLow > L * 0.998) return;
+        if (L < px * 0.88 || L > px * 1.03) return;
+        if (!held(L) && c.k === "tondo") {
+          // i tondi restano validi se il prezzo ci ha ruotato intorno
+          const near = prior.slice(-30).filter(b => Math.abs(Number(b.low || b.close) - L) / L < 0.008);
+          if (near.length < 2) return;
+        } else if (!held(L) && c.k !== "tondo") return;
+        const through = ((L - recentLow) / L) * 100;
+        if (through < 0.08 || through > 8) return;
+        if (!broken || Math.abs(L - px) < Math.abs(broken.v - px)) broken = { v: L, k: c.k, through };
+      });
+      const volOn = (volRatio != null && volRatio >= 1.18) || (burst != null && burst >= 1.45);
+      const volHot = (volRatio != null && volRatio >= 1.32) || (burst != null && burst >= 1.8);
+      const washed = drop5 != null && drop5 >= 3.2;
+      const deepWash = drop5 != null && drop5 >= 5;
+      let phase = "QUIETE";
+      let phaseCls = "wait";
+      let phaseTxt = "Nessuna rottura recente di un livello dove di solito si accumulano gli stop.";
+      let daysSince = null;
+      if (broken) {
+        for (let i = seq.length - 1; i >= Math.max(0, seq.length - 8); i--) {
+          if (Number(seq[i].low || seq[i].close) < broken.v * 0.998) {
+            daysSince = seq.length - 1 - i;
+            break;
+          }
+        }
+      }
+      const inPocket = broken && px <= broken.v * 1.006 && px >= recentLow * 0.999;
+      const reclaim = broken && px >= broken.v * 0.997 && px <= broken.v * 1.018;
+      const stillFalling = broken && px < broken.v * 0.975 && (drop5 != null && drop5 >= 4);
+
+      if (broken && (volOn || washed)) {
+        if (stillFalling && !reclaim) {
+          phase = "ROTTURA";
+          phaseCls = "high";
+          phaseTxt = "Il " + broken.k + " a " + broken.v.toFixed(0) + " è stato bucato e il movimento è ancora in corso. Gli stop stanno scattando: è presto per caricare il lotto intero.";
+        } else if (reclaim && (volOn || washed)) {
+          phase = "POST-SWEEP";
+          phaseCls = "ok";
+          phaseTxt = "Sweep avvenuto: il " + broken.k + " è stato preso e il prezzo è tornato sul livello. Zona classica di accumulo dopo il lavaggio degli stop.";
+        } else if (inPocket) {
+          phase = "STOP-RUN";
+          phaseCls = "ok";
+          phaseTxt = "Rottura del " + broken.k + " + volatilità alta. Siamo nella tasca sotto il livello, dove scattano gli stop: area interessante per iniziare a comprare a tranche.";
+        } else {
+          phase = "ROTTURA";
+          phaseCls = "wait";
+          phaseTxt = "Livello " + broken.k + " rotto da " + (daysSince != null ? (daysSince + " sedut" + (daysSince === 1 ? "a" : "e")) : "poco") + ", ma il prezzo è già uscito dalla tasca. Meglio il ritracciamento sul livello.";
+        }
+      } else if (!broken && volHot && deepWash) {
+        phase = "LAVAGGIO";
+        phaseCls = "ok";
+        phaseTxt = "Nessun livello singolo netto, ma la volatilità è esplosa e il calo a 5 sedute è da lavaggio. Area da iniziare a presidiare, non da inseguire al tick.";
+      } else if (volHot && drop5 != null && drop5 < 1.2) {
+        phase = "VOL ESPANSA";
+        phaseCls = "wait";
+        phaseTxt = "Volatilità alta senza rottura al ribasso: più tipico di corsa o rumor, non della fase in cui gli stop sotto un supporto vengono presi.";
+      }
+
+      return {
+        phase, phaseCls, phaseTxt, broken: broken ? broken.v : null, brokenKind: broken ? broken.k : null,
+        flushLow: recentLow, volRatio, burst, drop5, atr14, throughPct: broken ? broken.through : null,
+        daysSince, inPocket, reclaim
+      };
+    }
+
+    function computeBuySignal(daily, day) {
+      const px = day && day.price;
+      const closes = (daily || []).filter(b => !b.isOpen && Number(b.close) > 0).map(b => Number(b.close));
+      if (day && Number(day.price) > 0) {
+        if (!closes.length || Math.abs(closes[closes.length - 1] - px) / px > 0.002)
+          closes.push(px);
+      }
+      const s50 = sma(daily, 50);
+      const s200 = sma(daily, Math.min(200, Math.max(closes.length, 1)));
+      const s200Full = closes.length >= 180;
+      const rsi = rsiCloses(closes, 14);
+      const month = monthRange(daily, day);
+      const dist200 = (s200 > 0 && px > 0) ? ((px / s200) - 1) * 100 : null;
+      const dist50 = (s50 > 0 && px > 0) ? ((px / s50) - 1) * 100 : null;
+      let score = 42;
+      const checks = [];
+
+      const up200 = s200 != null && px > s200;
+      const up50 = s50 != null && px > s50;
+      const bullStack = up200 && s50 != null && s50 > s200;
+
+      if (up200) score += 16; else score -= 10;
+      checks.push({
+        k: "Trend SMA200",
+        v: s200 == null ? "storico corto" : (up200 ? "sopra — trend rialzista" : "sotto — trend debole"),
+        cls: s200 == null ? "warn" : (up200 ? "on" : "off")
+      });
+
+      if (bullStack && up50) score += 12;
+      else if (up200 && s50 != null && px <= s50) score += 10;
+      else if (!up200 && up50) score += 2;
+      else score -= 4;
+      checks.push({
+        k: "Struttura SMA50/200",
+        v: s50 == null ? "n/d" : (bullStack ? "prezzo > SMA50 > SMA200" : (up200 ? "pullback sotto SMA50" : "sotto le medie")),
+        cls: bullStack ? "on" : (up200 ? "warn" : "off")
+      });
+
+      if (rsi != null) {
+        if (up200 && rsi < 30) score += 16;
+        else if (up200 && rsi < 40) score += 12;
+        else if (up200 && rsi < 45) score += 8;
+        else if (up200 && rsi < 50) score += 4;
+        else if (rsi > 75) score -= 18;
+        else if (rsi > 70) score -= 12;
+        else if (rsi > 60) score -= 5;
+        else if (!up200 && rsi < 30) score += 8;
+        else if (!up200 && rsi < 35) score += 4;
+        checks.push({
+          k: "RSI 14 giorni",
+          v: fmt(rsi, 1),
+          cls: (up200 && rsi < 40) || (!up200 && rsi < 32) ? "on" : (rsi > 70 ? "off" : "warn")
+        });
+      } else {
+        checks.push({ k: "RSI 14 giorni", v: "n/d", cls: "warn" });
+      }
+
+      if (dist200 != null) {
+        if (dist200 < -10) score -= 8;
+        else if (dist200 < -5) score += 10;
+        else if (dist200 < 0) score += 7;
+        else if (dist200 < 8) score += 4;
+        else if (dist200 < 16) score += 1;
+        else if (dist200 < 20) score -= 6;
+        else if (dist200 < 25) score -= 14;
+        else score -= 22;
+        checks.push({
+          k: "Estensione vs SMA200",
+          v: (dist200 >= 0 ? "+" : "") + fmt(dist200, 1) + "%",
+          cls: dist200 > 20 || dist200 < -10 ? "off" : (dist200 < 0 || (up200 && dist200 < 8) ? "on" : "warn")
+        });
+      }
+
+      if (dist50 != null && up200 && Math.abs(dist50) <= 1.6) score += 8;
+      checks.push({
+        k: "Distanza SMA50",
+        v: dist50 == null ? "n/d" : ((dist50 >= 0 ? "+" : "") + fmt(dist50, 1) + "%"),
+        cls: dist50 != null && up200 && Math.abs(dist50) <= 1.6 ? "on" : "warn"
+      });
+
+      if (month.low && px) {
+        const mPos = month.high > month.low ? (px - month.low) / (month.high - month.low) : 0.5;
+        if (mPos <= 0.22) score += 6;
+        else if (mPos >= 0.88) score -= 6;
+        checks.push({
+          k: "Posizione range mese",
+          v: fmt(mPos * 100, 0) + "% dal minimo",
+          cls: mPos <= 0.25 ? "on" : (mPos >= 0.85 ? "off" : "warn")
+        });
+      }
+
+      const flush = detectFlushPhase(daily, day, s50);
+      if (flush.phase === "POST-SWEEP") score += up200 ? 16 : 10;
+      else if (flush.phase === "STOP-RUN") score += up200 ? 14 : 8;
+      else if (flush.phase === "LAVAGGIO") score += up200 ? 10 : 6;
+      else if (flush.phase === "ROTTURA") {
+        if (rsi != null && rsi < 28) score += 6;
+        else if (rsi != null && rsi > 42) score -= 6;
+        else score -= 2;
+      }
+      if (flush.volRatio != null && flush.volRatio >= 1.25 && flush.phase !== "QUIETE") score += 3;
+      checks.push({
+        k: "Fase post-rottura",
+        v: flush.phase,
+        cls: flush.phase === "STOP-RUN" || flush.phase === "POST-SWEEP" || flush.phase === "LAVAGGIO" ? "on" : (flush.phase === "ROTTURA" ? "off" : "warn")
+      });
+      checks.push({
+        k: "Livello rotto",
+        v: flush.broken ? (flush.brokenKind + " " + fmt(flush.broken, 0) + (flush.throughPct != null ? " (−" + fmt(flush.throughPct, 1) + "%)" : "")) : "nessuno recente",
+        cls: flush.broken ? "on" : "warn"
+      });
+      checks.push({
+        k: "Volatilità ATR",
+        v: flush.volRatio == null ? "n/d" : (fmt(flush.volRatio, 2) + "× media"),
+        cls: flush.volRatio != null && flush.volRatio >= 1.2 ? "on" : "warn"
+      });
+      if (flush.drop5 != null) {
+        checks.push({
+          k: "Calo da massimo 20s",
+          v: "−" + fmt(flush.drop5, 1) + "%",
+          cls: flush.drop5 >= 3.2 ? "on" : (flush.drop5 >= 1.8 ? "warn" : "off")
+        });
+      }
+
+      score = Math.max(0, Math.min(100, Math.round(score)));
+
+      const lows20 = (daily || []).filter(b => !b.isOpen && Number(b.low || b.close) > 0).slice(-20)
+        .map(b => Number(b.low || b.close));
+      const swing20 = lows20.length ? Math.min(...lows20) : null;
+      const floors = [];
+      if (s200 > 0) floors.push(s200);
+      if (month.low > 0) floors.push(month.low);
+      if (swing20 > 0) floors.push(swing20);
+      if (s50 > 0 && up200 && px > s50) floors.push(s50);
+      if (flush.flushLow > 0) floors.push(flush.flushLow);
+      if (flush.broken > 0 && flush.broken <= px * 1.01) floors.push(flush.broken);
+      const under = floors.filter(v => v > 0 && v <= px * 1.002);
+      const nearFloor = under.length ? Math.max(...under) : (floors.length ? Math.max(...floors) : (day && day.low) || px);
+      const farFloor = floors.length ? Math.min(...floors.filter(v => v > 0)) : nearFloor;
+      const residual = (px > 0 && nearFloor > 0) ? ((px - nearFloor) / px) * 100 : null;
+      const deepResidual = (px > 0 && farFloor > 0) ? ((px - farFloor) / px) * 100 : residual;
+      const limited = residual != null && residual <= 3.2;
+      const moderate = residual != null && residual <= 6.5;
+
+      const sweepHi = flush.broken || nearFloor;
+      const sweepLo = flush.flushLow || farFloor || nearFloor;
+      const inSweep = flush.phase === "STOP-RUN" || flush.phase === "POST-SWEEP" || flush.phase === "LAVAGGIO";
+      const earlyBreak = flush.phase === "ROTTURA";
+
+      let zone, bcls, action, buyPx, buyLab;
+      if (inSweep && score >= 58) {
+        zone = score >= 75 ? "FORTE ACQUISTO" : "ACQUISTO";
+        bcls = "ok";
+        action = flush.phaseTxt + " Per l’oro fisico: prima tranche qui, seconda se il prezzo rivede il low dello sweep. Non aspettare il tick perfetto: lo spread delle monete è già più largo di un’oscillazione fine.";
+        buyPx = flush.reclaim ? px : (limited ? px : (sweepHi && px > sweepHi ? sweepHi : px));
+        buyLab = flush.phase === "POST-SWEEP" ? "rientro sul livello rotto" : (limited ? "zona stop-run: ora" : "zona stop-run");
+      } else if (earlyBreak && score < 70) {
+        zone = "ATTENDERE FINE FLUSH";
+        bcls = "wait";
+        action = flush.phaseTxt + " Il lotto intero si carica quando la volatilità resta alta ma il prezzo smette di fare nuovi minimi sotto il livello rotto.";
+        buyPx = sweepLo;
+        buyLab = "attendi fine stop-run";
+      } else if (score >= 75 && (limited || moderate)) {
+        zone = "FORTE ACQUISTO"; bcls = "ok";
+        action = (flush.phaseTxt && flush.phase !== "QUIETE" ? flush.phaseTxt + " " : "") + "Sei vicino al supporto strutturale. Per l’oro fisico è la zona in cui i ribassi residui sono più contenuti. Carica il lotto pianificato, non inseguire un rimbalzo già partito.";
+        buyPx = limited ? px : nearFloor;
+        buyLab = limited ? "ingresso prudente: ora" : "ingresso prudente sul supporto";
+      } else if (score >= 60) {
+        zone = "ACQUISTO"; bcls = "ok";
+        action = "Quadro costruttivo, ma il prezzo non è ancora sul pavimento. Meglio accumulare a tranche e privilegiare il livello prudente sotto, non il tick corrente se è distante.";
+        buyPx = nearFloor;
+        buyLab = "ingresso prudente (tranche)";
+      } else if (score >= 45) {
+        zone = "NEUTRO / DCA"; bcls = "wait";
+        action = "Niente edge forte. Tieni solo il piano periodico. Il prezzo prudente è il supporto (SMA200 / minimi): sopra quel livello i ribassi possibili restano aperti.";
+        buyPx = s200 || nearFloor || px;
+        buyLab = "riferimento prudente SMA200";
+      } else if (score >= 30) {
+        zone = "ATTENDERE"; bcls = "wait";
+        action = "Ritracciamento incompleto o trend debole. Per limitare i ribassi aspetta il test del supporto, non anticipare.";
+        buyPx = nearFloor;
+        buyLab = "attendi il supporto prudente";
+      } else {
+        zone = "NON ACCUMULARE EXTRA"; bcls = "high";
+        action = "Estensione elevata: dal 2010 queste zone hanno spesso visto correzioni dell’8–15% verso SMA200. Tieni il DCA minimo e non aumentare la taglia finché il prezzo non torna sul livello prudente.";
+        buyPx = s200 || farFloor || px;
+        buyLab = "niente extra sopra il supporto";
+      }
+
+      if (residual != null) {
+        checks.push({
+          k: "Ribasso residuo al supporto",
+          v: (residual <= 0.15 ? "già sul supporto" : ("≈ " + fmt(residual, 1) + "%")),
+          cls: limited ? "on" : (moderate ? "warn" : "off")
+        });
+        checks.push({
+          k: "Pavimento strutturale",
+          v: (s200 ? "SMA200 " : "") + (nearFloor ? fmt(nearFloor, 2) : "n/d"),
+          cls: limited ? "on" : "warn"
+        });
+      }
+
+      if (!s200Full) {
+        action = "Storico ancora parziale per la SMA200. Il livello prudente è indicativo finché non arrivano ~200 sedute. " + action;
+      }
+
+      let riskTxt = residual == null
+        ? "Mancano i dati per stimare un pavimento."
+        : (limited
+          ? "Ribasso residuo limitato: sei entro circa " + fmt(Math.max(residual, 0), 1) + "% dal supporto. È la zona più difensiva disponibile, non un prezzo infallibile."
+          : ("Se compri ora, il ribasso tipico verso il supporto è circa " + fmt(residual, 1) + "%. Il prezzo prudente è " + fmt(nearFloor, 2) + ". Un caso più profondo (minimo mese / SMA200 più bassa) può arrivare a circa " + fmt(Math.max(deepResidual || residual, residual), 1) + "%."));
+      if (flush.broken && flush.flushLow) {
+        riskTxt += " Sweep: livello " + fmt(flush.broken, 2) + ", low del lavaggio " + fmt(flush.flushLow, 2) + ".";
+      }
+
+      return { score, zone, bcls, action, buyPx, buyLab, checks, s50, s200, rsi, dist200, s200Full, residual, riskTxt, nearFloor, flush, sweepLo, sweepHi };
+    }
+    function renderSignal(day) {
+      const box = document.getElementById("sigChecks");
+      if (!box) return;
+      const sig = computeBuySignal(state.daily, day);
+      const sc = document.getElementById("sigScore");
+      sc.innerHTML = sig.score + '<span>punteggio 0–100</span>';
+      const badge = document.getElementById("sigBadge");
+      badge.className = "badge " + sig.bcls;
+      badge.textContent = sig.zone;
+      document.getElementById("sigZonePx").textContent = sig.buyPx != null ? money(sig.buyPx) : "—";
+      document.getElementById("sigZoneLab").textContent = sig.buyLab;
+      document.getElementById("sigHint").textContent = sig.action;
+      const riskEl = document.getElementById("sigRisk");
+      if (riskEl) riskEl.textContent = sig.riskTxt || "";
+      document.getElementById("sigBar").style.width = sig.score + "%";
+      const ph = document.getElementById("sigPhase");
+      if (ph && sig.flush) {
+        ph.className = "sig-phase " + (sig.flush.phaseCls || "wait");
+        const band = (sig.sweepLo && sig.sweepHi && sig.flush.broken)
+          ? " Zona " + money(Math.min(sig.sweepLo, sig.sweepHi)) + " – " + money(Math.max(sig.sweepLo, sig.sweepHi)) + "."
+          : "";
+        ph.innerHTML = "<b>Fase " + sig.flush.phase + "</b><span>" + sig.flush.phaseTxt + band + "</span>";
+      }
+      box.innerHTML = sig.checks.map(c =>
+        '<div class="sig-item ' + c.cls + '"><label>' + c.k + "</label><b>" + c.v + "</b></div>"
+      ).join("");
+    }
+    function paintMetalCell(id, px, diff) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!(px > 0)) { el.textContent = "—"; return; }
+      const d = Number(diff);
+      const cls = d > 0.0001 ? "up" : (d < -0.0001 ? "down" : "");
+      const pct = Number.isFinite(d) ? ((d >= 0 ? "+" : "") + fmt(d, 2) + "% vs ieri") : "—";
+      el.innerHTML = money(px) + '<span class="' + cls + '" style="display:block;font-size:.78em;margin-top:2px">' + pct + "</span>";
+    }
+    function lastClosedClose(bars) {
+      const list = (bars || []).filter(b => Number(b.close) > 0);
+      if (!list.length) return null;
+      const today = typeof sessionDayKey === "function" ? sessionDayKey(new Date()) : null;
+      const dated = list.filter(b => {
+        if (b.isOpen) return false;
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return true;
+        return !today || sessionDayKey(d) !== today;
+      });
+      const pool = dated.length ? dated : list.filter(b => !b.isOpen);
+      if (!pool.length) return Number(list[list.length - 1].close);
+      pool.sort((a, b) => new Date(a.openTime || a.time || 0) - new Date(b.openTime || b.time || 0));
+      return Number(pool[pool.length - 1].close);
+    }
+    function pctVsPrev(mid, prev, fallback) {
+      if (mid > 0 && prev > 0) return ((mid - prev) / prev) * 100;
+      const fb = Number(fallback);
+      return Number.isFinite(fb) ? fb : null;
+    }
+    function toCcyFromUsd(usd) {
+      if (!(usd > 0)) return null;
+      const q = state.quote || {};
+      if (state.ccy === "USD") return usd;
+      if (state.ccy === "EUR") return q.eurusd > 0 ? usd / q.eurusd : null;
+      if (state.ccy === "PLN") {
+        const usdpln = (q.eurpln > 0 && q.eurusd > 0) ? (q.eurpln / q.eurusd) : null;
+        return usdpln ? usd * usdpln : null;
+      }
+      if (state.ccy === "CHF") {
+        const usdchf = (q.eurchf > 0 && q.eurusd > 0) ? (q.eurchf / q.eurusd) : null;
+        return usdchf ? usd * usdchf : null;
+      }
+      return usd;
+    }
+    function paintMetals() {
+      const m = state.metals;
+      if (!m) return;
+      let xag = null, xagDiff = null;
+      if (state.ccy === "EUR" && m.xagEur && m.xagEur.mid > 0) {
+        xag = m.xagEur.mid;
+        xagDiff = pctVsPrev(m.xagEur.mid, m.xagEurPrev, m.xagEur.dayDiffPercent);
+      } else if (m.xagUsd && m.xagUsd.mid > 0) {
+        xag = toCcyFromUsd(m.xagUsd.mid);
+        xagDiff = pctVsPrev(m.xagUsd.mid, m.xagUsdPrev, m.xagUsd.dayDiffPercent);
+      }
+      let xpt = null, xptDiff = null;
+      if (m.xptUsd && m.xptUsd.mid > 0) {
+        xpt = toCcyFromUsd(m.xptUsd.mid);
+        xptDiff = pctVsPrev(m.xptUsd.mid, m.xptUsdPrev, m.xptUsd.dayDiffPercent);
+      }
+      paintMetalCell("xagPx", xag, xagDiff);
+      paintMetalCell("xptPx", xpt, xptDiff);
+    }
+    async function loadMetals() {
+      const [xagUsd, xptUsd, xagEur, xagUsdBars, xptUsdBars, xagEurBars] = await Promise.all([
+        getJSON(`${API}/XAGUSD`).catch(() => null),
+        getJSON(`${API}/XPTUSD`).catch(() => null),
+        getJSON(`${API}/XAGEUR`).catch(() => null),
+        loadOhlc("XAGUSD", "1d", 6).catch(() => []),
+        loadOhlc("XPTUSD", "1d", 6).catch(() => []),
+        loadOhlc("XAGEUR", "1d", 6).catch(() => []),
+      ]);
+      state.metals = {
+        xagUsd, xptUsd, xagEur,
+        xagUsdPrev: lastClosedClose(xagUsdBars),
+        xptUsdPrev: lastClosedClose(xptUsdBars),
+        xagEurPrev: lastClosedClose(xagEurBars)
+      };
+      paintMetals();
+    }
+
+    function tokenizeCalc(raw) {
+      const s = String(raw || "").replace(/,/g, ".").replace(/[×xX]/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/\s+/g, "");
+      const out = [];
+      let cur = "";
+      for (const ch of s) {
+        if ("+-*/".includes(ch)) {
+          if (cur) { out.push({ t: "n", v: Number(cur) }); cur = ""; }
+          else if (ch === "-" && (!out.length || out[out.length-1].t === "op")) { cur = "-"; continue; }
+          out.push({ t: "op", v: ch });
+        } else cur += ch;
+      }
+      if (cur !== "" && cur !== "-") out.push({ t: "n", v: Number(cur) });
+      return out;
+    }
+    function countCalcNums(raw) {
+      return tokenizeCalc(raw).filter(x => x.t === "n" && Number.isFinite(x.v)).length;
+    }
+    function evalTokens(toks) {
+      const nums = toks.filter(x => x.t === "n" && Number.isFinite(x.v));
+      if (!nums.length) return { ok: false, steps: [], value: 0 };
+      const steps = [{ label: "Peso 1", value: nums[0].v }];
+      let acc = nums[0].v;
+      let ni = 1;
+      for (let i = 0; i < toks.length; i++) {
+        if (toks[i].t !== "op") continue;
+        const n = toks[i+1] && toks[i+1].t === "n" ? toks[i+1].v : null;
+        if (n == null || !Number.isFinite(n)) continue;
+        const op = toks[i].v;
+        if (op === "+") acc = acc + n;
+        else if (op === "-") acc = acc - n;
+        else if (op === "*") acc = acc * n;
+        else if (op === "/") acc = n === 0 ? acc : acc / n;
+        const lab = op === "+" ? "+ peso" : op === "-" ? "− peso" : op === "*" ? "×" : "÷";
+        ni += 1;
+        steps.push({ label: lab + " " + ni, value: n, op });
+      }
+      return { ok: true, steps, value: acc };
+    }
+    function renderCalc18(g24) {
+      state.g24 = g24;
+      const box = document.getElementById("calc18");
+      if (!box) return;
+      const ev = evalTokens(tokenizeCalc(document.getElementById("w18")?.value));
+      const w = ev.ok ? ev.value : 0;
+      const g18 = g24 != null ? g24 * K18 : null;
+      const rows = [];
+      if (!ev.steps.length) {
+        rows.push("<li><span>Pesi (max 8)</span><span>—</span></li>");
+      } else {
+        ev.steps.forEach(s => {
+          rows.push("<li><span>" + s.label + "</span><span>" + fmt(s.value, 2) + " g</span></li>");
+        });
+        if (ev.steps.length > 1) rows.push('<li class="tot"><span>= peso risultante</span><span>' + fmt(w, 2) + " g</span></li>");
+      }
+      if (w > 0 && g18 != null) {
+        rows.push("<li><span>× prezzo 18K / g</span><span>" + money(g18) + "/g</span></li>");
+        rows.push('<li class="eq"><span>= valore 18K</span><span>' + money(w * g18) + "</span></li>");
+      } else {
+        rows.push("<li><span>× prezzo 18K / g</span><span>" + (g18 != null ? money(g18) + "/g" : "—") + "</span></li>");
+        rows.push('<li class="eq"><span>= valore 18K</span><span>—</span></li>');
+      }
+      box.innerHTML = rows.join("");
+    }
+    function applyQuote(q) {
+      state.quote = q;
+      const mid = q.mid;
+      const g24 = mid / TROY_G;
+      document.getElementById("price").textContent = money(mid);
+      document.getElementById("priceUnit").textContent =
+        "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : state.ccy === "USD" ? "dollari USA" : state.ccy === "CHF" ? "franchi svizzeri" : "euro");
+      const chgEl = document.getElementById("chg");
+      const today = sessionDayKey(new Date());
+      const prevBar = (state.daily || []).filter(b => {
+        if (b.isOpen || !(Number(b.close) > 0)) return false;
+        const d = sessionDayKey(new Date(b.openTime || b.time || 0));
+        return d !== today && d !== "invalid";
+      }).pop();
+      const prevClose = prevBar && sameScale(prevBar.close, q.mid, 0.25) ? prevBar.close : (q.prevClose || null);
+      const chg = prevClose ? ((q.mid - prevClose) / prevClose) * 100 : (q.dayDiffPercent || 0);
+      chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
+      chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
+      document.getElementById("g24").textContent = money(g24);
+      document.getElementById("g22").textContent = money(g24 * K22);
+      document.getElementById("g216").textContent = money(g24 * K216);
+      document.getElementById("g18").textContent = money(g24 * K18);
+      renderCalc18(g24);
+      document.getElementById("g14").textContent = money(g24 * K14);
+      document.getElementById("g9").textContent = money(g24 * K9);
+      renderCoins(g24);
+      paintFx("eurusd", q.eurusd, 4, q.eurusdDiff);
+      paintFx("eurpln", q.eurpln, 4, q.eurplnDiff);
+      paintFx("eurchf", q.eurchf, 4, q.eurchfDiff);
+      const when = new Date(q.lastQuoteAt || q.timestamp || Date.now());
+      state.lastTick = when;
+      paintClock(when);
+      const open = isGoldMarketOpen(q);
+      document.getElementById("liveLabel").textContent = open ? (q.stale ? "Ritardo" : "Live") : "Closed";
+      document.getElementById("liveDot").classList.toggle("off", !open || !!q.stale);
+      renderBuy(todayBar(state.daily, q));
+      if (state.intraday?.length && q.mid) {
+        const last = state.intraday[state.intraday.length - 1];
+        if (last) last.close = q.mid;
+        drawSpark(state.intraday);
+      }
+    }
+    function multiplyBars(goldBars, fxBars) {
+      const fxMap = new Map();
+      (fxBars || []).forEach(b => fxMap.set(b.openTime, b));
+      const times = [...fxMap.keys()].sort();
+      function nearestFx(t) {
+        if (fxMap.has(t)) return fxMap.get(t);
+        let best = null, bestDt = Infinity;
+        for (const ft of times) {
+          const dt = Math.abs(new Date(ft) - new Date(t));
+          if (dt < bestDt) { bestDt = dt; best = fxMap.get(ft); }
+        }
+        return best;
+      }
+      return goldBars.map(g => {
+        const fx = nearestFx(g.openTime);
+        if (!fx) return null;
+        const m = fx.close;
+        return { openTime: g.openTime, open: g.open * (fx.open || m), high: g.high * (fx.high || m), low: g.low * (fx.low || m), close: g.close * m, isOpen: g.isOpen };
+      }).filter(Boolean);
+    }
+    async function loadOhlc(symbol, interval, limit) {
+      const data = await getJSON(`${API}/${symbol}/ohlc?interval=${interval}&limit=${limit}`);
+      return data.bars || [];
+    }
+    function drawSpark(bars) {
+      const svg = document.getElementById("spark");
+      if (!svg) return;
+      const rows = (bars || []).filter(b => Number(b.close) > 0);
+      const pts = rows.map(b => Number(b.close));
+      if (pts.length < 2) { svg.innerHTML = ""; return; }
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      let min = Math.min(...pts), max = Math.max(...pts);
+      [s50, s200].forEach(v => {
+        if (v != null && v > 0) {
+          const mid = (min + max) / 2;
+          if (Math.abs(v - mid) / mid < 0.15) { min = Math.min(min, v); max = Math.max(max, v); }
+        }
+      });
+      const span = max - min || 1;
+      const W = 560, H = 400, L = 8, R = 50, T = 8, B = 32;
+      const pw = W - L - R, ph = H - T - B;
+      function yx(v) { return T + (1 - (v - min) / span) * ph; }
+      const line = pts.map((v, i) => {
+        const x = L + (i / (pts.length - 1)) * pw;
+        return x.toFixed(1) + "," + yx(v).toFixed(1);
+      }).join(" ");
+      const up = pts[pts.length - 1] >= pts[0];
+      const col = up ? "#3dd68c" : "#ff6b6b";
+      const yVals = [max, min + span * 0.5, min];
+      const gridH = yVals.map((v, i) => {
+        const y = (T + i * ph / 2).toFixed(1);
+        return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
+          <text x="${W-R+5}" y="${Number(y)+4}" text-anchor="start" fill="#9aa0a6" font-size="11">${fmt(v, 0)}</text>`;
+      }).join("");
+      const gridV = [0,1,2].map(i => {
+        const x = (L + i * pw / 2).toFixed(1);
+        return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
+      }).join("");
+      function labTime(b) {
+        if (!b) return "";
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return "";
+        const tf = state.tf || "1D";
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        if (tf === "1D" || tf === "7D") return hh + ":" + mm;
+        return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0");
+      }
+      const xLabs = [0, 0.5, 1].map((p, idx) => {
+        const i = Math.round(p * (rows.length - 1));
+        const x = L + p * pw;
+        const anchor = idx === 0 ? "start" : idx === 2 ? "end" : "middle";
+        return `<text x="${x.toFixed(1)}" y="${T+ph+22}" text-anchor="${anchor}" fill="#9aa0a6" font-size="12">${labTime(rows[i])}</text>`;
+      }).join("");
+      function smaLine(val, color, tag) {
+        if (val == null || val <= 0) return "";
+        if (val < min || val > max) return "";
+        const y = yx(val);
+        return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="5 4" />
+          <text x="${L+4}" y="${(y-4).toFixed(1)}" fill="${color}" font-size="10">${tag} ${fmt(val, 0)}</text>`;
+      }
+      svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
+        <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        ${smaLine(s50, "#f0d78c", "SMA50")}
+        ${smaLine(s200, "#7ec8e3", "SMA200")}
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
+        ${xLabs}`;
+    }
+    const TF = {
+      "1D": { interval: "15m", limit: 96 },
+      "7D": { interval: "1h", limit: 168 },
+      "1M": { interval: "1d", limit: 32 },
+      "3M": { interval: "1d", limit: 95 },
+      "6M": { interval: "1d", limit: 190 }
+    };
+    async function loadChart() {
+      const spec = TF[state.tf] || TF["1D"];
+      async function bars(interval, limit) {
+        const gold = await loadOhlc(goldSymbol(), interval, limit);
+        const fx = fxSymbol();
+        const series = fx ? multiplyBars(gold, await loadOhlc(fx, interval, limit)) : gold;
+        return series.slice().reverse();
+      }
+      try {
+        state.intraday = await bars(spec.interval, spec.limit);
+      } catch (e) {
+        if (spec.interval === "1h") state.intraday = await bars("15m", 200);
+        else throw e;
+      }
+      drawSpark(state.intraday);
+    }
+    async function loadIntraday() { return loadChart(); }
+    async function loadDaily() {
+      const gold = await loadOhlc(goldSymbol(), "1d", 260);
+      const fx = fxSymbol();
+      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "1d", 260)) : gold;
+      state.daily = series.slice().reverse();
+    }
+    async function loadQuoteBiquote() {
+      const gold = await getJSON(`${API}/${goldSymbol()}`);
+      const epln = await getJSON(`${API}/EURPLN`);
+      const xauUsdQ = await getJSON(`${API}/XAUUSD`);
+      const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
+      const fxName = fxSymbol();
+      let q;
+      if (!fxName) {
+        q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
+      } else {
+        const fx = await getJSON(`${API}/${fxName}`);
+        q = {
+          mid: gold.mid * fx.mid, high: gold.high * fx.high, low: gold.low * fx.low,
+          marketState: gold.marketState, stale: gold.stale || fx.stale,
+          lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
+          symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
+        };
+      }
+      const closed = (state.daily || []).filter(b => !b.isOpen);
+      if (closed.length >= 1) {
+        const prev = closed[closed.length - 1].close;
+        q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => sessionDayKey(new Date(b.openTime || b.time || 0)) === day);
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
+      }
+      return q;
+    }
+    async function loadQuoteFallback() {
+      const [eur, usd, fx] = await Promise.all([
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
+      ]);
+      const xauEur = Number(eur.symbols[0].price);
+      const xauUsd = Number(usd.symbols[0].price);
+      const eurpln = Number(fx.rates.PLN);
+      const eurusd = Number(fx.rates.USD);
+      const ts = eur.symbols[0].computed_at;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
+      return {
+        mid, high: mid, low: mid, marketState: "open", stale: false,
+        lastQuoteAt: ts, timestamp: ts,
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0), eurchf: Number(fx.rates.CHF || 0), _xauUsd: xauUsd,
+      };
+    }
+    async function loadQuote() {
+      const q = await firstOk([loadQuoteBiquote, loadQuoteFallback]);
+      applyQuote(q);
+      document.getElementById("iosHint").style.display = "none";
+      try { await loadMetals(); } catch (e) {}
+      try {
+        const xau = await getJSON(`${API}/XAUUSD`);
+        const usdpln = await getJSON(`${API}/USDPLN`);
+        renderApart(xau.mid * usdpln.mid);
+      } catch (e) {
+        if (q.eurpln && q.symbol === "XAUEUR") renderApart(q.mid * q.eurpln);
+        else if (state.ccy === "PLN") renderApart(q.mid);
+      }
+    }
+    async function boot(full = true) {
+      try {
+        showErr("");
+        if (full) {
+          try { await loadDaily(); } catch (e) { console.warn("storico non disponibile", e); }
+          try { await loadIntraday(); } catch (e) { console.warn("intraday non disponibile", e); }
+        } else if (state.intraday?.length) {
+          drawSpark(state.intraday);
+        }
+        await loadQuote();
+        try { await loadTreasuries(); } catch (e) {}
+        if (full || !state.fxPrev) {
+          try { await loadFxPrev(); } catch (e) {}
+          if (state.quote) {
+            paintFx("eurusd", state.quote.eurusd, 4);
+            paintFx("eurpln", state.quote.eurpln, 4);
+            paintFx("eurchf", state.quote.eurchf, 4);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        document.getElementById("iosHint").style.display = "block";
+        showErr("Dati non arrivati. Su iPhone apri il file in Safari. (" + (e.name === "AbortError" ? "timeout" : e.message) + ")");
+        document.getElementById("liveDot").classList.add("off");
+        document.getElementById("liveLabel").textContent = "Offline";
+      }
+    }
+    function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
+    function fmt(n, d = 2) {
+      if (n == null || Number.isNaN(n)) return "—";
+      return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
+    }
+    function money(n, d = 2) {
+      const num = fmt(n, d);
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
+    }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleString("it-IT");
+    }
+    function showErr(msg) {
+      const box = document.getElementById("errBox");
+      if (!msg) { box.style.display = "none"; box.textContent = ""; return; }
+      box.style.display = "block"; box.textContent = msg;
+    }
+    async function getJSON(url, ms = 8000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally { clearTimeout(t); }
+    }
+    async function firstOk(jobs) {
+      let last = null;
+      for (const job of jobs) { try { return await job(); } catch (e) { last = e; } }
+      throw last || new Error("nessuna fonte");
+    }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
+    function todayBar(daily, quote) {
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
+      }
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
+      });
+      let high = mid, low = mid;
+      bars.forEach(b => {
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
+      });
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: openPx, high, low, price: mid };
+    }
+    function parseApartCatalog(text) {
+      const rows = [];
+      const re = /\[([^\]]+1oz[^\]]*)\]\((https:\/\/mennica\.apart\.pl\/produkt\/[^)]+)\)[\s\S]{0,180}?(\d[\d\s]{3,6})\s*PLN/gi;
+      let m;
+      while ((m = re.exec(text))) {
+        const name = m[1].replace(/\s+/g, " ").trim();
+        const url = m[2];
+        const price = Number(String(m[3]).replace(/\s/g, ""));
+        if (price > 10000 && price < 40000) rows.push({ name, url, price });
+      }
+      const uniq = [], seen = new Set();
+      for (const r of rows) { if (seen.has(r.url)) continue; seen.add(r.url); uniq.push(r); }
+      return uniq.sort((a, b) => a.price - b.price);
+    }
+    async function getJSONText(url) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.text();
+      } finally { clearTimeout(t); }
+    }
+    async function fetchApartCatalog() {
+      const proxies = [
+        "https://r.jina.ai/http://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h",
+        "https://r.jina.ai/" + APART_LIST_URL,
+      ];
+      for (const url of proxies) {
+        try {
+          const text = await getJSONText(url);
+          const list = parseApartCatalog(text);
+          if (list.length >= 5) return list;
+        } catch (e) {}
+      }
+      return null;
+    }
+    async function refreshApart() {
+      const btn = document.getElementById("apartBtn");
+      btn.disabled = true;
+      btn.textContent = "Leggo Apart…";
+      try {
+        const list = await fetchApartCatalog();
+        if (list && list.length) {
+          state.apartList = list;
+          state.apartSource = "sito live " + new Date().toLocaleTimeString("it-IT");
+        } else {
+          state.apartSource = "listino vero 01/09/2026 15:05 (Apart blocca la lettura dal browser)";
+        }
+        let spot = state.spotPln;
+        try {
+          const xau = await getJSON(`${API}/XAUUSD`);
+          const usdpln = await getJSON(`${API}/USDPLN`);
+          spot = xau.mid * usdpln.mid;
+        } catch (e) {}
+        renderApart(spot);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Aggiorna listino Apart";
+      }
+    }
+    async function loadQuote() {
+      const q = await firstOk([loadQuoteBiquote, loadQuoteFallback]);
+      applyQuote(q);
+      document.getElementById("iosHint").style.display = "none";
+      try { await loadMetals(); } catch (e) {}
+      try {
+        const xau = await getJSON(`${API}/XAUUSD`);
+        const usdpln = await getJSON(`${API}/USDPLN`);
+        renderApart(xau.mid * usdpln.mid);
+      } catch (e) {
+        if (q.eurpln && q.symbol === "XAUEUR") renderApart(q.mid * q.eurpln);
+        else if (state.ccy === "PLN") renderApart(q.mid);
+      }
+    }
+    async function loadQuoteBiquote() {
+      const gold = await getJSON(`${API}/${goldSymbol()}`);
+      const epln = await getJSON(`${API}/EURPLN`);
+      const xauUsdQ = await getJSON(`${API}/XAUUSD`);
+      const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
+      const fxName = fxSymbol();
+      let q;
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
+      else {
+        const fx = await getJSON(`${API}/${fxName}`);
+        q = {
+          mid: gold.mid * fx.mid, high: gold.high * fx.high, low: gold.low * fx.low,
+          marketState: gold.marketState, stale: gold.stale || fx.stale,
+          lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
+          symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
+        };
+      }
+      const closed = (state.daily || []).filter(b => !b.isOpen);
+      if (closed.length >= 1) {
+        const prev = closed[closed.length - 1].close;
+        q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
+      }
+      return q;
+    }
+    async function loadQuoteFallback() {
+      const [eur, usd, fx] = await Promise.all([
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
+      ]);
+      const xauEur = Number(eur.symbols[0].price);
+      const xauUsd = Number(usd.symbols[0].price);
+      const eurpln = Number(fx.rates.PLN);
+      const eurusd = Number(fx.rates.USD);
+      const ts = eur.symbols[0].computed_at;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
+      return {
+        mid, high: mid, low: mid, marketState: "open", stale: false,
+        lastQuoteAt: ts, timestamp: ts,
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0),
+      };
+    }
+    async function loadOhlc(symbol, interval, limit) {
+      const data = await getJSON(`${API}/${symbol}/ohlc?interval=${interval}&limit=${limit}`);
+      return data.bars || [];
+    }
+    function drawSpark(bars) {
+      const svg = document.getElementById("spark");
+      if (!svg) return;
+      const rows = (bars || []).filter(b => Number(b.close) > 0);
+      const pts = rows.map(b => Number(b.close));
+      if (pts.length < 2) { svg.innerHTML = ""; return; }
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      let min = Math.min(...pts), max = Math.max(...pts);
+      [s50, s200].forEach(v => {
+        if (v != null && v > 0) {
+          const mid = (min + max) / 2;
+          if (Math.abs(v - mid) / mid < 0.15) { min = Math.min(min, v); max = Math.max(max, v); }
+        }
+      });
+      const span = max - min || 1;
+      const W = 560, H = 400, L = 8, R = 50, T = 8, B = 32;
+      const pw = W - L - R, ph = H - T - B;
+      function yx(v) { return T + (1 - (v - min) / span) * ph; }
+      const line = pts.map((v, i) => {
+        const x = L + (i / (pts.length - 1)) * pw;
+        return x.toFixed(1) + "," + yx(v).toFixed(1);
+      }).join(" ");
+      const up = pts[pts.length - 1] >= pts[0];
+      const col = up ? "#3dd68c" : "#ff6b6b";
+      const yVals = [max, min + span * 0.5, min];
+      const gridH = yVals.map((v, i) => {
+        const y = (T + i * ph / 2).toFixed(1);
+        return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
+          <text x="${W-R+5}" y="${Number(y)+4}" text-anchor="start" fill="#9aa0a6" font-size="11">${fmt(v, 0)}</text>`;
+      }).join("");
+      const gridV = [0,1,2].map(i => {
+        const x = (L + i * pw / 2).toFixed(1);
+        return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
+      }).join("");
+      function labTime(b) {
+        if (!b) return "";
+        const d = new Date(b.openTime || b.time || 0);
+        if (Number.isNaN(d.getTime())) return "";
+        const tf = state.tf || "1D";
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        if (tf === "1D" || tf === "7D") return hh + ":" + mm;
+        return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0");
+      }
+      const xLabs = [0, 0.5, 1].map((p, idx) => {
+        const i = Math.round(p * (rows.length - 1));
+        const x = L + p * pw;
+        const anchor = idx === 0 ? "start" : idx === 2 ? "end" : "middle";
+        return `<text x="${x.toFixed(1)}" y="${T+ph+22}" text-anchor="${anchor}" fill="#9aa0a6" font-size="12">${labTime(rows[i])}</text>`;
+      }).join("");
+      function smaLine(val, color, tag) {
+        if (val == null || val <= 0) return "";
+        if (val < min || val > max) return "";
+        const y = yx(val);
+        return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="5 4" />
+          <text x="${L+4}" y="${(y-4).toFixed(1)}" fill="${color}" font-size="10">${tag} ${fmt(val, 0)}</text>`;
+      }
+      svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
+        <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        ${smaLine(s50, "#f0d78c", "SMA50")}
+        ${smaLine(s200, "#7ec8e3", "SMA200")}
+        <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
+        ${xLabs}`;
+    }
+    async function loadIntraday() { return loadChart(); }
+    async function loadDaily() {
+      const gold = await loadOhlc(goldSymbol(), "1d", 260);
+      const fx = fxSymbol();
+      const series = fx ? multiplyBars(gold, await loadOhlc(fx, "1d", 260)) : gold;
+      state.daily = series.slice().reverse();
+    }
+    function multiplyBars(goldBars, fxBars) {
+      const fxMap = new Map();
+      (fxBars || []).forEach(b => fxMap.set(b.openTime, b));
+      const times = [...fxMap.keys()].sort();
+      function nearestFx(t) {
+        if (fxMap.has(t)) return fxMap.get(t);
+        let best = null, bestDt = Infinity;
+        for (const ft of times) {
+          const dt = Math.abs(new Date(ft) - new Date(t));
+          if (dt < bestDt) { bestDt = dt; best = fxMap.get(ft); }
+        }
+        return best;
+      }
+      return goldBars.map(g => {
+        const fx = nearestFx(g.openTime);
+        if (!fx) return null;
+        const m = fx.close;
+        return { openTime: g.openTime, open: g.open * (fx.open || m), high: g.high * (fx.high || m), low: g.low * (fx.low || m), close: g.close * m, isOpen: g.isOpen };
+      }).filter(Boolean);
+    }
+    async function loadQuote() {
+      const q = await firstOk([loadQuoteBiquote, loadQuoteFallback]);
+      applyQuote(q);
+      document.getElementById("iosHint").style.display = "none";
+      try { await loadMetals(); } catch (e) {}
+      try {
+        const xau = await getJSON(`${API}/XAUUSD`);
+        const usdpln = await getJSON(`${API}/USDPLN`);
+        renderApart(xau.mid * usdpln.mid);
+      } catch (e) {
+        if (q.eurpln && q.symbol === "XAUEUR") renderApart(q.mid * q.eurpln);
+        else if (state.ccy === "PLN") renderApart(q.mid);
+      }
+    }
+    async function loadQuoteBiquote() {
+      const gold = await getJSON(`${API}/${goldSymbol()}`);
+      const epln = await getJSON(`${API}/EURPLN`);
+      const xauUsdQ = await getJSON(`${API}/XAUUSD`);
+      const eurUsdQ = await getJSON(`${API}/EURUSD`);
+      let eurChfQ = { mid: null };
+      try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
+      const fxName = fxSymbol();
+      let q;
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
+      else {
+        const fx = await getJSON(`${API}/${fxName}`);
+        q = {
+          mid: gold.mid * fx.mid, high: gold.high * fx.high, low: gold.low * fx.low,
+          marketState: gold.marketState, stale: gold.stale || fx.stale,
+          lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
+          symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
+        };
+      }
+      const closed = (state.daily || []).filter(b => !b.isOpen);
+      if (closed.length >= 1) {
+        const prev = closed[closed.length - 1].close;
+        q.dayDiffPercent = ((q.mid - prev) / prev) * 100;
+      }
+      const day = sessionDayKey(new Date());
+      const todayBars = (state.daily || []).filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === day;
+      });
+      if (todayBars.length) {
+        const th = Math.max(...todayBars.map(b => b.high || q.mid), q.mid);
+        const tl = Math.min(...todayBars.map(b => b.low || q.mid), q.mid);
+        q.high = Math.max(q.high || q.mid, th);
+        q.low = Math.min(q.low || q.mid, tl);
+      } else {
+        q.high = q.mid;
+        q.low = q.mid;
+      }
+      return q;
+    }
+    async function loadQuoteFallback() {
+      const [eur, usd, fx] = await Promise.all([
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-EUR-SPOT"),
+        getJSON("https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT"),
+        getJSON("https://api.frankfurter.app/latest?from=EUR&to=PLN,USD,CHF"),
+      ]);
+      const xauEur = Number(eur.symbols[0].price);
+      const xauUsd = Number(usd.symbols[0].price);
+      const eurpln = Number(fx.rates.PLN);
+      const eurusd = Number(fx.rates.USD);
+      const ts = eur.symbols[0].computed_at;
+      const mid = state.ccy === "PLN" ? xauEur * eurpln : state.ccy === "USD" ? xauUsd : state.ccy === "CHF" ? xauEur * Number(fx.rates.CHF || 0) : xauEur;
+      return {
+        mid, high: mid, low: mid, marketState: "open", stale: false,
+        lastQuoteAt: ts, timestamp: ts,
+        symbol: state.ccy === "PLN" ? "XAUPLN" : state.ccy === "USD" ? "XAUUSD" : state.ccy === "CHF" ? "XAUCHF" : "XAUEUR",
+        dayDiffPercent: 0, eurpln, xauusd: xauUsd, eurusd, eurchf: Number(fx.rates.CHF || 0),
+      };
+    }
+    function goldSymbol() { return state.ccy === "EUR" ? "XAUEUR" : "XAUUSD"; }
+    function fxSymbol() { return state.ccy === "PLN" ? "USDPLN" : state.ccy === "CHF" ? "USDCHF" : null; }
+    function fmt(n, d = 2) {
+      if (n == null || Number.isNaN(n)) return "—";
+      return Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
+    }
+    function money(n, d = 2) {
+      const num = fmt(n, d);
+      if (state.ccy === "PLN") return num + "\u00A0zł";
+      if (state.ccy === "CHF") return num + "\u00A0CHF";
+      if (state.ccy === "USD") return num + "\u00A0$";
+      return num + "\u00A0€";
+    }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleString("it-IT");
+    }
+    function showErr(msg) {
+      const box = document.getElementById("errBox");
+      if (!msg) { box.style.display = "none"; box.textContent = ""; return; }
+      box.style.display = "block"; box.textContent = msg;
+    }
+    async function getJSON(url, ms = 8000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally { clearTimeout(t); }
+    }
+    async function firstOk(jobs) {
+      let last = null;
+      for (const job of jobs) { try { return await job(); } catch (e) { last = e; } }
+      throw last || new Error("nessuna fonte");
+    }
+    function sameScale(v, mid, band) {
+      if (v == null || mid == null || !(mid > 0)) return false;
+      const b = band || 0.2;
+      return v > mid * (1 - b) && v < mid * (1 + b);
+    }
+    function todayBar(daily, quote) {
+      const mid = quote?.mid;
+      const day = sessionDayKey(new Date()) + "|" + (state.ccy || "EUR");
+      if (state.sessionDay !== day) {
+        state.sessionDay = day;
+        state.sessionCcy = state.ccy;
+        state.sessionHigh = mid ?? null;
+        state.sessionLow = mid ?? null;
+        state.sessionOpen = mid ?? null;
+      }
+      const pool = []
+        .concat(daily || [])
+        .concat(state.intraday || []);
+      const bars = pool.filter(b => {
+        const t0 = new Date(b.openTime || b.time || 0);
+        return !Number.isNaN(t0.getTime()) && sessionDayKey(t0) === sessionDayKey(new Date());
+      });
+      let high = mid, low = mid;
+      bars.forEach(b => {
+        if (sameScale(b.high, mid, 0.18)) high = Math.max(high, b.high);
+        if (sameScale(b.low, mid, 0.18)) low = Math.min(low, b.low);
+        if (sameScale(b.close, mid, 0.18)) {
+          high = Math.max(high, b.close);
+          low = Math.min(low, b.close);
+        }
+      });
+      if (sameScale(quote?.high, mid, 0.18)) high = Math.max(high, quote.high);
+      if (sameScale(quote?.low, mid, 0.18)) low = Math.min(low, quote.low);
+      if (sameScale(state.sessionHigh, mid, 0.18)) high = Math.max(high, state.sessionHigh);
+      if (sameScale(state.sessionLow, mid, 0.18)) low = Math.min(low, state.sessionLow);
+      const openPx = bars.find(b => sameScale(b.open, mid, 0.18))?.open
+        || state.sessionOpen
+        || mid;
+      if (state.sessionOpen == null && openPx) state.sessionOpen = openPx;
+      state.sessionHigh = high;
+      state.sessionLow = low;
+      return { open: openPx, high, low, price: mid };
+    }
+    function parseApartCatalog(text) {
+      const rows = [];
+      const re = /\[([^\]]+1oz[^\]]*)\]\((https:\/\/mennica\.apart\.pl\/produkt\/[^)]+)\)[\s\S]{0,180}?(\d[\d\s]{3,6})\s*PLN/gi;
+      let m;
+      while ((m = re.exec(text))) {
+        const name = m[1].replace(/\s+/g, " ").trim();
+        const price = Number(String(m[3]).replace(/\s/g, ""));
+        if (price > 10000 && price < 40000) rows.push({ name, url: APART_LIST_URL, price });
+      }
+      const uniq = [], seen = new Set();
+      for (const r of rows) { if (seen.has(r.name)) continue; seen.add(r.name); uniq.push(r); }
+      return uniq.sort((a, b) => a.price - b.price);
+    }
+    async function getJSONText(url) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.text();
+      } finally { clearTimeout(t); }
+    }
+    async function fetchApartCatalog() {
+      const proxies = [
+        "https://r.jina.ai/http://mennica.apart.pl/zloto/monety?masa=1-oz&realizacja=24h",
+        "https://r.jina.ai/" + APART_LIST_URL,
+      ];
+      for (const url of proxies) {
+        try {
+          const text = await getJSONText(url);
+          const list = parseApartCatalog(text);
+          if (list.length >= 5) return list;
+        } catch (e) {}
+      }
+      return null;
+    }
+    async function boot(full = true) {
+      try {
+        showErr("");
+        if (full) {
+          try { await loadDaily(); } catch (e) { console.warn("storico non disponibile", e); }
+          try { await loadIntraday(); } catch (e) { console.warn("intraday non disponibile", e); }
+        } else if (state.intraday?.length) drawSpark(state.intraday);
+        await loadQuote();
+        try { await loadTreasuries(); } catch (e) {}
+        if (full || !state.fxPrev) {
+          try { await loadFxPrev(); } catch (e) {}
+          if (state.quote) {
+            paintFx("eurusd", state.quote.eurusd, 4);
+            paintFx("eurpln", state.quote.eurpln, 4);
+            paintFx("eurchf", state.quote.eurchf, 4);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        document.getElementById("iosHint").style.display = "block";
+        showErr("Dati non arrivati. Su iPhone apri il file in Safari. (" + (e.name === "AbortError" ? "timeout" : e.message) + ")");
+        document.getElementById("liveDot").classList.add("off");
+        document.getElementById("liveLabel").textContent = "Offline";
+      }
+    }
+
+
+    function toneEl(el, cur, prev) {
+      if (!el) return;
+      el.classList.remove("up", "down");
+      if (prev == null || cur == null || !Number.isFinite(prev) || !Number.isFinite(cur)) return;
+      if (cur > prev + 1e-8) el.classList.add("up");
+      else if (cur < prev - 1e-8) el.classList.add("down");
+    }
+    function fxBag() {
+      const day = sessionDayKey(new Date());
+      let bag = { day: day, prev: {}, today: {} };
+      try { bag = Object.assign(bag, JSON.parse(localStorage.getItem("oroFx") || "{}")); } catch (e) {}
+      if (bag.day !== day) {
+        bag.prev = bag.today || bag.prev || {};
+        bag.today = {};
+        bag.day = day;
+      }
+      return bag;
+    }
+    function paintFx(id, cur, dec, diff) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (cur == null || !Number.isFinite(cur)) { el.textContent = "—"; return; }
+      el.textContent = fmt(cur, dec);
+      el.classList.remove("up", "down");
+      if (diff != null && Number.isFinite(diff)) {
+        if (diff > 0.0001) el.classList.add("up");
+        else if (diff < -0.0001) el.classList.add("down");
+        el.style.color = diff > 0.0001 ? "var(--up)" : diff < -0.0001 ? "var(--down)" : "";
+        return;
+      }
+      const bag = fxBag();
+      const prev = (state.fxPrev && state.fxPrev[id] != null) ? state.fxPrev[id] : bag.prev[id];
+      toneEl(el, cur, prev);
+      if (el.classList.contains("up")) el.style.color = "var(--up)";
+      else if (el.classList.contains("down")) el.style.color = "var(--down)";
+      else el.style.color = "";
+      bag.today[id] = cur;
+      try { localStorage.setItem("oroFx", JSON.stringify(bag)); } catch (e) {}
+    }
+    async function loadFxPrev() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+      const iso = d.toISOString().slice(0, 10);
+      try {
+        const j = await getJSON("https://api.frankfurter.app/" + iso + "?from=EUR&to=USD,PLN,CHF");
+        if (j && j.rates) {
+          state.fxPrev = { eurusd: Number(j.rates.USD), eurpln: Number(j.rates.PLN), eurchf: Number(j.rates.CHF) };
+          return;
+        }
+      } catch (e) {}
+      try {
+        const [u, p, c] = await Promise.all([
+          yahooYield("EURUSD=X"),
+          yahooYield("EURPLN=X"),
+          yahooYield("EURCHF=X"),
+        ]);
+        state.fxPrev = {
+          eurusd: u && u.prev,
+          eurpln: p && p.prev,
+          eurchf: c && c.prev,
+        };
+      } catch (e) {}
+    }
+    function setPct(id, n, prev) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (n == null || !Number.isFinite(n)) { el.textContent = "—"; return; }
+      let v = n;
+      if (v > 20) v = v / 10;
+      el.textContent = fmt(v, 2) + " %";
+      toneEl(el, v, prev);
+    }
+    async function yahooYield(symbol) {
+      const url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol) + "?interval=1m&range=1d";
+      const tries = [url, "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)];
+      let raw = "";
+      for (const u of tries) {
+        try { raw = await getJSONText(u); if (raw && raw.includes("regularMarketPrice")) break; } catch (e) {}
+      }
+      if (!raw) return null;
+      const m = raw.match(/"regularMarketPrice":([0-9.]+)/);
+      if (!m) return null;
+      let v = Number(m[1]);
+      if (v > 20) v = v / 10;
+      if (!(v > 1 && v < 12)) return null;
+      let prev = null;
+      const p = raw.match(/"chartPreviousClose":([0-9.]+)/) || raw.match(/"previousClose":([0-9.]+)/);
+      if (p) {
+        prev = Number(p[1]);
+        if (prev > 20) prev = prev / 10;
+      }
+      return { v, prev };
+    }
+    async function loadTreasuries() {
+      const csvUrl = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_yield_curve&field_tdr_date_value=2026&_format=csv";
+      let y2 = 4.39, y10 = 4.79, y30 = 5.27, p2 = 4.34, p10 = 4.75, p30 = 5.25;
+      try {
+        const txt = await getJSONText(csvUrl).catch(() => "");
+        if (txt) {
+          const rows = txt.split(/\n/).map(l => l.trim()).filter(l => /^\d{2}\/\d{2}\/\d{4},/.test(l));
+          if (rows[0]) {
+            const c = rows[0].split(",");
+            if (Number(c[8]) > 0) y2 = Number(c[8]);
+            if (Number(c[12]) > 0) y10 = Number(c[12]);
+            if (Number(c[14]) > 0) y30 = Number(c[14]);
+          }
+          if (rows[1]) {
+            const c = rows[1].split(",");
+            if (Number(c[8]) > 0) p2 = Number(c[8]);
+            if (Number(c[12]) > 0) p10 = Number(c[12]);
+            if (Number(c[14]) > 0) p30 = Number(c[14]);
+          }
+        }
+      } catch (e) {}
+      try {
+        const [l2, l10, l30] = await Promise.all([
+          yahooYield("2YY=F"),
+          yahooYield("^TNX"),
+          yahooYield("^TYX"),
+        ]);
+        if (l2 && Math.abs(l2.v - y2) < 0.12) { y2 = l2.v; if (l2.prev) p2 = l2.prev; }
+        if (l10) { y10 = l10.v; if (l10.prev) p10 = l10.prev; }
+        if (l30) { y30 = l30.v; if (l30.prev) p30 = l30.prev; }
+      } catch (e) { console.warn("treasury live", e); }
+      setPct("ust2", y2, p2);
+      setPct("ust10", y10, p10);
+      setPct("ust30", y30, p30);
+    }
+    const NEWS_FALLBACK = [
+      { title: "L’oro continua a scendere sulle attese di un rialzo dei tassi Fed", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z", text: "Martedì l’oro ha perso ancora, dopo il massimo di 15 settimane di fine agosto. Il movimento è legato alle attese di un rialzo dei tassi della Federal Reserve: i tassi più alti riducono l’attrattiva del metallo, che non paga interessi. Spot vicino a 4.414 $ dopo un minimo di giornata a 4.374 $. Anche l’argento è in calo. Saxo Bank cita il dollaro più forte e il discorso hawkish di Kevin Warsh. CME FedWatch vede circa 66% di probabilità di un rialzo a settembre." },
+      { title: "Comex gold chiude a 4.348 $ (−1,88%), terzo calo consecutivo", source: "WSJ", url: "https://www.wsj.com/finance/commodities-futures/gold-rises-jackson-hole-speech-may-limit-near-term-upside-381724a6", at: "2026-09-01T00:56:00Z", text: "Il future Comex di settembre ha perso 83,10 $ l’oncia, pari a −1,88%, chiudendo a 4.348 $. È la terza seduta consecutiva in ribasso e un calo di 261,70 $ (−5,68%) in tre giorni, il più ampio da marzo. Quinta perdita in sei sedute e chiusura più bassa da inizio agosto. Il mercato sta assorbendo il tono restrittivo della Fed dopo Jackson Hole." },
+      { title: "XAU/USD sui minimi di 10 giorni: rendimenti USA e discorso Warsh a Jackson Hole", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:27:00Z", text: "L’oro ha toccato un minimo di 10 giorni mentre i rendimenti USA salgono: il decennale è intorno al 4,78%. Il presidente Fed Kevin Warsh ha indicato che potrebbe servire altro lavoro sui tassi se l’inflazione non torna al 2%. Nel breve pesa il repricing dei tassi; nel medio restano gli acquisti delle banche centrali, 244 tonnellate nel primo trimestre. Supporti osservati verso 4.380 / 4.334 $." },
+      { title: "Oro in calo in attesa dei dati sul lavoro USA, focus anche sul Medio Oriente", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:10:00Z", text: "Lo spot è sceso dopo aver toccato i minimi dal 19 agosto. Questa settimana arrivano JOLTS, ADP e payrolls, dati che possono spostare le attese sulla Fed. I mercati assegnano circa 66% a un rialzo a settembre e quasi 90% entro dicembre. Restano sullo sfondo le tensioni in Medio Oriente, che in teoria sostengono il safe haven ma oggi restano secondarie rispetto ai tassi." },
+      { title: "Da gennaio l’oro è sotto di circa il 22% rispetto al picco: cosa può muovere settembre", source: "CBS News", url: "https://www.cbsnews.com/news/golds-price-down-by-over-21-percent-where-will-it-head-september-2026/", at: "2026-09-01T16:17:00Z", text: "Dopo il record di fine gennaio vicino a 5.589 $ l’oncia, a settembre l’oro è intorno a 4.369 $, circa −22% dal massimo. Il calo non è stato lineare: ad agosto c’è stato un rimbalzo poi invertito dal discorso di Warsh. A settembre i catalizzatori restano i tassi USA, i dati sul lavoro e l’inflazione. Su 12 mesi il metallo resta comunque in forte rialzo rispetto al 2025." },
+      { title: "Agosto chiuso comunque a +10% nonostante il crollo di fine mese", source: "IG", url: "https://www.ig.com/ae/news-and-trade-ideas/gold-still-up-10--in-august-despite-late-month-whiplash-260901", at: "2026-09-01T04:07:00Z", text: "L’oro ha chiuso agosto in rialzo di circa il 10%, miglior mese da gennaio, anche se nelle ultime sedute ha perso circa 300 $ dal picco di 4.697 $. Il rally estivo era stato alimentato dai buyback dei Treasury USA e dal tema di svalutazione del dollaro. Il discorso hawkish di Warsh a Jackson Hole ha poi innescato il sell-off di fine mese." },
+      { title: "Spot in euro vicino a 3.747 € l’oncia e 120 € al grammo", source: "StoneX", url: "https://stonexbullion.com/it/grafici/prezzo-oro/", at: "2026-09-01T18:09:00Z", text: "In Europa lo spot è intorno a 3.747 € l’oncia, in calo di circa 87 € sulla giornata (−2,3%). Il grammo vale circa 120 €, il chilo circa 120.500 €. Massimo di giornata vicino a 3.845 € e minimo a 3.731 €. I prezzi restano allineati al movimento globale post Jackson Hole." },
+      { title: "Hawkish Fed e rischio Iran: i jobs data sono il prossimo catalizzatore", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xau-usd-silver-price-forecast-hawkish-fed-meets-iran-risk-as-jobs-data-looms-1620988", at: "2026-09-01T05:58:00Z", text: "Sul breve l’oro e l’argento restano compressi tra una Fed più restrittiva e le tensioni in Medio Oriente. Dopo Jackson Hole il mercato prezza un rialzo a settembre al 66% e un altro entro dicembre vicino al 90%. I dati sul lavoro USA di questa settimana decideranno se il sell-off continua o se torna la domanda da safe haven." },
+      { title: "Future oro dicembre a 4.408 $: settimana a −6%", source: "Investing.com", url: "https://it.investing.com/commodities/gold-related-securities", at: "2026-09-01T15:03:00Z", text: "Il contratto dicembre 2026 tratta vicino a 4.408 $, in calo di circa 74 $ (−1,65%) in giornata. Range 4.374–4.510 $. Sulla settimana la perdita è intorno al 6%, sul mese resta un rialzo vicino al 7%. Il range a 52 settimane va da circa 3.506 $ a 5.627 $." },
+      { title: "Le banche centrali restano acquirenti: 244 tonnellate nel primo trimestre", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:30:00Z", text: "Nonostante il calo di queste sedute, la domanda ufficiale non è sparita. Nel primo trimestre gli acquisti delle banche centrali sono stati 244 tonnellate, il massimo da fine 2024. La Cina ha aggiunto almeno 8 tonnellate ad aprile. Questo flusso dà un supporto strutturale di medio periodo, mentre il breve è dominato dai tassi USA." }
+    ];
+    function escNews(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function newsWhen(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    function renderNews(items, stamp, sourceNote, listId, metaId, limit) {
+      const list = document.getElementById(listId || "newsList");
+      const meta = document.getElementById(metaId || "newsMeta");
+      if (!list || !meta) return;
+      meta.textContent = "Feed aggiornato: " + newsWhen(stamp) + (sourceNote ? " · " + sourceNote : "");
+      list.innerHTML = (items || []).slice(0, limit || 10).map(n => {
+        const when = newsWhen(n.at);
+        const src = n.source ? n.source : "";
+        const ex = escNews(n.text || "");
+        return '<li><a href="' + (n.url || "#") + '" target="_blank" rel="noopener">' + escNews(n.title) + "</a><div class=\"meta-n\">" + [src, when].filter(Boolean).join(" · ") + "</div>" + (ex ? '<div class="news-ex">' + ex + "</div>" : "") + "</li>";
+      }).join("") || "<li><div class=\"meta-n\">Nessuna news disponibile.</div></li>";
+    }
+    async function fetchNewsText(url) {
+      const proxies = [
+        "https://r.jina.ai/" + url,
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+      ];
+      for (const u of proxies) {
+        try {
+          const txt = await getJSONText(u);
+          if (txt && txt.includes("<item")) return txt;
+        } catch (e) {}
+      }
+      throw new Error("feed non raggiungibile");
+    }
+    async function getJSONText(url) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 4500);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        if (!r.ok) throw new Error("http " + r.status);
+        return await r.text();
+      } finally { clearTimeout(t); }
+    }
+    function parseRss(xml) {
+      const doc = new DOMParser().parseFromString(xml, "text/xml");
+      return [...doc.querySelectorAll("item")].map(it => {
+        const title = (it.querySelector("title")?.textContent || "").trim();
+        const link = (it.querySelector("link")?.textContent || "").trim();
+        const pub = (it.querySelector("pubDate")?.textContent || it.querySelector("published")?.textContent || "").trim();
+        let source = (it.querySelector("source")?.textContent || "").trim();
+        let clean = title;
+        const dash = title.lastIndexOf(" - ");
+        if (dash > 20) { source = source || title.slice(dash + 3); clean = title.slice(0, dash); }
+        const raw = it.querySelector("description")?.textContent || it.querySelector("content")?.textContent || "";
+        const text = raw.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+        return { title: clean, url: link, source, at: pub ? new Date(pub).toISOString() : "", text };
+      }).filter(n => n.title);
+    }
+
+    const WORLD_FALLBACK = [
+      { title: "Fed: dopo Jackson Hole sale al 66% la probabilità di un rialzo a settembre", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:16:00Z", text: "Kevin Warsh ha detto che la Fed potrebbe avere ancora lavoro da fare se l’inflazione non torna al 2%. Le probabilità di un rialzo a settembre sono salite da circa 36% a 66%, a dicembre verso il 90%. Dollaro e rendimenti si sono irrigiditi, con effetto immediato su oro e altri asset senza rendimento." },
+      { title: "Treasury USA a 10 anni verso il 4,78%: pressione su bond e metalli", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:27:00Z", text: "Il rialzo dei rendimenti americani è il canale principale del sell-off. Un decennale più alto alza il costo opportunità di oro e azioni growth. Il mercato aspetta JOLTS, ADP e payrolls per capire se il movimento sui tassi continua." },
+      { title: "Settimana dei dati sul lavoro USA: JOLTS, ADP e nonfarm payrolls", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:10:00Z", text: "Gli investitori guardano la tenuta del mercato del lavoro. Un’occupazione ancora calda rinforza lo scenario di rialzo tassi; un raffreddamento riaprirebbe spazio a un pause della Fed. È il catalizzatore macro della settimana." },
+      { title: "Debito USA oltre i 40mila miliardi e buyback dei Treasury: torna il tema debasement", source: "IG", url: "https://www.ig.com/ae/news-and-trade-ideas/gold-still-up-10--in-august-despite-late-month-whiplash-260901", at: "2026-09-01T04:07:00Z", text: "A metà agosto il Tesoro ha annunciato di almeno raddoppiare i riacquisti di titoli lunghi. Il mercato ha letto la mossa come tentativo di contenere i rendimenti senza tagliare spesa o alzare tasse. È uno dei motivi del rally dell’oro in agosto, prima del dietrofront di Warsh." },
+      { title: "Petrolio nervoso: Hormuz e tensioni in Medio Oriente restano sul tavolo", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:12:00Z", text: "Il mercato energetico continua a prezzare il rischio sullo Stretto di Hormuz. A inizio agosto Trump aveva parlato di una possibile riapertura ravvicinata; a settembre il rischio geopolitico resta e sostiene i premi sul greggio, con effetti su inflazione e banche centrali." },
+      { title: "Rischio Iran e sanzioni: safe haven e petrolio si muovono insieme", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xau-usd-silver-price-forecast-hawkish-fed-meets-iran-risk-as-jobs-data-looms-1620988", at: "2026-09-01T05:58:00Z", text: "L’escalation delle sanzioni e delle tensioni con Teheran è il secondo motore, dopo la Fed, per oro e petrolio. Nel breve i tassi USA vincono; se la situazione militare peggiora, il bid da rifugio può tornare in fretta." },
+      { title: "Brent in rialzo sulla settimana mentre i metalli correggono", source: "Investing.com", url: "https://it.investing.com/commodities", at: "2026-09-01T16:52:00Z", text: "Il petrolio ha mostrato una tenuta migliore dell’oro nelle ultime sedute, con il Brent in recupero settimanale. La divergenza dice che il mercato distingue tra rischio inflazione energetica e repricing dei tassi. Rame e platino sono invece in calo insieme all’oro." },
+      { title: "Argento sotto pressione con l’oro: spot verso 65 $ l’oncia", source: "Forbes", url: "https://www.forbes.com/sites/conormurray/2026/09/01/gold-price-continues-fall-as-expectations-of-an-interest-rate-hike-grow/", at: "2026-09-01T15:20:00Z", text: "L’argento ha perso più del 2% in giornata, scendendo verso 65 $ dopo un minimo a 64,35 $. Segue l’oro nella correzione post Jackson Hole, ma resta più volatile. La domanda industriale non sta compensando il deflusso speculativo di queste ore." },
+      { title: "Dollaro più forte: DXY tiene dopo il discorso di Warsh", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xauusd-price-forecast-gold-waits-on-warsh-as-dollar-weakness-stalls-1619738", at: "2026-08-27T20:04:00Z", text: "Il dollaro ha smesso di indebolirsi in attesa e poi a seguito di Jackson Hole. Un DXY più fermo pesa su materie prime quotate in dollari e sugli emergenti. Finché i tassi USA restano prezzati al rialzo, il biglietto verde resta sostenuto." },
+      { title: "Inflazione USA: il 2% PCE resta il vincolo dichiarato da Warsh", source: "BullionVault", url: "https://oro.bullionvault.it/Prezzo-Oro.do", at: "2026-08-28T13:20:00Z", text: "A Jackson Hole Warsh ha escluso una forward guidance accomodante e ha legato ogni pausa a evidenze convincenti sul PCE verso il 2%. Il messaggio ha fatto scendere l’oro di decine di dollari in pochi minuti venerdì e guida ancora il posizionamento di inizio settembre." },
+      { title: "Banche centrali ancora nette acquirenti di oro nel 2026", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-price-hits-10-day-low-as-rising-yields-test-support-1621111", at: "2026-09-01T13:30:00Z", text: "Nel primo trimestre gli acquisti ufficiali sono stati 244 tonnellate, il ritmo più alto da fine 2024. La Cina ha aggiunto almeno 8 tonnellate ad aprile. Il flusso strutturale resta un pavimento di medio periodo, anche se non ferma le correzioni tattiche." },
+      { title: "Cina e dazi: l’incertezza commerciale resta uno dei rischi globali", source: "DailyForex", url: "https://www.dailyforex.com/forex-technical-analysis/2026/08/gold-analysis-25-august-2026/249015", at: "2026-08-25T00:00:00Z", text: "Oltre a Iran e Fed, i mercati continuano a prezzare attriti commerciali con la Cina. È un fattore che sostiene domanda di riserve e oro da parte delle banche centrali emergenti, ma pesa su crescita e materie prime industriali come il rame." },
+      { title: "Oro ancora +7% sul mese nonostante il crollo di tre giorni", source: "Investing.com", url: "https://it.investing.com/commodities/gold-related-securities", at: "2026-09-01T15:03:00Z", text: "Il future dicembre perde l’1,6% in giornata ma sul mese resta in positivo di circa il 7%. La settimana è a −6%. Il quadro dice correzione violenta dentro un mese ancora costruttivo, non inversione strutturale da sola." },
+      { title: "Record di gennaio a 5.589 $: da lì l’oro ha perso oltre il 21%", source: "CBS News", url: "https://www.cbsnews.com/news/golds-price-down-by-over-21-percent-where-will-it-head-september-2026/", at: "2026-09-01T16:17:00Z", text: "Il massimo del 28 gennaio 2026 è il riferimento dell’anno. A 4.369 $ il drawdown è circa 22%. La discesa non è stata lineare: agosto aveva recuperato prima del sell-off di Warsh. Settembre si gioca su tassi e geopolitica." },
+      { title: "Spot europeo: oncia a circa 3.747 €, grammo a 120 €", source: "StoneX", url: "https://stonexbullion.com/it/grafici/prezzo-oro/", at: "2026-09-01T18:09:00Z", text: "In euro la giornata è pesante: −87 € sull’oncia, range 3.731–3.845 €. Il cambio EUR/USD sopra 1,15 attenua in parte il calo espresso in dollari. Per chi guarda il fisico in Europa conta questa quotazione, non solo XAU/USD." },
+      { title: "Stretto di Hormuz: ogni segnale su aperture o chiusure muove oil e inflazione", source: "IG", url: "https://www.ig.com/ae/news-and-trade-ideas/gold-still-up-10--in-august-despite-late-month-whiplash-260901", at: "2026-09-01T04:10:00Z", text: "Il 5 agosto Trump aveva detto che lo Stretto si sarebbe riaperto presto. Quel tono aveva raffreddato il petrolio e aiutato l’idea di una Fed meno aggressiva. Oggi quel canale geopolitico è di nuovo un rischio per i prezzi energetici globali." },
+      { title: "Politica fiscale USA: buyback sì, tagli di spesa no", source: "FOREX.com", url: "https://www.forex.com/en-us/news-and-analysis/gold-works-to-complete-strongest-month-in-18-years-4600-in-play/", at: "2026-08-26T15:59:00Z", text: "Il dibattito di fine agosto è stato sulla volontà del Tesoro di tenere bassi i rendimenti lunghi senza consolidamento fiscale. Per i mercati è il classico schema di dominanza fiscale: più debito, più intervento, più domanda di oro come assicurazione." },
+      { title: "Materie prime agricole miste mentre energia e metalli divergono", source: "Investing.com", url: "https://it.investing.com/commodities", at: "2026-09-01T16:53:00Z", text: "Il frumento ha recuperato in giornata, il cotone è in calo. Il complesso commodities non si muove in blocco: energia sostenuta dalla geopolitica, metalli preziosi colpiti dai tassi, agricoli più legati a clima e scorte. Serve leggere i singoli mercati." },
+      { title: "Platino e palladio: correzione più contenuta rispetto all’oro", source: "Reuters", url: "https://profit.pakistantoday.com.pk/2026/09/01/gold-slips-as-traders-await-us-jobs-data-track-mideast-tensions", at: "2026-09-01T08:11:00Z", text: "Il platino ha mostrato anche sedute in lieve rialzo mentre l’oro scendeva. Il palladio è rimasto più stabile. La domanda industriale (auto, idrogeno) li distingue dai preziosi puri e riduce la correlazione al solo tema Fed." },
+      { title: "Geopolitica e guerra: il premio al rischio resta, ma oggi vince la Fed", source: "FXEmpire", url: "https://www.fxempire.com/forecasts/article/gold-xau-usd-silver-price-forecast-hawkish-fed-meets-iran-risk-as-jobs-data-looms-1620988", at: "2026-09-01T06:00:00Z", text: "Medio Oriente, Iran e rotte energetiche restano sullo sfondo. In una giornata normale basterebbero a sostenere oro e petrolio. L’1 settembre 2026 il mercato ha scelto il canale tassi: hawkish Fed, jobs data in arrivo, metalli in calo. Il rischio geopolitico non è sparito, è solo passato in secondo piano." }
+    ];
+    async function loadWorldNews() {
+      renderNews(WORLD_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026", "worldList", "worldMeta", 20);
+      const rss = "https://news.google.com/rss/search?q=economia+OR+petrolio+OR+geopolitica+OR+guerra+OR+Fed+OR+Iran+OR+Hormuz&hl=it&gl=IT&ceid=IT:it";
+      try {
+        const xml = await fetchNewsText(rss);
+        const items = parseRss(xml);
+        if (!items.length) return;
+        const withText = items.filter(n => n.text && n.text.length > 40);
+        renderNews((withText.length ? withText : items).slice(0, 20), new Date().toISOString(), "Google News", "worldList", "worldMeta", 20);
+      } catch (e) { console.warn("world news", e); }
+    }
+    async function loadNews() {
+      renderNews(NEWS_FALLBACK, new Date().toISOString(), "riepilogo 1/9/2026", "newsList", "newsMeta", 10);
+      const rss = "https://news.google.com/rss/search?q=oro+OR+gold+price+OR+XAUUSD&hl=it&gl=IT&ceid=IT:it";
+      try {
+        const xml = await fetchNewsText(rss);
+        const items = parseRss(xml);
+        if (!items.length) return;
+        const withText = items.filter(n => n.text && n.text.length > 40);
+        renderNews(withText.length ? withText : items, new Date().toISOString(), "Google News", "newsList", "newsMeta", 10);
+      } catch (e) {
+        console.warn("news live", e);
+      }
+    }
+        document.querySelectorAll(".pair-tabs button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll(".pair-tabs button").forEach(b => b.classList.remove("on"));
+        btn.classList.add("on");
+        state.ccy = btn.dataset.ccy;
+        state.sessionDay = null;
+        state.sessionHigh = null;
+        state.sessionLow = null;
+        state.sessionOpen = null;
+        await boot(true);
+      });
+    });
+    document.querySelectorAll(".tools details.fold").forEach(d => {
+      d.addEventListener("toggle", () => {
+        if (d.open && d.querySelector("#spark")) {
+          if (state.intraday?.length) drawSpark(state.intraday);
+          else loadChart().catch(() => {});
+        }
+      });
+    });
+    document.getElementById("tfRow")?.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll("#tfRow button").forEach(b => b.classList.remove("on"));
+        btn.classList.add("on");
+        state.tf = btn.dataset.tf;
+        try { await loadChart(); } catch (e) { console.warn("grafico", e); }
+      });
+    });
+    document.getElementById("w18")?.addEventListener("input", () => renderCalc18(state.g24));
+    document.getElementById("calcKeys")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      const el = document.getElementById("w18");
+      if (!btn || !el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (btn.dataset.act === "ac") { el.value = ""; renderCalc18(state.g24); el.focus(); return; }
+      if (btn.dataset.act === "del") {
+        el.value = el.value.replace(/[+\-*/×÷−]?[\d.,]*$/, "") ;
+        if (!el.value) el.value = "";
+        renderCalc18(state.g24); el.focus(); return;
+      }
+      const op = btn.dataset.op;
+      if (!op) return;
+      if (countCalcNums(el.value) >= 8) return;
+      const v = el.value.trim().replace(/[+\-*/×÷−]+$/, "");
+      const map = { "+": "+", "-": "-", "*": "×", "/": "÷" };
+      el.value = v ? v + map[op] : (op === "-" ? "-" : "");
+      el.focus();
+    });
+    document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
+    document.getElementById("apartBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      refreshApart();
+    });
+    function bindNewsBtn(id, fn, metaId) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const meta = document.getElementById(metaId);
+        if (meta) meta.textContent = "Aggiorno il feed…";
+        fn();
+      }, true);
+    }
+    bindNewsBtn("newsBtn", loadNews, "newsMeta");
+    bindNewsBtn("worldBtn", loadWorldNews, "worldMeta");
+
+    document.getElementById("apartTitleLink").addEventListener("click", (e) => e.stopPropagation());
+    boot(true);
+    loadNews();
+    loadTreasuries();
+    loadWorldNews();
+    setTimeout(() => { if (!state.quote) document.getElementById("iosHint").style.display = "block"; }, 2500);
+    setInterval(() => boot(false), 8000);
+    setInterval(() => paintClock(new Date()), 1000);
+    setInterval(() => boot(true), 180000);
+  </script>
+</body>
+</html>
