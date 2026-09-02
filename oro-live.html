@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v1.85.0 — Prezzo e statistiche</title>
+  <title>Oro Live v2.00.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,23 +33,36 @@
     h1 { margin: 0; font-family: Manrope, Inter, sans-serif; letter-spacing: -.03em; }
     header p { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
     .status { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; color: var(--muted); font-size: .85rem; }
-    .status-row { display: flex; align-items: center; gap: 10px; }
-    #upd { font-size: .78rem; color: var(--muted); }
+    .status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .live-pill .upd-d { color: var(--text); font-weight: 600; text-transform: capitalize; margin-left: 6px; }
+    .live-pill .upd-t { color: var(--gold-2); font-variant-numeric: tabular-nums; font-weight: 600; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); box-shadow: 0 0 10px var(--up); }
     .dot.off { background: var(--down); box-shadow: none; }
     .hero { display: grid; grid-template-columns: 1.4fr .9fr; gap: 14px; align-items: stretch; }
     .hero > .card { display: flex; flex-direction: column; }
-    @media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
+    @media (max-width: 820px) {
+      .hero { grid-template-columns: 1fr; }
+      .tools.hero { grid-template-columns: 1fr !important; }
+      .tools details[open] .calc18,
+      .tools details[open] .chart-box { min-height: 0; height: auto; }
+      .tools .calc18 { max-height: none; overflow: visible; }
+      .chart-box { min-height: 380px; height: 400px; }
+      .tools .spark { min-height: 340px; height: 340px; margin-top: 4px; }
+    }
     .card {
       background: var(--bg-2); border: 1px solid var(--line);
       border-radius: 18px; padding: 16px;
     }
-    .pair-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .pair-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: nowrap; }
     .pair-tabs button, .refresh-btn {
       background: transparent; color: var(--muted);
       border: 1px solid var(--line); border-radius: 999px;
       padding: 10px 16px; cursor: pointer; font: inherit; font-size: .9rem;
       min-height: 44px; touch-action: manipulation;
+    }
+    .pair-tabs button {
+      flex: 1 1 0; min-width: 0; padding: 8px 6px; font-size: .72rem;
+      white-space: nowrap; letter-spacing: 0;
     }
     .pair-tabs button.on, .tf-row button.on {
       color: #1a1404; background: linear-gradient(180deg, var(--gold-2), var(--gold));
@@ -63,10 +76,10 @@
       font-weight: 600; letter-spacing: .04em; min-height: 32px;
     }
 
-    .price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center; }
-    .px { font-size: 3.05rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .price-row { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+    .px { font-size: 3.55rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
     #priceUnit { text-align: center; }
-    .chg { font-weight: 600; padding: 4px 8px; border-radius: 8px; }
+    .chg { font-weight: 700; padding: 8px 12px; border-radius: 10px; font-size: 1.35rem; }
     .chg.up { color: var(--up); background: rgba(61,214,140,.12); }
     .chg.down { color: var(--down); background: rgba(255,107,107,.12); }
     .hint { color: var(--muted); font-size: .78rem; margin-top: 8px; line-height: 1.45; }
@@ -77,18 +90,18 @@
     }
     .grams > .stat, .grams.side > .stat {
       display: flex; flex-direction: column; justify-content: space-between;
-      min-height: 0; height: 100%; padding: 14px 14px;
+      min-height: 0; height: 100%; padding: 8px 10px;
     }
     .grams > .stat b, .grams.side > .stat b { margin-top: auto; }
     .hero > .card .buy-grid { flex: 1; grid-auto-rows: 1fr; }
     .buy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; align-items: stretch; }
-    .buy-grid .stat { min-height: 92px; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 14px; }
-    .stat { background: var(--bg-3); border-radius: 12px; padding: 10px 12px; }
+    .buy-grid .stat { min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 10px; }
+    .stat { background: var(--bg-3); border-radius: 12px; padding: 8px 10px; }
     .stat label {
-      display: block; color: var(--muted); font-size: .72rem;
-      letter-spacing: .08em; text-transform: uppercase;
+      display: block; color: var(--muted); font-size: .62rem;
+      letter-spacing: .06em; text-transform: uppercase;
     }
-    .stat b { display: block; margin-top: 4px; font-size: 1.52rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .stat b { display: block; margin-top: 2px; font-size: 1.18rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
     .stat b.up, .stat b .up { color: var(--up); }
     .stat b.down, .stat b .down { color: var(--down); }
     .stat.upd { text-align: left; }
@@ -161,6 +174,8 @@
       font-variant-numeric: tabular-nums; vertical-align: top;
     }
     table.apart-tbl td.r { text-align: right; }
+    table.apart-tbl td.w { white-space: nowrap; text-align: right; font-size: .82rem; }
+    table.apart-tbl td.k { white-space: nowrap; font-size: .78rem; }
     #apartBody tr:first-child td { color: var(--up); }
     #apartBody tr:first-child a { color: var(--up); }
     table.apart-tbl a {
@@ -179,9 +194,14 @@
       padding: 12px 12px; font: inherit; font-size: 1.35rem;
       font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;
     }
-    .calc18 .plus {
-      min-width: 48px; border-radius: 10px; border: 1px solid var(--gold);
+    .calc-keys { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+    .calc18 .plus, .calc-keys button {
+      min-width: 0; border-radius: 10px; border: 1px solid var(--gold);
       background: rgba(212,175,55,.16); color: var(--gold-2);
+      min-height: 40px; font: inherit; font-weight: 700; cursor: pointer;
+    }
+    .calc-keys button.danger { border-color: rgba(255,107,107,.45); color: #ffb4b4; background: rgba(255,107,107,.1); }
+    .calc18 .plus {
       font-size: 1.4rem; font-weight: 700; cursor: pointer;
     }
     .tools.hero {
@@ -229,7 +249,7 @@
     .news-list .meta-n { color: var(--muted); font-size: .72rem; margin-top: 4px; }
     footer { color: var(--muted); font-size: .75rem; line-height: 1.5; margin-top: 18px; }
     @media (max-width: 820px) {
-      .px { font-size: 2.35rem; }
+      .px { font-size: 2.75rem; }
       .buy-level { font-size: 1.55rem; }
       .stat b { font-size: 1.42rem; }
     }
@@ -239,15 +259,14 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v1.85.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.00.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
         <div class="status-row">
-          <span class="live-pill" id="livePill"><span class="dot off" id="liveDot"></span><span id="liveLabel">Live</span></span>
+          <span class="live-pill" id="livePill"><span class="dot off" id="liveDot"></span><span id="liveLabel">Live</span><span class="upd-d" id="updD"></span><span class="upd-t" id="updT">—</span></span>
           <button class="refresh-btn" id="reloadBtn">Aggiorna</button>
         </div>
-        <div id="upd">—</div>
       </div>
     </header>
 
@@ -280,15 +299,19 @@
             <div class="stat"><label>EUR / USD</label><b id="eurusd">—</b></div>
             <div class="stat"><label>EUR / PLN</label><b id="eurpln">—</b></div>
             <div class="stat"><label>EUR / CHF</label><b id="eurchf">—</b></div>
-            <div class="stat stack"><label>Treasury USA 2 anni</label><b id="ust2">—</b></div>
-            <div class="stat stack"><label>Treasury USA 10 anni</label><b id="ust10">—</b></div>
-            <div class="stat stack"><label>Treasury USA 30 anni</label><b id="ust30">—</b></div>
+            <div class="stat"><label>Treasury USA 2 anni</label><b id="ust2">—</b></div>
+            <div class="stat"><label>Treasury USA 10 anni</label><b id="ust10">—</b></div>
+            <div class="stat"><label>Treasury USA 30 anni</label><b id="ust30">—</b></div>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <strong style="color:var(--gold-2)">Statistiche</strong>
+        <details class="fold">
+          <summary>
+            <strong class="fold-title" style="color:var(--gold-2)">Statistiche</strong>
+            <span class="fold-actions"><span class="fold-btn"></span></span>
+          </summary>
         <p class="hint" style="margin-top:6px">Minimi, massimi e distanze sul prezzo attuale.</p>
         <div class="buy-grid">
           <div class="stat"><label>Minimo di giornata</label><b id="dayLow">—</b></div>
@@ -304,6 +327,7 @@
           <div class="stat"><label>Media mobile 50 giorni</label><b id="sma50">—</b></div>
           <div class="stat"><label>Media mobile 200 giorni</label><b id="sma200">—</b></div>
         </div>
+        </details>
       </section>
     </div>
 
@@ -315,10 +339,17 @@
             <span class="fold-actions"><span class="fold-btn"></span></span>
           </summary>
           <div class="calc18">
-            <p class="hint" style="margin-top:4px">Fino a 8 pesi. Valore = peso × prezzo 18K al grammo.</p>
+            <p class="hint" style="margin-top:4px">Fino a 8 numeri. + − × ÷ poi × prezzo 18K/g.</p>
             <div class="calc-row" style="margin-top:8px">
-              <input id="w18" type="text" inputmode="decimal" placeholder="es. 12+3,5+8" autocomplete="off" />
-              <button class="plus" id="w18add" type="button">+</button>
+              <input id="w18" type="text" inputmode="decimal" placeholder="es. 12+3,5-1×2" autocomplete="off" />
+            </div>
+            <div class="calc-keys" id="calcKeys">
+              <button type="button" data-op="+">+</button>
+              <button type="button" data-op="-">−</button>
+              <button type="button" data-op="*">×</button>
+              <button type="button" data-op="/">÷</button>
+              <button type="button" data-act="del" class="danger">⌫</button>
+              <button type="button" data-act="ac" class="danger">C</button>
             </div>
             <ul class="calc-steps" id="calc18"></ul>
           </div>
@@ -338,7 +369,7 @@
               <button data-tf="3M">3M</button>
               <button data-tf="6M">6M</button>
             </div>
-            <svg class="spark" id="spark" viewBox="0 0 560 280" preserveAspectRatio="none" aria-label="Grafico"></svg>
+            <svg class="spark" id="spark" viewBox="0 0 560 400" preserveAspectRatio="xMidYMid meet" aria-label="Grafico"></svg>
           </div>
         </details>
       </section>
@@ -436,7 +467,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v1.85.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v2.00.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -481,9 +512,9 @@
       document.getElementById("coinsBody").innerHTML = COINS.map(c => `
         <tr>
           <td style="font-family:Manrope,Inter,sans-serif;font-weight:600;color:var(--gold-2)">${c.name}</td>
-          <td>${c.karat}</td>
-          <td class="r">${fmt(c.gross, 3)} g</td>
-          <td class="r">${fmt(c.fine, 3)} g</td>
+          <td class="k">${c.karat}</td>
+          <td class="w">${fmt(c.gross, 3)}&nbsp;g</td>
+          <td class="w">${fmt(c.fine, 3)}&nbsp;g</td>
           <td class="r">${money(g24 * c.fine)}</td>
         </tr>`).join("");
     }
@@ -526,12 +557,18 @@
       if (state.ccy === "USD") return num + "\u00A0$";
       return num + "\u00A0€";
     }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
     function fmtDateTime(iso) {
       if (!iso) return "—";
-      return new Date(iso).toLocaleString("it-IT", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      });
+      return new Date(iso).toLocaleString("it-IT");
     }
     function showErr(msg) {
       const box = document.getElementById("errBox");
@@ -670,15 +707,14 @@
     }
     function setSignedDist(id, pct, amount) {
       const el = document.getElementById(id);
-      if (el == null || pct == null || amount == null || Number.isNaN(pct) || Number.isNaN(amount)) {
+      if (el == null || amount == null || Number.isNaN(amount)) {
         if (el) el.textContent = "—";
         return;
       }
-      const cls = pct > 0 || amount > 0 ? "up" : (pct < 0 || amount < 0 ? "down" : "");
-      const ps = (pct >= 0 ? "+" : "−") + fmt(Math.abs(pct), 2) + "%";
+      const cls = amount > 0 ? "up" : (amount < 0 ? "down" : "");
       const as = (amount >= 0 ? "+" : "−") + money(Math.abs(amount));
       el.className = cls;
-      el.innerHTML = '<span class="' + cls + '">' + ps + '</span><br><span class="' + cls + '">' + as + '</span>';
+      el.textContent = as;
     }
     function renderBuy(day) {
       document.getElementById("dayLow").textContent = money(day.low);
@@ -718,29 +754,59 @@
       return slice.reduce((a, b) => a + b, 0) / slice.length;
     }
 
-    function parseWeights(raw) {
-      return String(raw || "")
-        .replace(/,/g, ".")
-        .split("+")
-        .map(s => Number(s.trim()))
-        .filter(n => n > 0 && Number.isFinite(n))
-        .slice(0, 8);
+    function tokenizeCalc(raw) {
+      const s = String(raw || "").replace(/,/g, ".").replace(/[×xX]/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/\s+/g, "");
+      const out = [];
+      let cur = "";
+      for (const ch of s) {
+        if ("+-*/".includes(ch)) {
+          if (cur) { out.push({ t: "n", v: Number(cur) }); cur = ""; }
+          else if (ch === "-" && (!out.length || out[out.length-1].t === "op")) { cur = "-"; continue; }
+          out.push({ t: "op", v: ch });
+        } else cur += ch;
+      }
+      if (cur !== "" && cur !== "-") out.push({ t: "n", v: Number(cur) });
+      return out;
+    }
+    function countCalcNums(raw) {
+      return tokenizeCalc(raw).filter(x => x.t === "n" && Number.isFinite(x.v)).length;
+    }
+    function evalTokens(toks) {
+      const nums = toks.filter(x => x.t === "n" && Number.isFinite(x.v));
+      if (!nums.length) return { ok: false, steps: [], value: 0 };
+      const steps = [{ label: "Peso 1", value: nums[0].v }];
+      let acc = nums[0].v;
+      let ni = 1;
+      for (let i = 0; i < toks.length; i++) {
+        if (toks[i].t !== "op") continue;
+        const n = toks[i+1] && toks[i+1].t === "n" ? toks[i+1].v : null;
+        if (n == null || !Number.isFinite(n)) continue;
+        const op = toks[i].v;
+        if (op === "+") acc = acc + n;
+        else if (op === "-") acc = acc - n;
+        else if (op === "*") acc = acc * n;
+        else if (op === "/") acc = n === 0 ? acc : acc / n;
+        const lab = op === "+" ? "+ peso" : op === "-" ? "− peso" : op === "*" ? "×" : "÷";
+        ni += 1;
+        steps.push({ label: lab + " " + ni, value: n, op });
+      }
+      return { ok: true, steps, value: acc };
     }
     function renderCalc18(g24) {
       state.g24 = g24;
       const box = document.getElementById("calc18");
       if (!box) return;
-      const parts = parseWeights(document.getElementById("w18")?.value);
-      const w = parts.reduce((a, b) => a + b, 0);
+      const ev = evalTokens(tokenizeCalc(document.getElementById("w18")?.value));
+      const w = ev.ok ? ev.value : 0;
       const g18 = g24 != null ? g24 * K18 : null;
       const rows = [];
-      if (!parts.length) {
-        rows.push("<li><span>Pesi (max 8, usa +)</span><span>—</span></li>");
+      if (!ev.steps.length) {
+        rows.push("<li><span>Pesi (max 8)</span><span>—</span></li>");
       } else {
-        parts.forEach((n, i) => {
-          rows.push("<li><span>" + (i === 0 ? "Peso" : "+ peso") + " " + (i + 1) + "</span><span>" + fmt(n, 2) + " g</span></li>");
+        ev.steps.forEach(s => {
+          rows.push("<li><span>" + s.label + "</span><span>" + fmt(s.value, 4) + " g</span></li>");
         });
-        if (parts.length > 1) rows.push("<li><span>= peso totale</span><span>" + fmt(w, 2) + " g</span></li>");
+        if (ev.steps.length > 1) rows.push("<li><span>= peso risultante</span><span>" + fmt(w, 4) + " g</span></li>");
       }
       if (w > 0 && g18 != null) {
         rows.push("<li><span>× prezzo 18K / g</span><span>" + money(g18) + "/g</span></li>");
@@ -759,9 +825,14 @@
       document.getElementById("priceUnit").textContent =
         "Oncia troy · oro puro 24k · " + (state.ccy === "PLN" ? "złoty polacchi" : state.ccy === "USD" ? "dollari USA" : state.ccy === "CHF" ? "franchi svizzeri" : "euro");
       const chgEl = document.getElementById("chg");
-      const day = todayBar(state.daily, q);
-      const openPx = day.open || state.sessionOpen || q.mid;
-      const chg = openPx ? ((q.mid - openPx) / openPx) * 100 : 0;
+      const today = sessionDayKey(new Date());
+      const prevBar = (state.daily || []).filter(b => {
+        if (b.isOpen || !(Number(b.close) > 0)) return false;
+        const d = sessionDayKey(new Date(b.openTime || b.time || 0));
+        return d !== today && d !== "invalid";
+      }).pop();
+      const prevClose = prevBar && sameScale(prevBar.close, q.mid, 0.25) ? prevBar.close : (q.prevClose || null);
+      const chg = prevClose ? ((q.mid - prevClose) / prevClose) * 100 : (q.dayDiffPercent || 0);
       chgEl.textContent = (chg >= 0 ? "+" : "") + fmt(chg, 2) + "%";
       chgEl.className = "chg " + (chg >= 0 ? "up" : "down");
       document.getElementById("g24").textContent = money(g24);
@@ -772,11 +843,12 @@
       document.getElementById("g14").textContent = money(g24 * K14);
       document.getElementById("g9").textContent = money(g24 * K9);
       renderCoins(g24);
-      document.getElementById("eurusd").textContent = q.eurusd != null ? fmt(q.eurusd, 4) : "—";
-      document.getElementById("eurpln").textContent = q.eurpln != null ? fmt(q.eurpln, 4) : "—";
-      const chfEl = document.getElementById("eurchf");
-      if (chfEl) chfEl.textContent = q.eurchf != null ? fmt(q.eurchf, 4) : "—";
-      document.getElementById("upd").textContent = fmtDateTime(q.lastQuoteAt || q.timestamp);
+      paintFx("eurusd", q.eurusd, 4, q.eurusdDiff);
+      paintFx("eurpln", q.eurpln, 4, q.eurplnDiff);
+      paintFx("eurchf", q.eurchf, 4, q.eurchfDiff);
+      const when = new Date(q.lastQuoteAt || q.timestamp || Date.now());
+      state.lastTick = when;
+      paintClock(when);
       const open = isGoldMarketOpen(q);
       document.getElementById("liveLabel").textContent = open ? (q.stale ? "Ritardo" : "Live") : "Closed";
       document.getElementById("liveDot").classList.toggle("off", !open || !!q.stale);
@@ -817,25 +889,33 @@
       const rows = (bars || []).filter(b => Number(b.close) > 0);
       const pts = rows.map(b => Number(b.close));
       if (pts.length < 2) { svg.innerHTML = ""; return; }
-      const min = Math.min(...pts), max = Math.max(...pts);
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      let min = Math.min(...pts), max = Math.max(...pts);
+      [s50, s200].forEach(v => {
+        if (v != null && v > 0) {
+          const mid = (min + max) / 2;
+          if (Math.abs(v - mid) / mid < 0.15) { min = Math.min(min, v); max = Math.max(max, v); }
+        }
+      });
       const span = max - min || 1;
-      const W = 560, H = 280, L = 8, R = 52, T = 6, B = 22;
+      const W = 560, H = 400, L = 8, R = 50, T = 8, B = 32;
       const pw = W - L - R, ph = H - T - B;
+      function yx(v) { return T + (1 - (v - min) / span) * ph; }
       const line = pts.map((v, i) => {
         const x = L + (i / (pts.length - 1)) * pw;
-        const y = T + (1 - (v - min) / span) * ph;
-        return x.toFixed(1) + "," + y.toFixed(1);
+        return x.toFixed(1) + "," + yx(v).toFixed(1);
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      const yVals = [max, min + span * 0.75, min + span * 0.5, min + span * 0.25, min];
+      const yVals = [max, min + span * 0.5, min];
       const gridH = yVals.map((v, i) => {
-        const y = (T + i * ph / 4).toFixed(1);
+        const y = (T + i * ph / 2).toFixed(1);
         return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
-          <text x="${W-R+6}" y="${Number(y)+3}" text-anchor="start" fill="#9aa0a6" font-size="10">${fmt(v, 0)}</text>`;
+          <text x="${W-R+5}" y="${Number(y)+4}" text-anchor="start" fill="#9aa0a6" font-size="11">${fmt(v, 0)}</text>`;
       }).join("");
-      const gridV = [0,1,2,3,4].map(i => {
-        const x = (L + i * pw / 4).toFixed(1);
+      const gridV = [0,1,2].map(i => {
+        const x = (L + i * pw / 2).toFixed(1);
         return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
       }).join("");
       function labTime(b) {
@@ -843,16 +923,28 @@
         const d = new Date(b.openTime || b.time || 0);
         if (Number.isNaN(d.getTime())) return "";
         const tf = state.tf || "1D";
-        if (tf === "1D") return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-        return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        if (tf === "1D" || tf === "7D") return hh + ":" + mm;
+        return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0");
       }
-      const xLabs = [0, 0.5, 1].map(p => {
+      const xLabs = [0, 0.5, 1].map((p, idx) => {
         const i = Math.round(p * (rows.length - 1));
         const x = L + p * pw;
-        return `<text x="${x.toFixed(1)}" y="${T+ph+16}" text-anchor="middle" fill="#9aa0a6" font-size="9">${labTime(rows[i])}</text>`;
+        const anchor = idx === 0 ? "start" : idx === 2 ? "end" : "middle";
+        return `<text x="${x.toFixed(1)}" y="${T+ph+22}" text-anchor="${anchor}" fill="#9aa0a6" font-size="12">${labTime(rows[i])}</text>`;
       }).join("");
+      function smaLine(val, color, tag) {
+        if (val == null || val <= 0) return "";
+        if (val < min || val > max) return "";
+        const y = yx(val);
+        return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="5 4" />
+          <text x="${L+4}" y="${(y-4).toFixed(1)}" fill="${color}" font-size="10">${tag} ${fmt(val, 0)}</text>`;
+      }
       svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
         <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        ${smaLine(s50, "#f0d78c", "SMA50")}
+        ${smaLine(s200, "#7ec8e3", "SMA200")}
         <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
         ${xLabs}`;
     }
@@ -896,7 +988,7 @@
       const fxName = fxSymbol();
       let q;
       if (!fxName) {
-        q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
+        q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
       } else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -904,7 +996,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -967,6 +1059,15 @@
           drawSpark(state.intraday);
         }
         await loadQuote();
+        try { await loadTreasuries(); } catch (e) {}
+        if (full || !state.fxPrev) {
+          try { await loadFxPrev(); } catch (e) {}
+          if (state.quote) {
+            paintFx("eurusd", state.quote.eurusd, 4);
+            paintFx("eurpln", state.quote.eurpln, 4);
+            paintFx("eurchf", state.quote.eurchf, 4);
+          }
+        }
       } catch (e) {
         console.error(e);
         document.getElementById("iosHint").style.display = "block";
@@ -988,12 +1089,18 @@
       if (state.ccy === "USD") return num + "\u00A0$";
       return num + "\u00A0€";
     }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
     function fmtDateTime(iso) {
       if (!iso) return "—";
-      return new Date(iso).toLocaleString("it-IT", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      });
+      return new Date(iso).toLocaleString("it-IT");
     }
     function showErr(msg) {
       const box = document.getElementById("errBox");
@@ -1140,7 +1247,7 @@
       try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
       const fxName = fxSymbol();
       let q;
-      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
       else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -1148,7 +1255,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -1201,25 +1308,33 @@
       const rows = (bars || []).filter(b => Number(b.close) > 0);
       const pts = rows.map(b => Number(b.close));
       if (pts.length < 2) { svg.innerHTML = ""; return; }
-      const min = Math.min(...pts), max = Math.max(...pts);
+      const s50 = sma(state.daily, 50);
+      const s200 = sma(state.daily, 200);
+      let min = Math.min(...pts), max = Math.max(...pts);
+      [s50, s200].forEach(v => {
+        if (v != null && v > 0) {
+          const mid = (min + max) / 2;
+          if (Math.abs(v - mid) / mid < 0.15) { min = Math.min(min, v); max = Math.max(max, v); }
+        }
+      });
       const span = max - min || 1;
-      const W = 560, H = 280, L = 8, R = 52, T = 6, B = 22;
+      const W = 560, H = 400, L = 8, R = 50, T = 8, B = 32;
       const pw = W - L - R, ph = H - T - B;
+      function yx(v) { return T + (1 - (v - min) / span) * ph; }
       const line = pts.map((v, i) => {
         const x = L + (i / (pts.length - 1)) * pw;
-        const y = T + (1 - (v - min) / span) * ph;
-        return x.toFixed(1) + "," + y.toFixed(1);
+        return x.toFixed(1) + "," + yx(v).toFixed(1);
       }).join(" ");
       const up = pts[pts.length - 1] >= pts[0];
       const col = up ? "#3dd68c" : "#ff6b6b";
-      const yVals = [max, min + span * 0.75, min + span * 0.5, min + span * 0.25, min];
+      const yVals = [max, min + span * 0.5, min];
       const gridH = yVals.map((v, i) => {
-        const y = (T + i * ph / 4).toFixed(1);
+        const y = (T + i * ph / 2).toFixed(1);
         return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" />
-          <text x="${W-R+6}" y="${Number(y)+3}" text-anchor="start" fill="#9aa0a6" font-size="10">${fmt(v, 0)}</text>`;
+          <text x="${W-R+5}" y="${Number(y)+4}" text-anchor="start" fill="#9aa0a6" font-size="11">${fmt(v, 0)}</text>`;
       }).join("");
-      const gridV = [0,1,2,3,4].map(i => {
-        const x = (L + i * pw / 4).toFixed(1);
+      const gridV = [0,1,2].map(i => {
+        const x = (L + i * pw / 2).toFixed(1);
         return `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" />`;
       }).join("");
       function labTime(b) {
@@ -1227,16 +1342,28 @@
         const d = new Date(b.openTime || b.time || 0);
         if (Number.isNaN(d.getTime())) return "";
         const tf = state.tf || "1D";
-        if (tf === "1D") return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-        return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        if (tf === "1D" || tf === "7D") return hh + ":" + mm;
+        return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0");
       }
-      const xLabs = [0, 0.5, 1].map(p => {
+      const xLabs = [0, 0.5, 1].map((p, idx) => {
         const i = Math.round(p * (rows.length - 1));
         const x = L + p * pw;
-        return `<text x="${x.toFixed(1)}" y="${T+ph+16}" text-anchor="middle" fill="#9aa0a6" font-size="9">${labTime(rows[i])}</text>`;
+        const anchor = idx === 0 ? "start" : idx === 2 ? "end" : "middle";
+        return `<text x="${x.toFixed(1)}" y="${T+ph+22}" text-anchor="${anchor}" fill="#9aa0a6" font-size="12">${labTime(rows[i])}</text>`;
       }).join("");
+      function smaLine(val, color, tag) {
+        if (val == null || val <= 0) return "";
+        if (val < min || val > max) return "";
+        const y = yx(val);
+        return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="5 4" />
+          <text x="${L+4}" y="${(y-4).toFixed(1)}" fill="${color}" font-size="10">${tag} ${fmt(val, 0)}</text>`;
+      }
       svg.innerHTML = `<g stroke="rgba(212,175,55,.22)" stroke-width="0.7">${gridH}${gridV}</g>
         <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="0.8" />
+        ${smaLine(s50, "#f0d78c", "SMA50")}
+        ${smaLine(s200, "#7ec8e3", "SMA200")}
         <polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${line}" />
         ${xLabs}`;
     }
@@ -1289,7 +1416,7 @@
       try { eurChfQ = await getJSON(`${API}/EURCHF`); } catch (e) {}
       const fxName = fxSymbol();
       let q;
-      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid };
+      if (!fxName) q = { ...gold, symbol: gold.symbol || goldSymbol(), eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent };
       else {
         const fx = await getJSON(`${API}/${fxName}`);
         q = {
@@ -1297,7 +1424,7 @@
           marketState: gold.marketState, stale: gold.stale || fx.stale,
           lastQuoteAt: gold.lastQuoteAt || gold.timestamp, timestamp: gold.timestamp,
           symbol: "XAUPLN", dayDiffPercent: gold.dayDiffPercent,
-          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid,
+          eurpln: epln.mid, xauusd: xauUsdQ.mid, eurusd: eurUsdQ.mid, eurchf: eurChfQ.mid, eurusdDiff: eurUsdQ.dayDiffPercent, eurplnDiff: epln.dayDiffPercent, eurchfDiff: eurChfQ.dayDiffPercent,
         };
       }
       const closed = (state.daily || []).filter(b => !b.isOpen);
@@ -1353,12 +1480,18 @@
       if (state.ccy === "USD") return num + "\u00A0$";
       return num + "\u00A0€";
     }
+    function paintClock(d) {
+      const elD = document.getElementById("updD");
+      const elT = document.getElementById("updT");
+      if (!elD || !elT) return;
+      const x = d instanceof Date ? d : new Date();
+      if (Number.isNaN(x.getTime())) return;
+      elD.textContent = x.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+      elT.textContent = x.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
     function fmtDateTime(iso) {
       if (!iso) return "—";
-      return new Date(iso).toLocaleString("it-IT", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      });
+      return new Date(iso).toLocaleString("it-IT");
     }
     function showErr(msg) {
       const box = document.getElementById("errBox");
@@ -1466,6 +1599,15 @@
           try { await loadIntraday(); } catch (e) { console.warn("intraday non disponibile", e); }
         } else if (state.intraday?.length) drawSpark(state.intraday);
         await loadQuote();
+        try { await loadTreasuries(); } catch (e) {}
+        if (full || !state.fxPrev) {
+          try { await loadFxPrev(); } catch (e) {}
+          if (state.quote) {
+            paintFx("eurusd", state.quote.eurusd, 4);
+            paintFx("eurpln", state.quote.eurpln, 4);
+            paintFx("eurchf", state.quote.eurchf, 4);
+          }
+        }
       } catch (e) {
         console.error(e);
         document.getElementById("iosHint").style.display = "block";
@@ -1476,48 +1618,131 @@
     }
 
 
+    function toneEl(el, cur, prev) {
+      if (!el) return;
+      el.classList.remove("up", "down");
+      if (prev == null || cur == null || !Number.isFinite(prev) || !Number.isFinite(cur)) return;
+      if (cur > prev + 1e-8) el.classList.add("up");
+      else if (cur < prev - 1e-8) el.classList.add("down");
+    }
+    function fxBag() {
+      const day = sessionDayKey(new Date());
+      let bag = { day: day, prev: {}, today: {} };
+      try { bag = Object.assign(bag, JSON.parse(localStorage.getItem("oroFx") || "{}")); } catch (e) {}
+      if (bag.day !== day) {
+        bag.prev = bag.today || bag.prev || {};
+        bag.today = {};
+        bag.day = day;
+      }
+      return bag;
+    }
+    function paintFx(id, cur, dec, diff) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (cur == null || !Number.isFinite(cur)) { el.textContent = "—"; return; }
+      el.textContent = fmt(cur, dec);
+      el.classList.remove("up", "down");
+      if (diff != null && Number.isFinite(diff)) {
+        if (diff > 0.0001) el.classList.add("up");
+        else if (diff < -0.0001) el.classList.add("down");
+        el.style.color = diff > 0.0001 ? "var(--up)" : diff < -0.0001 ? "var(--down)" : "";
+        return;
+      }
+      const bag = fxBag();
+      const prev = (state.fxPrev && state.fxPrev[id] != null) ? state.fxPrev[id] : bag.prev[id];
+      toneEl(el, cur, prev);
+      if (el.classList.contains("up")) el.style.color = "var(--up)";
+      else if (el.classList.contains("down")) el.style.color = "var(--down)";
+      else el.style.color = "";
+      bag.today[id] = cur;
+      try { localStorage.setItem("oroFx", JSON.stringify(bag)); } catch (e) {}
+    }
+    async function loadFxPrev() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+      const iso = d.toISOString().slice(0, 10);
+      try {
+        const j = await getJSON("https://api.frankfurter.app/" + iso + "?from=EUR&to=USD,PLN,CHF");
+        if (j && j.rates) {
+          state.fxPrev = { eurusd: Number(j.rates.USD), eurpln: Number(j.rates.PLN), eurchf: Number(j.rates.CHF) };
+          return;
+        }
+      } catch (e) {}
+      try {
+        const [u, p, c] = await Promise.all([
+          yahooYield("EURUSD=X"),
+          yahooYield("EURPLN=X"),
+          yahooYield("EURCHF=X"),
+        ]);
+        state.fxPrev = {
+          eurusd: u && u.prev,
+          eurpln: p && p.prev,
+          eurchf: c && c.prev,
+        };
+      } catch (e) {}
+    }
     function setPct(id, n, prev) {
       const el = document.getElementById(id);
       if (!el) return;
       if (n == null || !Number.isFinite(n)) { el.textContent = "—"; return; }
       let v = n;
       if (v > 20) v = v / 10;
-      let html = fmt(v, 2) + " %";
-      if (prev != null && Number.isFinite(prev)) {
-        let p = prev > 20 ? prev / 10 : prev;
-        const d = v - p;
-        const cls = d > 0.0005 ? "up" : d < -0.0005 ? "down" : "";
-        const sign = d > 0 ? "+" : "";
-        html += "<br><span class=\"" + cls + "\">" + sign + fmt(d, 2) + "</span>";
+      el.textContent = fmt(v, 2) + " %";
+      toneEl(el, v, prev);
+    }
+    async function yahooYield(symbol) {
+      const url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol) + "?interval=1m&range=1d";
+      const tries = [url, "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)];
+      let raw = "";
+      for (const u of tries) {
+        try { raw = await getJSONText(u); if (raw && raw.includes("regularMarketPrice")) break; } catch (e) {}
       }
-      el.innerHTML = html;
+      if (!raw) return null;
+      const m = raw.match(/"regularMarketPrice":([0-9.]+)/);
+      if (!m) return null;
+      let v = Number(m[1]);
+      if (v > 20) v = v / 10;
+      if (!(v > 1 && v < 12)) return null;
+      let prev = null;
+      const p = raw.match(/"chartPreviousClose":([0-9.]+)/) || raw.match(/"previousClose":([0-9.]+)/);
+      if (p) {
+        prev = Number(p[1]);
+        if (prev > 20) prev = prev / 10;
+      }
+      return { v, prev };
     }
     async function loadTreasuries() {
       const csvUrl = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_yield_curve&field_tdr_date_value=2026&_format=csv";
-      const sources = [csvUrl, "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrl)];
-      let txt = "";
-      for (const u of sources) {
-        try {
-          txt = await getJSONText(u);
-          if (txt && /2 Yr|2 Yr/i.test(txt) || /\d{2}\/\d{2}\/\d{4},/.test(txt)) break;
-        } catch (e) {}
-      }
-      let y2, y10, y30, p2, p10, p30;
-      if (txt) {
-        const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
-        const rows = lines.filter(l => /^\d{2}\/\d{2}\/\d{4},/.test(l));
-        if (rows[0]) {
-          const c = rows[0].split(",");
-          y2 = Number(c[8]); y10 = Number(c[12]); y30 = Number(c[14]);
+      let y2 = 4.39, y10 = 4.79, y30 = 5.27, p2 = 4.34, p10 = 4.75, p30 = 5.25;
+      try {
+        const txt = await getJSONText(csvUrl).catch(() => "");
+        if (txt) {
+          const rows = txt.split(/\n/).map(l => l.trim()).filter(l => /^\d{2}\/\d{2}\/\d{4},/.test(l));
+          if (rows[0]) {
+            const c = rows[0].split(",");
+            if (Number(c[8]) > 0) y2 = Number(c[8]);
+            if (Number(c[12]) > 0) y10 = Number(c[12]);
+            if (Number(c[14]) > 0) y30 = Number(c[14]);
+          }
+          if (rows[1]) {
+            const c = rows[1].split(",");
+            if (Number(c[8]) > 0) p2 = Number(c[8]);
+            if (Number(c[12]) > 0) p10 = Number(c[12]);
+            if (Number(c[14]) > 0) p30 = Number(c[14]);
+          }
         }
-        if (rows[1]) {
-          const c = rows[1].split(",");
-          p2 = Number(c[8]); p10 = Number(c[12]); p30 = Number(c[14]);
-        }
-      }
-      if (!(y2 > 0)) { y2 = 4.39; p2 = 4.34; }
-      if (!(y10 > 0)) { y10 = 4.79; p10 = 4.75; }
-      if (!(y30 > 0)) { y30 = 5.27; p30 = 5.25; }
+      } catch (e) {}
+      try {
+        const [l2, l10, l30] = await Promise.all([
+          yahooYield("2YY=F"),
+          yahooYield("^TNX"),
+          yahooYield("^TYX"),
+        ]);
+        if (l2 && Math.abs(l2.v - y2) < 1.2) { y2 = l2.v; if (l2.prev) p2 = l2.prev; }
+        if (l10) { y10 = l10.v; if (l10.prev) p10 = l10.prev; }
+        if (l30) { y30 = l30.v; if (l30.prev) p30 = l30.prev; }
+      } catch (e) { console.warn("treasury live", e); }
       setPct("ust2", y2, p2);
       setPct("ust10", y10, p10);
       setPct("ust30", y30, p30);
@@ -1668,12 +1893,24 @@
       });
     });
     document.getElementById("w18")?.addEventListener("input", () => renderCalc18(state.g24));
-    document.getElementById("w18add")?.addEventListener("click", () => {
+    document.getElementById("calcKeys")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
       const el = document.getElementById("w18");
-      if (!el) return;
-      if (parseWeights(el.value).length >= 8) return;
-      const v = el.value.trim();
-      el.value = v ? v.replace(/\+$/, "") + "+" : "";
+      if (!btn || !el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (btn.dataset.act === "ac") { el.value = ""; renderCalc18(state.g24); el.focus(); return; }
+      if (btn.dataset.act === "del") {
+        el.value = el.value.replace(/[+\-*/×÷−]?[\d.,]*$/, "") ;
+        if (!el.value) el.value = "";
+        renderCalc18(state.g24); el.focus(); return;
+      }
+      const op = btn.dataset.op;
+      if (!op) return;
+      if (countCalcNums(el.value) >= 8) return;
+      const v = el.value.trim().replace(/[+\-*/×÷−]+$/, "");
+      const map = { "+": "+", "-": "-", "*": "×", "/": "÷" };
+      el.value = v ? v + map[op] : (op === "-" ? "-" : "");
       el.focus();
     });
     document.getElementById("reloadBtn").addEventListener("click", () => boot(true));
@@ -1704,6 +1941,7 @@
     loadWorldNews();
     setTimeout(() => { if (!state.quote) document.getElementById("iosHint").style.display = "block"; }, 2500);
     setInterval(() => boot(false), 8000);
+    setInterval(() => paintClock(new Date()), 1000);
     setInterval(() => boot(true), 180000);
   </script>
 </body>
