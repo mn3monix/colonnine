@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v2.03.0 — Prezzo e statistiche</title>
+  <title>Oro Live v2.04.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -266,7 +266,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.03.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.04.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -476,7 +476,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v2.03.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v2.04.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -534,14 +534,27 @@
         day: "2-digit", month: "2-digit", year: "numeric",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
       });
-      const list = state.apartList || APART;
-      document.getElementById("apartMeta").textContent =
-        "Listino Apart reale · " + (state.apartSource || "catalogo") + " · " + now;
+      const live = Array.isArray(state.apartList) && state.apartList.length;
+      document.getElementById("apartMeta").textContent = live
+        ? ("Listino Apart · " + (state.apartSource || "aggiornato") + " · " + now)
+        : "In attesa di aggiornamento listino Apart";
       document.getElementById("spotPln").textContent = spot ? pln(spot) : "—";
-      const rows = list.map(p => {
+      const clean = s => String(s || "").replace(/\*+/g, "").trim();
+      if (!live) {
+        document.getElementById("apartBody").innerHTML = APART.slice(0, 10).map((p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><a href="${APART_LIST_URL}" target="_blank" rel="noopener">${clean(p.name)}</a></td>
+          <td class="r">—</td>
+          <td class="r">—</td>
+          <td class="r">—</td>
+        </tr>`).join("");
+        return;
+      }
+      const rows = state.apartList.map(p => {
         const spread = p.price - (spot || p.price);
         const pct = spot ? (spread / spot) * 100 : 0;
-        return { ...p, spread, pct };
+        return { ...p, name: clean(p.name), spread, pct };
       }).sort((a, b) => a.price - b.price).slice(0, 10);
       document.getElementById("apartBody").innerHTML = rows.map((p, i) => `
         <tr>
