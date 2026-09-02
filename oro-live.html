@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Oro Live v2.02.0 — Prezzo e statistiche</title>
+  <title>Oro Live v2.03.0 — Prezzo e statistiche</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23d4af37'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23f0d78c' stroke-width='2'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='18' font-family='Georgia,serif' font-weight='700' fill='%231a1404'%3EAu%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -266,7 +266,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.02.0</span></h1>
+        <h1>Oro Live <span style="font-size:.55em;font-weight:600;color:var(--muted);letter-spacing:0">v2.03.0</span></h1>
         <p>Prezzi in euro, zloty e dollari — oncia, grammo 24k / 22k / 21,6k / 18k / 14k / 9k</p>
       </div>
       <div class="status">
@@ -333,6 +333,8 @@
           <div class="stat"><label>Range ultimo mese</label><b id="monthRange">—</b></div>
           <div class="stat"><label>Media mobile 50 giorni</label><b id="sma50">—</b></div>
           <div class="stat"><label>Media mobile 200 giorni</label><b id="sma200">—</b></div>
+          <div class="stat"><label>Supporto</label><b id="srSup">—</b></div>
+          <div class="stat"><label>Resistenza</label><b id="srRes">—</b></div>
         </div>
         </details>
       </section>
@@ -474,7 +476,7 @@
       Dati da feed CFD MetaTrader 5. Lo zloty è XAU/USD × USD/PLN.
       Carati sul grammo: 22k = 916,7, 21,6k = 900, 18k = 750, 14k = 585, 9k = 375.
       1 oncia troy = 31,1034768 g. Il statistiche non è il prezzo più basso: usa minimo di giornata, minimo del mese, S1/S2 di ieri e ritracciamenti del mese.
-      App v2.02.0 — 1 settembre 2026. Non è un consiglio di investimento.
+      App v2.03.0 — 1 settembre 2026. Non è un consiglio di investimento.
     </footer>
   </div>
 
@@ -753,6 +755,48 @@
       const el200 = document.getElementById("sma200");
       if (el50) el50.textContent = s50 != null ? money(s50) : "—";
       if (el200) el200.textContent = s200 != null ? money(s200) : "—";
+      const sr = keySR(state.daily, day, s50, s200);
+      const elS = document.getElementById("srSup");
+      const elR = document.getElementById("srRes");
+      if (elS) elS.textContent = sr.sup != null ? money(sr.sup) : "—";
+      if (elR) elR.textContent = sr.res != null ? money(sr.res) : "—";
+    }
+    function keySR(daily, day, s50, s200) {
+      const px = day?.price;
+      if (!(px > 0)) return { sup: null, res: null };
+      const bars = (daily || []).filter(b => sameScale(b.close || b.low || b.high, px, 0.25)).slice(-60);
+      const lows = [], highs = [];
+      for (let i = 2; i < bars.length - 2; i++) {
+        const l = Number(bars[i].low || bars[i].close);
+        const h = Number(bars[i].high || bars[i].close);
+        const pl = Number(bars[i-1].low || bars[i-1].close);
+        const nl = Number(bars[i+1].low || bars[i+1].close);
+        const ph = Number(bars[i-1].high || bars[i-1].close);
+        const nh = Number(bars[i+1].high || bars[i+1].close);
+        if (l <= pl && l <= nl && l > 0) lows.push(l);
+        if (h >= ph && h >= nh && h > 0) highs.push(h);
+      }
+      const step = px >= 5000 ? 100 : px >= 800 ? 50 : 10;
+      const roundDown = Math.floor(px / step) * step;
+      const roundUp = Math.ceil(px / step) * step;
+      const below = [];
+      const above = [];
+      lows.forEach(v => { if (v < px * 0.999) below.push(v); });
+      highs.forEach(v => { if (v > px * 1.001) above.push(v); });
+      if (day.low && day.low < px * 0.999) below.push(day.low);
+      if (day.high && day.high > px * 1.001) above.push(day.high);
+      if (s50 && s50 < px * 0.999) below.push(s50);
+      if (s50 && s50 > px * 1.001) above.push(s50);
+      if (s200 && s200 < px * 0.999) below.push(s200);
+      if (s200 && s200 > px * 1.001) above.push(s200);
+      if (roundDown > 0 && roundDown < px * 0.999) below.push(roundDown);
+      if (roundUp > px * 1.001) above.push(roundUp);
+      const month = monthRange(daily, day);
+      if (month.low && month.low < px) below.push(month.low);
+      if (month.high && month.high > px) above.push(month.high);
+      const sup = below.length ? Math.max(...below.filter(v => v > px * 0.85)) : (month.low || day.low);
+      const res = above.length ? Math.min(...above.filter(v => v < px * 1.15)) : (month.high || day.high);
+      return { sup, res };
     }
     function sma(daily, n) {
       const closes = (daily || []).filter(b => !b.isOpen && Number(b.close) > 0).map(b => Number(b.close));
