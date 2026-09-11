@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>MeteoRoute — percorsi con meteo e traffico</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img class="brand-mark" src="icon.svg" alt="" />
+        <div>
+          <h1>MeteoRoute</h1>
+          <p>Percorsi, traffico e meteo sul tracciato</p>
+        </div>
+      </div>
+      <p style="padding:0 16px;font-size:13px"><a href="./" style="color:#7dd3fc">← Torna alle colonnine</a></p>
+      <div class="panel">
+        <div class="field">
+          <label for="origin">Partenza</label>
+          <div class="input-wrap">
+            <input id="origin" type="text" placeholder="Indirizzo o città" autocomplete="off" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="dest">Destinazione</label>
+          <input id="dest" type="text" placeholder="Dove vuoi arrivare" autocomplete="off" />
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="locate" type="button">Usa posizione</button>
+          <button class="btn btn-ghost" id="swap" type="button">Inverti</button>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="depart">Partenza prevista</label>
+            <input id="depart" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label>Opzioni</label>
+            <div class="checks" style="padding-top:8px">
+              <label><input type="checkbox" id="trafficOn" checked /> Traffico</label>
+            </div>
+          </div>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="avoidHw" /> Evita autostrade</label>
+          <label><input type="checkbox" id="avoidTolls" /> Evita pedaggi</label>
+        </div>
+        <button class="btn btn-primary" id="go" type="button">Calcola percorsi + meteo</button>
+        <div id="status" class="status">Apri Impostazioni per la chiave Google Maps.</div>
+      </div>
+      <details class="settings">
+        <summary>Impostazioni API e soglie</summary>
+        <div class="settings-body">
+          <label for="apiKey">Chiave Google Maps</label>
+          <input id="apiKey" type="password" placeholder="AIza…" autocomplete="off" />
+          <button class="btn btn-ghost" id="saveKey" type="button">Salva e carica mappa</button>
+          <div class="row-2">
+            <div class="field">
+              <label for="windWarn">Vento attenzione (km/h)</label>
+              <input id="windWarn" type="number" min="20" max="150" />
+            </div>
+            <div class="field">
+              <label for="windBad">Vento alto (km/h)</label>
+              <input id="windBad" type="number" min="30" max="200" />
+            </div>
+          </div>
+          <p class="hint">
+            Abilita Maps JavaScript API, Places API e Directions API.
+            Autorizza il referrer https://mn3monix.github.io/*
+            Il meteo arriva da Open-Meteo, senza chiave.
+            La chiave resta solo in questo browser.
+          </p>
+        </div>
+      </details>
+      <div id="results" class="results"></div>
+    </aside>
+    <main style="position:relative;min-width:0">
+      <div id="map"></div>
+      <div class="legend">
+        <div><b>Meteo sul percorso</b></div>
+        <div><span class="sw" style="background:#34d399"></span>ok</div>
+        <div><span class="sw" style="background:#fbbf24"></span>attenzione (vento / pioggia)</div>
+        <div><span class="sw" style="background:#fb7185"></span>temporale, grandine, raffiche forti</div>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
