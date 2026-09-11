@@ -4,29 +4,49 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Colonnine — ricarica Tesla a Bydgoszcz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-:root{--bg:#0f1419;--card:#1a222c;--ink:#e8eef5;--muted:#9aa8b8;--gold:#e8b84a}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
-header{padding:16px 20px 8px;max-width:1200px;margin:0 auto}h1{font-size:1.3rem;margin:0 0 6px}
-.sub{color:var(--muted);font-size:.9rem;line-height:1.45}
+:root{--bg:#0b1016;--card:#151c26;--ink:#eef3f8;--muted:#9aa8b8;--gold:#e8b84a;--text:#111827}
+*{box-sizing:border-box}
+html,body{margin:0;font-family:Outfit,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--ink);letter-spacing:-.01em}
+header{padding:16px 20px 8px;max-width:1200px;margin:0 auto}h1{font-size:1.45rem;margin:0 0 6px;font-weight:700;letter-spacing:-.03em}
+.sub{color:var(--muted);font-size:.92rem;line-height:1.5;font-weight:400}
 .wrap{display:grid;grid-template-columns:1fr 360px;gap:14px;max-width:1200px;margin:0 auto;padding:10px 16px 24px}
 #map{height:72vh;min-height:480px;border-radius:14px;overflow:hidden;border:1px solid #2a3542;background:#1a222c}
 aside{display:flex;flex-direction:column;gap:10px;max-height:72vh;overflow:auto}
-.card{background:var(--card);border:1px solid #2a3542;border-radius:12px;padding:12px;cursor:pointer}
-.badge{font-size:11px;font-weight:700;padding:3px 7px;border-radius:999px}
+.card{background:var(--card);border:1px solid #2a3542;border-radius:14px;padding:13px;cursor:pointer}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.04em}
 .b-best{background:#2a2110;color:var(--gold)}.b-cheap{background:#12301f;color:#3dd68c}.b-fast{background:#1a2a40;color:#4da3ff}.b-ok{background:#2a2418;color:#ff8a3d}
-h2{font-size:.98rem;margin:4px 0 0}.meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.4}.price{font-weight:700;color:var(--gold)}
+h2{font-size:1.02rem;margin:6px 0 0;font-weight:600}.meta{font-size:.82rem;color:var(--muted);margin-top:5px;line-height:1.45}.price{font-weight:700;color:var(--gold)}
 .filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
-.filters button,.btn{background:#243040;color:var(--ink);border:1px solid #334455;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+.filters button,.btn{background:#243040;color:var(--ink);border:1px solid #334455;border-radius:999px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
 .filters button.on,.btn.primary{background:#e8b84a;color:#111;border-color:#e8b84a;font-weight:700}
-.legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-weight:500}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
-a.nav{color:#4da3ff;font-size:12px;text-decoration:none}
+a.nav{color:#7cbcff;font-size:13px;text-decoration:none;font-weight:600}
 footer{max-width:1200px;margin:0 auto;padding:0 20px 28px;font-size:12px;color:var(--muted)}
 details.settings{margin-top:10px;max-width:620px}details.settings summary{cursor:pointer;color:var(--muted);font-size:12px}
 .settings-body{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.settings-body input{flex:1;min-width:220px;background:#243040;border:1px solid #334455;color:var(--ink);border-radius:8px;padding:8px 10px}
+.settings-body input{flex:1;min-width:220px;background:#243040;border:1px solid #334455;color:var(--ink);border-radius:8px;padding:8px 10px;font-family:inherit}
+.leaflet-container,.leaflet-popup-content,.gm-style{font-family:Outfit,ui-sans-serif,system-ui,sans-serif !important}
+.leaflet-popup-content-wrapper{background:#fff;color:#111827;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.28);padding:2px 2px 0}
+.leaflet-popup-tip{background:#fff}
+.leaflet-popup-content{margin:12px 14px 14px;color:#111827;font-size:14px;line-height:1.45;min-width:180px}
+.leaflet-popup-content .pin-pop strong{display:block;font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px}
+.leaflet-popup-content .pin-pop p{margin:0 0 2px;color:#334155;font-weight:500}
+.leaflet-popup-content .pin-pop .p{color:#b45309;font-weight:700}
+.leaflet-popup-content .pin-pop a{color:#1d4ed8;font-weight:700;text-decoration:none}
+.leaflet-container a.leaflet-popup-close-button{color:#334155;font-size:18px}
+.gm-style .gm-style-iw-c,.gm-style .gm-style-iw-d{color:#111827 !important;font-family:Outfit,ui-sans-serif,system-ui,sans-serif !important}
+.gm-style .gm-style-iw-d{overflow:auto !important}
+.pin-pop{color:#111827;font-family:Outfit,ui-sans-serif,system-ui,sans-serif;min-width:190px}
+.pin-pop strong{display:block;color:#0f172a;font-size:15px;font-weight:700;margin-bottom:4px}
+.pin-pop p{margin:0 0 2px;color:#334155;font-weight:500}
+.pin-pop .p{color:#b45309;font-weight:700}
+.pin-pop a{color:#1d4ed8;font-weight:700;text-decoration:none}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}#map{height:50vh}aside{max-height:none}}
 </style>
 </head>
@@ -80,6 +100,7 @@ const stations = [
 {id:"koronowo",tags:["tesla"],color:"#ea4335",rank:"Destination Tesla",badge:"b-ok",name:"Tesla Destination Koronowo",addr:"Diabelski Młyn, Nakielska 11",lat:53.3136,lng:17.9368,power:"2× 22 kW",price:"lento",why:"~25–30 km nord.",maps:"https://maps.google.com/?q=53.3136,17.9368"},
 {id:"pkp",tags:[],color:"#9aa8b8",rank:"AC stazione",badge:"b-ok",name:"PKP Bydgoszcz Główna",addr:"Zygmunta Augusta 7",lat:53.135283,lng:17.992965,power:"Type 2 22 kW",price:"AC",why:"Solo lento.",maps:"https://maps.google.com/?q=53.135283,17.992965"}
 ];
+function popHtml(s){return `<div class="pin-pop"><strong>${s.name}</strong><p>${s.power}</p><p class="p">${s.price}</p><a href="${s.maps}" target="_blank">Naviga</a></div>`;}
 const keyInput=document.getElementById("apiKey");
 const keyStatus=document.getElementById("keyStatus");
 let mode="osm",leafletMap,gmap,markers={},filter="all",info;
@@ -98,7 +119,7 @@ function focusStation(id){
   if(mode==="google"&&gmap&&m){
     gmap.setCenter({lat:s.lat,lng:s.lng}); gmap.setZoom(15);
     if(info) info.close();
-    info=new google.maps.InfoWindow({content:`<div style="font:14px/1.4 system-ui;max-width:240px"><b>${s.name}</b><br>${s.power}<br>${s.price}<br><a target="_blank" href="${s.maps}">Naviga</a></div>`});
+    info=new google.maps.InfoWindow({content:popHtml(s)});
     info.open({map:gmap,anchor:m});
   } else if(leafletMap&&m){ leafletMap.setView([s.lat,s.lng],15); m.openPopup(); }
 }
@@ -109,8 +130,7 @@ function startLeaflet(){
   visible().forEach(s=>{
     const icon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:50%;background:${s.color};border:2px solid #fff"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
     const m=L.marker([s.lat,s.lng],{icon}).addTo(leafletMap);
-    m.bindPopup(`<b>${s.name}</b><br>${s.power}<br>${s.price}<br><a href="${s.maps}" target="_blank">Naviga</a>`);
-    markers[s.id]=m;
+    m.bindPopup(popHtml(s)); markers[s.id]=m;
   });
   setTimeout(()=>leafletMap.invalidateSize(),80);
 }
@@ -160,7 +180,7 @@ document.querySelectorAll(".filters button").forEach(btn=>{
       visible().forEach(s=>{
         const icon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:50%;background:${s.color};border:2px solid #fff"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
         const m=L.marker([s.lat,s.lng],{icon}).addTo(leafletMap);
-        m.bindPopup(`<b>${s.name}</b><br>${s.power}<br>${s.price}<br><a href="${s.maps}" target="_blank">Naviga</a>`); markers[s.id]=m;
+        m.bindPopup(popHtml(s)); markers[s.id]=m;
       });
     }
   };
