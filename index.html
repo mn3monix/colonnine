@@ -4,34 +4,36 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Colonnine — ricarica Tesla a Bydgoszcz</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-:root{--bg:#0f1419;--card:#1a222c;--ink:#e8eef5;--muted:#9aa8b8;--gold:#e8b84a;--green:#3dd68c;--blue:#4da3ff;--orange:#ff8a3d}
+:root{--bg:#0f1419;--card:#1a222c;--ink:#e8eef5;--muted:#9aa8b8;--gold:#e8b84a}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
-header{padding:18px 20px 10px;max-width:1200px;margin:0 auto}h1{font-size:1.35rem;margin:0 0 6px}
-.sub{color:var(--muted);font-size:.92rem;line-height:1.45;max-width:760px}
+header{padding:16px 20px 8px;max-width:1200px;margin:0 auto}h1{font-size:1.3rem;margin:0 0 6px}
+.sub{color:var(--muted);font-size:.9rem;line-height:1.45}
 .wrap{display:grid;grid-template-columns:1fr 360px;gap:14px;max-width:1200px;margin:0 auto;padding:10px 16px 24px}
 #map{height:72vh;min-height:480px;border-radius:14px;overflow:hidden;border:1px solid #2a3542;background:#1a222c}
 aside{display:flex;flex-direction:column;gap:10px;max-height:72vh;overflow:auto}
-.card{background:var(--card);border:1px solid #2a3542;border-radius:12px;padding:12px 13px;cursor:pointer}
+.card{background:var(--card);border:1px solid #2a3542;border-radius:12px;padding:12px;cursor:pointer}
 .badge{font-size:11px;font-weight:700;padding:3px 7px;border-radius:999px}
-.b-best{background:#2a2110;color:var(--gold)}.b-cheap{background:#12301f;color:var(--green)}.b-fast{background:#1a2a40;color:var(--blue)}.b-ok{background:#2a2418;color:var(--orange)}
+.b-best{background:#2a2110;color:var(--gold)}.b-cheap{background:#12301f;color:#3dd68c}.b-fast{background:#1a2a40;color:#4da3ff}.b-ok{background:#2a2418;color:#ff8a3d}
 h2{font-size:.98rem;margin:4px 0 0}.meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.4}.price{font-weight:700;color:var(--gold)}
 .filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
-.filters button{background:#243040;color:var(--ink);border:1px solid #334455;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
-.filters button.on{background:#e8b84a;color:#111;border-color:#e8b84a;font-weight:700}
+.filters button,.btn{background:#243040;color:var(--ink);border:1px solid #334455;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+.filters button.on,.btn.primary{background:#e8b84a;color:#111;border-color:#e8b84a;font-weight:700}
 .legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
-a.nav{color:var(--blue);font-size:12px;text-decoration:none}footer{max-width:1200px;margin:0 auto;padding:0 20px 28px;font-size:12px;color:var(--muted)}
-details.settings{margin-top:10px;max-width:560px}details.settings summary{cursor:pointer;color:var(--muted);font-size:12px}
-.settings-body{display:flex;gap:8px;align-items:center;margin-top:8px}
-.settings-body input{flex:1;background:#243040;border:1px solid #334455;color:var(--ink);border-radius:8px;padding:8px 10px}
-@media(max-width:900px){.wrap{grid-template-columns:1fr}#map{height:52vh}aside{max-height:none}}
+a.nav{color:#4da3ff;font-size:12px;text-decoration:none}
+footer{max-width:1200px;margin:0 auto;padding:0 20px 28px;font-size:12px;color:var(--muted)}
+details.settings{margin-top:10px;max-width:620px}details.settings summary{cursor:pointer;color:var(--muted);font-size:12px}
+.settings-body{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.settings-body input{flex:1;min-width:220px;background:#243040;border:1px solid #334455;color:var(--ink);border-radius:8px;padding:8px 10px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}#map{height:50vh}aside{max-height:none}}
 </style>
 </head>
 <body>
 <header>
 <h1>Colonnine — Tesla a Bydgoszcz</h1>
-<p class="sub">Google Maps parte dalla chiave salvata sul Mac. La chiave non è nel file. <a class="nav" href="meteo.html">MeteoRoute</a></p>
+<p class="sub">La mappa parte subito. Google Maps è opzionale, con chiave solo sul Mac. <a class="nav" href="meteo.html">MeteoRoute</a></p>
 <div class="filters">
 <button class="on" data-f="all">Tutti</button>
 <button data-f="top">Solo i migliori</button>
@@ -48,14 +50,15 @@ details.settings{margin-top:10px;max-width:560px}details.settings summary{cursor
 <details class="settings" id="settingsBox">
 <summary>Chiave Google (solo questo Mac)</summary>
 <div class="settings-body">
-<input id="apiKey" type="password" placeholder="AIza… incolla qui" autocomplete="off" />
-<button type="button" id="saveKey">Salva e avvia Google Maps</button>
+<input id="apiKey" type="password" placeholder="AIza… opzionale" autocomplete="off" />
+<button type="button" class="btn primary" id="saveKey">Salva e prova Google Maps</button>
 </div>
-<p class="sub" id="keyStatus"></p>
+<p class="sub" id="keyStatus">Mappa OpenStreetMap attiva.</p>
 </details>
 </header>
 <div class="wrap"><div id="map"></div><aside id="list"></aside></div>
-<footer>Nessuna API key è scritta in questo file. Autorizza il referrer https://mn3monix.github.io/*</footer>
+<footer>La chiave non è nel file. Per Google: Maps JavaScript API + referrer https://mn3monix.github.io/*</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const STORAGE_KEY = "meteoroute.googleKey";
 const stations = [
@@ -79,10 +82,8 @@ const stations = [
 ];
 const keyInput=document.getElementById("apiKey");
 const keyStatus=document.getElementById("keyStatus");
-const settingsBox=document.getElementById("settingsBox");
-let map,markers={},filter="all",info;
+let mode="osm",leafletMap,gmap,markers={},filter="all",info;
 function getKey(){return (localStorage.getItem(STORAGE_KEY)||"").trim();}
-function pin(color){return {path:"M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z",fillColor:color,fillOpacity:1,strokeColor:"#fff",strokeWeight:1.1,scale:1.55,anchor:new google.maps.Point(12,22)};}
 function visible(){return stations.filter(s=>filter==="all"||s.tags.includes(filter));}
 function renderList(){
   const list=document.getElementById("list"); list.innerHTML="";
@@ -93,51 +94,78 @@ function renderList(){
   });
 }
 function focusStation(id){
-  const s=stations.find(x=>x.id===id); const m=markers[id];
-  if(!s||!m||!map) return;
-  map.setCenter({lat:s.lat,lng:s.lng}); map.setZoom(15);
-  if(info) info.close();
-  info=new google.maps.InfoWindow({content:`<div style="font:14px/1.4 system-ui;max-width:240px"><b>${s.name}</b><br>${s.power}<br>${s.price}<br><a target="_blank" href="${s.maps}">Naviga</a></div>`});
-  info.open({map,anchor:m});
+  const s=stations.find(x=>x.id===id); const m=markers[id]; if(!s) return;
+  if(mode==="google"&&gmap&&m){
+    gmap.setCenter({lat:s.lat,lng:s.lng}); gmap.setZoom(15);
+    if(info) info.close();
+    info=new google.maps.InfoWindow({content:`<div style="font:14px/1.4 system-ui;max-width:240px"><b>${s.name}</b><br>${s.power}<br>${s.price}<br><a target="_blank" href="${s.maps}">Naviga</a></div>`});
+    info.open({map:gmap,anchor:m});
+  } else if(leafletMap&&m){ leafletMap.setView([s.lat,s.lng],15); m.openPopup(); }
 }
-function drawMarkers(){
-  Object.values(markers).forEach(m=>m.setMap(null)); markers={};
+function startLeaflet(){
+  mode="osm"; markers={};
+  leafletMap=L.map("map").setView([53.1235,18.0084],12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(leafletMap);
+  visible().forEach(s=>{
+    const icon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:50%;background:${s.color};border:2px solid #fff"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+    const m=L.marker([s.lat,s.lng],{icon}).addTo(leafletMap);
+    m.bindPopup(`<b>${s.name}</b><br>${s.power}<br>${s.price}<br><a href="${s.maps}" target="_blank">Naviga</a>`);
+    markers[s.id]=m;
+  });
+  setTimeout(()=>leafletMap.invalidateSize(),80);
+}
+function pin(color){return {path:"M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z",fillColor:color,fillOpacity:1,strokeColor:"#fff",strokeWeight:1.1,scale:1.55,anchor:new google.maps.Point(12,22)};}
+function startGoogle(){
+  if(leafletMap){leafletMap.remove();leafletMap=null;}
+  document.getElementById("map").innerHTML="";
+  mode="google"; markers={};
+  gmap=new google.maps.Map(document.getElementById("map"),{center:{lat:53.1235,lng:18.0084},zoom:12,mapTypeControl:false,streetViewControl:false});
   const bounds=new google.maps.LatLngBounds();
   visible().forEach(s=>{
-    const m=new google.maps.Marker({position:{lat:s.lat,lng:s.lng},map,title:s.name,icon:pin(s.color)});
+    const m=new google.maps.Marker({position:{lat:s.lat,lng:s.lng},map:gmap,title:s.name,icon:pin(s.color)});
     m.addListener("click",()=>focusStation(s.id));
-    markers[s.id]=m;
-    if(s.lng>17.85) bounds.extend(m.getPosition());
+    markers[s.id]=m; if(s.lng>17.85) bounds.extend(m.getPosition());
   });
-  if(!bounds.isEmpty()) map.fitBounds(bounds,48);
-}
-function initMap(){
-  map=new google.maps.Map(document.getElementById("map"),{center:{lat:53.1235,lng:18.0084},zoom:12,mapTypeControl:false,streetViewControl:false,fullscreenControl:true});
-  renderList(); drawMarkers();
+  if(!bounds.isEmpty()) gmap.fitBounds(bounds,48);
   keyStatus.textContent="Google Maps attivo. Chiave solo su questo Mac.";
-  settingsBox.open=false;
 }
-function loadGoogle(key){
+function loadGoogleScript(key){
   return new Promise((resolve,reject)=>{
-    if(window.google&&window.google.maps){resolve();return;}
-    const old=document.getElementById("gmaps"); if(old) old.remove();
-    window.gm_authFailure=()=>{keyStatus.textContent="Chiave rifiutata. Autorizza https://mn3monix.github.io/* e Maps JavaScript API.";settingsBox.open=true;reject(new Error("auth"));};
-    const s=document.createElement("script"); s.id="gmaps"; s.async=true;
-    s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&language=it&region=PL&callback=initMap";
-    s.onerror=()=>reject(new Error("script"));
-    window.initMap=()=>resolve(initMap());
-    document.head.appendChild(s);
+    if(window.google&&window.google.maps&&window.google.maps.Map){resolve();return;}
+    window.gm_authFailure=function(){ keyStatus.textContent="Google ha rifiutato la chiave. Abilita Maps JavaScript API e il referrer https://mn3monix.github.io/*"; reject(new Error("auth")); };
+    window.__colonnineGmapsReady=function(){ resolve(); };
+    const s=document.createElement("script");
+    s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&language=it&region=PL&callback=__colonnineGmapsReady";
+    s.async=true; s.onerror=()=>reject(new Error("script")); document.head.appendChild(s);
   });
 }
-async function start(){
-  const key=getKey(); keyInput.value=key; renderList();
-  if(!key){ settingsBox.open=true; keyStatus.textContent="Incolla la chiave e premi Salva. Resta nel browser, non sul repo."; document.getElementById("map").innerHTML="<div style='padding:24px;color:#9aa8b8'>Serve la chiave Google Maps per vedere la mappa.</div>"; return; }
-  keyStatus.textContent="Avvio Google Maps…";
-  try{ await loadGoogle(key);}catch(e){}
+async function tryGoogle(){
+  const key=getKey(); if(!key) return false;
+  keyStatus.textContent="Provo Google Maps…";
+  try{ await loadGoogleScript(key); startGoogle(); return true; }
+  catch(e){ if(!leafletMap) startLeaflet(); return false; }
 }
-document.getElementById("saveKey").onclick=()=>{ const v=keyInput.value.trim(); if(!v){localStorage.removeItem(STORAGE_KEY);location.reload();return;} localStorage.setItem(STORAGE_KEY,v); location.reload(); };
-document.querySelectorAll(".filters button").forEach(btn=>{ btn.onclick=()=>{document.querySelectorAll(".filters button").forEach(b=>b.classList.remove("on"));btn.classList.add("on");filter=btn.dataset.f;renderList();if(map) drawMarkers();};});
-start();
+async function boot(){
+  keyInput.value=getKey(); renderList(); startLeaflet();
+  if(getKey()) await tryGoogle();
+  else keyStatus.textContent="Mappa OpenStreetMap attiva. Per Google incolla la chiave e salva.";
+}
+document.getElementById("saveKey").onclick=async()=>{ const v=keyInput.value.trim(); if(!v){localStorage.removeItem(STORAGE_KEY);location.reload();return;} localStorage.setItem(STORAGE_KEY,v); await tryGoogle(); };
+document.querySelectorAll(".filters button").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".filters button").forEach(b=>b.classList.remove("on")); btn.classList.add("on"); filter=btn.dataset.f; renderList();
+    if(mode==="google") startGoogle();
+    else {
+      Object.values(markers).forEach(m=>leafletMap.removeLayer(m)); markers={};
+      visible().forEach(s=>{
+        const icon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:50%;background:${s.color};border:2px solid #fff"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+        const m=L.marker([s.lat,s.lng],{icon}).addTo(leafletMap);
+        m.bindPopup(`<b>${s.name}</b><br>${s.power}<br>${s.price}<br><a href="${s.maps}" target="_blank">Naviga</a>`); markers[s.id]=m;
+      });
+    }
+  };
+});
+boot();
 </script>
 </body>
 </html>
