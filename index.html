@@ -23,6 +23,9 @@ h2{font-size:.98rem;margin:4px 0 0}.meta{font-size:.8rem;color:var(--muted);marg
 .legend{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
 a.nav{color:var(--blue);font-size:12px;text-decoration:none}footer{max-width:1200px;margin:0 auto;padding:0 20px 28px;font-size:12px;color:var(--muted)}
+details.settings{margin-top:10px;max-width:520px}details.settings summary{cursor:pointer;color:var(--muted);font-size:12px}
+.settings-body{display:flex;gap:8px;align-items:center;margin-top:8px}
+.settings-body input{flex:1;background:#243040;border:1px solid #334455;color:var(--ink);border-radius:8px;padding:8px 10px}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}#map{height:52vh}aside{max-height:none}}
 </style>
 </head>
@@ -44,11 +47,31 @@ a.nav{color:var(--blue);font-size:12px;text-decoration:none}footer{max-width:120
 <span><i class="dot" style="background:#ff8a3d"></i> Comodo / shopping</span>
 <span><i class="dot" style="background:#9aa8b8"></i> AC lento</span>
 </div>
+<details class="settings">
+<summary>Chiave Google (solo su questo Mac, non va sul sito)</summary>
+<div class="settings-body">
+<input id="apiKey" type="password" placeholder="AIza… incolla qui, resta in localStorage" autocomplete="off" />
+<button class="filters" id="saveKey" type="button" style="margin:0">Salva sul Mac</button>
+</div>
+<p class="sub" id="keyStatus" style="margin-top:6px">La mappa colonnine usa OpenStreetMap e non ha bisogno della chiave. Serve solo a MeteoRoute.</p>
+</details>
 </header>
 <div class="wrap"><div id="map"></div><aside id="list"></aside></div>
-<footer>Prezzi settembre 2026 (indicativi). Verifica in app prima di partire. Mappa OpenStreetMap, senza chiave Google.</footer>
+<footer>Prezzi settembre 2026 (indicativi). Verifica in app prima di partire. Nessuna API key è scritta in questo file.</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+const STORAGE_KEY = "meteoroute.googleKey";
+const saved = localStorage.getItem(STORAGE_KEY) || "";
+const keyInput = document.getElementById("apiKey");
+const keyStatus = document.getElementById("keyStatus");
+keyInput.value = saved;
+if (saved) keyStatus.textContent = "Chiave presente in questo browser. Non è sul repo.";
+document.getElementById("saveKey").onclick = () => {
+  const v = keyInput.value.trim();
+  if (!v) { localStorage.removeItem(STORAGE_KEY); keyStatus.textContent = "Chiave rimossa da questo Mac."; return; }
+  localStorage.setItem(STORAGE_KEY, v);
+  keyStatus.textContent = "Salvata solo su questo Mac. MeteoRoute la riusa da solo.";
+};
 const stations=[
 {id:"pila",tags:["tesla","top","cheap","fast"],color:"#e82127",rank:"1 · MIGLIORE PER TESLA",badge:"b-best",name:"Tesla Supercharger Piła",addr:"Bydgoska 135, Comfy Park — Piła",lat:53.15086,lng:16.77011,power:"12× fino a 250 kW CCS",price:"~1,60 zł/kWh (Tesla)",why:"Prezzo più basso + plug & charge. ~90 km da Bydgoszcz.",maps:"https://maps.google.com/?q=53.15086,16.77011"},
 {id:"leclerc",tags:["top","cheap","fast"],color:"#3dd68c",rank:"2 · MIGLIORE IN CITTÀ",badge:"b-cheap",name:"E.Leclerc — Skłodowskiej-Curie 26",addr:"Marii Skłodowskiej-Curie 26, Bydgoszcz",lat:53.1239,lng:18.0218,power:"fino a 180 kW CCS",price:"~1,99 zł/kWh",why:"Miglior rapporto prezzo/potenza in città.",maps:"https://maps.google.com/?q=53.1239,18.0218"},
